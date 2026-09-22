@@ -2,6 +2,10 @@
 
 Itération du 22 septembre 2026. Le style du fil validé est étendu à la fiche, pour le parcours **lire, puis écouter un passage**.
 
+Le code couleur du fil est désormais partagé par la fiche : rouge pour les citations, bleu pour les interventions, sur le pictogramme du média, le filet de la personnalité et le libellé du type dans les informations du passage. Les nuances s’adaptent au thème clair/sombre.
+
+[Citation en clair](citation-claire.png) · [Citation en sombre](citation-sombre.png). Captures fictives vérifiées dans `build/PassageColors.xcresult`.
+
 ## Choix
 
 - Même ligne source/heure et même identité avec filet discret que dans les cartes du fil. Ces deux éléments partagent désormais leurs composants SwiftUI.

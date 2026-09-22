@@ -1,5 +1,32 @@
 # Validation du portage
 
+## En-tête du fil compact — 22 septembre 2026
+
+Titre intégré à la barre de navigation, bouton « Filtrer » persistant avec texte visible, types présentés par libellés et soulignement, « Tout écouter » réuni avec la période et le nombre de passages. La capture standard sur iPhone 17 Pro montre désormais deux cartes complètes, contre une avant. [Comparaison et captures](UX/Feed/README.md#en-tête-compact--présentation-actuelle).
+
+- Compilation SDK iOS 27 réussie. Deux parcours fonctionnels réussis dans `build/FeedCompactHeader.xcresult` : types/panneau/retour/écoute et filtres multiples/intersection/vide/remise à zéro.
+- Sombre et texte maximal validés dans `build/FeedCompactHeaderFinal.xcresult`. Le pilote a été ajusté à la position des choix au-dessous de la barre pour éviter des gestes de rafraîchissement inutiles.
+- Dernier parcours réussi dans `build/FeedCompactHeaderVerified.xcresult` (`TEST SUCCEEDED`, un test, zéro échec) : filtres, annulation et audit du fil (contraste, texte tronqué, cibles tactiles) selon le périmètre existant. Le bouton de barre conserve son texte et une cible de 44 points ; sa mesure flottante est contrôlée avec une tolérance de 0,01 point. « 24 h » utilise une aide VoiceOver plutôt qu’un libellé long identifié à tort comme tronqué.
+- Captures avant/après inspectées ensemble, ainsi que les thèmes et les grands caractères. Données fictives, iPhone 17 Pro / iOS 26.4 ; application normale relancée.
+- Logs : `/tmp/infometrie-feed-compact-header.log`, `/tmp/infometrie-feed-compact-header-final.log`, `/tmp/infometrie-feed-compact-header-verified.log`.
+
+## Sélecteur de type dans le fil — 22 septembre 2026
+
+**Tous · Interventions · Citations** applique immédiatement le type au-dessus du fil. Les autres critères sont conservés, le panneau reste synchronisé et « Tout écouter » utilise les résultats affichés. Le récapitulatif du type seul est supprimé. Voir [les choix et captures](UX/Feed/README.md#choix-du-type-directement-dans-le-fil).
+
+- Compilation SDK iOS 27 réussie. Deux parcours fonctionnels passent dans `build/FeedQuickKinds.xcresult` : changement de type, navigation/retour et podcast limité à deux citations ; intersection personnalités/partis préservée, résultat vide et retour à « Tous », annulation et remise à zéro.
+- Deux parcours passent dans `build/FeedQuickKindsVerified.xcresult` (`TEST SUCCEEDED`, zéro échec) : sélecteur en sombre et Dynamic Type maximal ; synchronisation du panneau, annulation et audit du fil (contraste, texte tronqué, cibles tactiles) selon le périmètre existant.
+- L’audit initial a signalé le compteur après défilement. Son contraste est renforcé avec `Color.primary` explicite, qui remplace le gris hérité de la ligne. Les captures finales ont été inspectées et conservées dans `Docs/UX/Feed/`.
+- Données fictives, iPhone 17 Pro / iOS 26.4. Application normale relancée. Logs : `/tmp/infometrie-feed-quick-kinds.log` et `/tmp/infometrie-feed-quick-kinds-verified.log`.
+
+## Couleurs des types de passages — 22 septembre 2026
+
+Citations en rouge et interventions en bleu dans les accents des cartes, des fiches et des filtres. Palette adaptée aux thèmes clair/sombre ; libellés et pictogrammes conservés.
+
+- Compilation SDK iOS 27 et deux parcours réussis dans `build/PassageColors.xcresult` (`TEST SUCCEEDED`, zéro échec), dont ouverture d’une citation en clair et en sombre, texte maximal et audit du fil selon le périmètre existant.
+- Captures inspectées et conservées dans les galeries du fil, de la fiche et des filtres. Données fictives, iPhone 17 Pro / iOS 26.4. Application normale relancée.
+- Journal : `/tmp/infometrie-passage-colors.log`.
+
 ## Cartes du fil allégées et dates — 22 septembre 2026
 
 Date et heure réunies dans l’en-tête du fil et de la fiche (`22/09 · 10:45`). Dans le fil, le bandeau « Lire et écouter » est retiré ; le type et la durée d’écoute occupent la dernière ligne. Toute la carte reste une destination vers la fiche. Voir [les captures actualisées](UX/Feed/README.md#cartes-allégées--présentation-actuelle).

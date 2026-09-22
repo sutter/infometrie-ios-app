@@ -198,6 +198,11 @@ final class InfometrieUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.staticTexts["demo-banner"].waitForExistence(timeout: 10))
         capture("05-fil-sombre", app: app)
+        reveal(app.buttons["feed-item-2"], in: app, down: false)
+        app.buttons["feed-item-2"].tap()
+        XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
+        capture("17-citation-sombre", app: app)
+        app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
         app.buttons["feed-item-1"].tap()
         XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
         capture("05-sequence-sombre", app: app)
@@ -254,15 +259,23 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["enter-demo"].tap()
         XCTAssertEqual(app.tabBars.buttons.count, 3)
         XCTAssertTrue(app.buttons["feed-item-1"].isHittable)
-        XCTAssertGreaterThanOrEqual(app.buttons["edit-filters"].frame.height, 52)
+        // UIKit may report 43.99999999999999 for a 44pt toolbar target.
+        XCTAssertGreaterThanOrEqual(app.buttons["edit-filters"].frame.height + 0.01, 44)
         capture("16-fil-cartes", app: app)
         app.buttons["edit-filters"].tap()
         reveal(app.buttons["filter-kind-2"], in: app, down: false)
         app.buttons["filter-kind-2"].tap()
+        capture("17-filtres-citations", app: app)
         app.buttons["apply-search"].tap()
-        XCTAssertTrue(app.staticTexts["Citations uniquement"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["feed-kind-2"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["feed-kind-2"].isSelected)
         XCTAssertFalse(app.buttons["feed-item-1"].exists)
-        app.buttons["clear-filters"].tap()
+        capture("18-fil-citations", app: app)
+        app.buttons["feed-item-2"].tap()
+        XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
+        capture("17-citation-claire", app: app)
+        app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
+        app.buttons["feed-kind-0"].tap()
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 5))
         // Cancelling the sheet must leave the applied criteria unchanged.
         app.buttons["edit-filters"].tap()
@@ -314,6 +327,17 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertFalse(app.buttons["feed-item-2"].exists, "Alex est exclu par le parti choisi")
         XCTAssertFalse(app.buttons["feed-item-3"].exists, "Sam appartient au parti mais ne fait pas partie des personnalités choisies")
         capture("15-fil-filtre", app: app)
+
+        // A type change preserves both personality and party restrictions.
+        app.buttons["feed-kind-2"].tap()
+        XCTAssertTrue(app.staticTexts["Aucun passage pour le moment"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["start-podcast"].isEnabled)
+        XCTAssertTrue(app.buttons["clear-filters"].exists)
+        capture("18-fil-citations-vide", app: app)
+        app.buttons["feed-kind-0"].tap()
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["feed-item-2"].exists, "Tous ne doit pas réinitialiser les partis")
+        XCTAssertFalse(app.buttons["feed-item-3"].exists, "Tous ne doit pas réinitialiser les personnalités")
 
         app.buttons["edit-filters"].tap()
         reveal(app.buttons["reset-search"], in: app, down: false)
@@ -368,7 +392,96 @@ final class InfometrieUITests: XCTestCase {
             XCTAssertGreaterThanOrEqual(apply.frame.height, 52)
             XCTAssertLessThanOrEqual(apply.frame.maxX, app.frame.maxX)
             apply.tap()
-            XCTAssertTrue(app.staticTexts["Interventions uniquement"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons["feed-kind-1"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons["feed-kind-1"].isSelected)
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testFeedKindSelectionSyncNavigationAndPodcast() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--demo", "--reset-demo", "-appearance", "light"]
+        app.launch()
+        let all = app.buttons["feed-kind-0"]
+        let interventions = app.buttons["feed-kind-1"]
+        let citations = app.buttons["feed-kind-2"]
+        XCTAssertTrue(all.waitForExistence(timeout: 10))
+        XCTAssertTrue(all.isSelected)
+        XCTAssertTrue(app.staticTexts["5 passages"].exists)
+        capture("18-fil-tous", app: app)
+
+        citations.tap()
+        XCTAssertTrue(citations.isSelected)
+        XCTAssertFalse(all.isSelected)
+        XCTAssertTrue(app.staticTexts["2 passages"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["feed-item-1"].exists)
+        XCTAssertFalse(app.buttons["clear-filters"].exists, "Le type seul ne doit pas ajouter un récapitulatif redondant")
+        capture("18-fil-citations", app: app)
+        app.buttons["feed-item-2"].tap()
+        XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
+        app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(citations.isSelected, "Le retour au fil conserve le type choisi")
+
+        app.buttons["edit-filters"].tap()
+        reveal(app.buttons["filter-kind-2"], in: app, down: false)
+        XCTAssertTrue(app.buttons["filter-kind-2"].isSelected)
+        app.buttons["filter-kind-1"].tap()
+        app.buttons["apply-search"].tap()
+        XCTAssertTrue(interventions.waitForExistence(timeout: 5))
+        XCTAssertTrue(interventions.isSelected, "Le panneau doit actualiser le sélecteur du fil")
+        XCTAssertTrue(app.staticTexts["3 passages"].exists)
+        XCTAssertFalse(app.buttons["feed-item-2"].exists)
+        capture("18-fil-interventions", app: app)
+
+        all.tap()
+        XCTAssertTrue(app.staticTexts["5 passages"].waitForExistence(timeout: 5))
+        citations.tap()
+        app.buttons["start-podcast"].tap()
+        XCTAssertTrue(app.staticTexts["Passage 1 sur 2"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Les enjeux de la rentrée"].exists)
+        wait(app.buttons["player-toggle"], key: "label", equals: "Pause")
+        app.buttons["player-toggle"].tap()
+        app.buttons["player-next"].tap()
+        XCTAssertTrue(app.staticTexts["Passage 2 sur 2"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Un nouveau regard sur les territoires"].exists)
+        XCTAssertFalse(app.buttons["player-next"].isEnabled)
+        app.buttons["close-podcast"].tap()
+        XCTAssertTrue(citations.waitForExistence(timeout: 5))
+        XCTAssertTrue(citations.isSelected)
+    }
+
+    @MainActor
+    func testFeedKindsDarkAppearanceAndMaximumText() {
+        let app = XCUIApplication()
+        for largeText in [false, true] {
+            app.launchArguments = ["--uitesting", "--demo", "-appearance", largeText ? "light" : "dark"]
+            if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
+            app.launch()
+            let suffix = largeText ? "grand-texte" : "sombre"
+            let citations = app.buttons["feed-kind-2"]
+            XCTAssertTrue(citations.waitForExistence(timeout: 10))
+            reveal(citations, in: app, down: false)
+            citations.tap()
+            XCTAssertTrue(citations.isSelected)
+            capture("18-fil-citations-\(suffix)", app: app)
+            for index in 0...2 {
+                let choice = app.buttons["feed-kind-\(index)"]
+                XCTAssertGreaterThanOrEqual(choice.frame.height, 48)
+                XCTAssertGreaterThanOrEqual(choice.frame.minX, app.frame.minX + 20)
+                XCTAssertLessThanOrEqual(choice.frame.maxX, app.frame.maxX - 20)
+            }
+            let interventions = app.buttons["feed-kind-1"]
+            reveal(interventions, in: app, down: true)
+            interventions.tap()
+            XCTAssertTrue(interventions.isSelected)
+            XCTAssertFalse(citations.isSelected)
+            capture("18-fil-interventions-\(suffix)", app: app)
+            let all = app.buttons["feed-kind-0"]
+            reveal(all, in: app, down: true)
+            all.tap()
+            XCTAssertTrue(all.isSelected)
+            capture("18-fil-tous-\(suffix)", app: app)
             app.terminate()
         }
     }
@@ -511,6 +624,10 @@ final class InfometrieUITests: XCTestCase {
             // including at the largest accessibility size, where it is taller.
             let bounds = app.frame
             let top = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY + 12 : bounds.minY + 100
+            // The compact type row begins 8pt below the native navigation bar.
+            // It is fully visible there; do not keep pulling to refresh in an
+            // attempt to create the larger gap used by scrolling body controls.
+            let controlTop = element.identifier.hasPrefix("feed-kind-") ? top - 8 : top
             let slider = app.sliders["player-position"]
             let filterFooter = ["confirm-save-search", "confirm-choices", "apply-search"].map { app.buttons[$0] }.first { $0.exists && $0.isHittable }
             let choiceCount = app.staticTexts["choice-count"]
@@ -521,8 +638,8 @@ final class InfometrieUITests: XCTestCase {
             let bottom = slider.exists ? slider.frame.minY - 12 : filterBottom ?? bounds.maxY - 150
             if element.exists && element.isHittable {
                 let contentControl = ["sequence-summary", "sequence-context", "transcript-follow"].contains(element.identifier)
-                    || ["save-search", "reset-search", "clear-choices"].contains(element.identifier)
-                    || ["filter-kind-", "choice-", "pick-"].contains { element.identifier.hasPrefix($0) }
+                    || ["save-search", "reset-search", "clear-choices", "start-podcast"].contains(element.identifier)
+                    || ["filter-kind-", "feed-kind-", "choice-", "pick-"].contains { element.identifier.hasPrefix($0) }
                 if element.elementType != .link && !contentControl { return }
                 // A large-text choice can be taller than the viewport. Its center
                 // remains a valid tap target when it lies above the fixed footer.
@@ -530,7 +647,7 @@ final class InfometrieUITests: XCTestCase {
                    element.frame.midY >= top, element.frame.midY <= bottom { return }
                 // XCTest may report content controls as hittable underneath the
                 // dock. Expose the complete word or disclosure/follow control.
-                if element.frame.minY >= top && element.frame.maxY <= bottom { return }
+                if element.frame.minY >= controlTop && element.frame.maxY <= bottom { return }
             }
             let upper = top + (bottom - top) * 0.15
             let lower = top + (bottom - top) * 0.85

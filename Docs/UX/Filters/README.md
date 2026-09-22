@@ -6,11 +6,12 @@ Itération du 22 septembre 2026. Le parcours reprend les titres à empattements,
 
 - Deux groupes : **Qui suivre ?** pour les personnalités et les partis ; **Quels passages ?** pour les interventions et les citations. Le texte explique chaque type de passage.
 - Chaque rangée est entièrement tactile. Une coche et un fond teinté indiquent les choix actifs ; la couleur n’est pas le seul repère.
+- Le choix **Citations** reprend l’accent rouge du fil et de la fiche ; **Interventions** conserve le bleu. [Voir les citations sélectionnées](citations-rouges.png), capture contrôlée dans `build/PassageColors.xcresult`.
 - Les listes conservent la recherche et la sélection multiple. « Toutes les personnalités » / « Tous les partis » enlève la restriction ; le nombre de choix et **Terminé** restent visibles en bas.
 - **Afficher les résultats** reste fixé en bas de la feuille. Les filtres ne sont appliqués qu’à la validation ; **Annuler** conserve ceux du fil. La remise à zéro peut donc être annulée.
 - Lorsque personnalités et partis sont sélectionnés ensemble, un texte explique leur intersection.
 - L’enregistrement d’un suivi propose un nom et un récapitulatif des critères. Annuler cette étape ramène aux filtres en cours d’édition.
-- Dans le fil, **Votre sélection** présente les critères appliqués et **Tout afficher** permet de revenir au fil complet.
+- Dans le fil, **Votre sélection** présente les personnalités et partis appliqués et **Tout afficher** permet de revenir au fil complet. Le sélecteur **Tous · Interventions · Citations** indique directement le type ; il applique immédiatement ce seul critère sans ouvrir la feuille, en conservant les autres restrictions. Les deux commandes restent synchronisées. [Voir le sélecteur du fil](../Feed/README.md#choix-du-type-directement-dans-le-fil).
 - Police sémantique, hauteurs adaptables, thèmes clair/sombre et actions principales d’au moins 52 points. La navigation reste séparée du contenu défilant.
 
 Le client API, les règles de filtrage et le moteur de lecture ne changent pas. Le nombre de résultats n’est pas prédit dans la feuille : les résultats sont chargés après validation.

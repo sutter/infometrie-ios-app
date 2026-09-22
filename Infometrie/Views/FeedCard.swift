@@ -30,7 +30,7 @@ struct FeedCard: View {
     private var metadata: some View {
         AdaptiveRow {
             Label(item.kindLabel, systemImage: item.isCitation ? "quote.bubble" : "waveform")
-                .font(.subheadline.weight(.semibold)).foregroundStyle(Brand.blue)
+                .font(.subheadline.weight(.semibold)).foregroundStyle(item.kindColor)
                 .fixedSize(horizontal: false, vertical: true)
             if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
             if item.hasMedia && item.durationSec > 0 {

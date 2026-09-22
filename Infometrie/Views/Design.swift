@@ -6,6 +6,11 @@ enum Brand {
             ? UIColor(red: 0.48, green: 0.59, blue: 1, alpha: 1)
             : UIColor(red: 0.19, green: 0.28, blue: 0.87, alpha: 1)
     })
+    static let citation = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 1, green: 0.52, blue: 0.56, alpha: 1)
+            : UIColor(red: 0.72, green: 0.13, blue: 0.19, alpha: 1)
+    })
     static let secondary = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.76, green: 0.78, blue: 0.83, alpha: 1)
@@ -66,7 +71,7 @@ struct KindBadge: View {
     var body: some View {
         Label(item.kindLabel, systemImage: item.isCitation ? "quote.bubble" : "waveform")
             .font(.subheadline.weight(.medium))
-            .foregroundStyle(item.isCitation ? Color.purple : Brand.blue)
+            .foregroundStyle(item.kindColor)
     }
 }
 

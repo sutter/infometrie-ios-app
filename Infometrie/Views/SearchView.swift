@@ -46,7 +46,7 @@ struct SearchView: View {
                                 model.draft.interventions = index != 2
                                 model.draft.citations = index != 1
                             } label: {
-                                FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false)
+                                FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false, accent: index == 2 ? Brand.citation : Brand.blue)
                             }
                             .buttonStyle(.plain)
                             .accessibilityAddTraits(kind == index ? .isSelected : [])
@@ -253,6 +253,7 @@ private struct FilterChoiceRow: View {
     let subtitle: String
     let selected: Bool
     let multiple: Bool
+    var accent: Color = Brand.blue
     var body: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
@@ -260,10 +261,10 @@ private struct FilterChoiceRow: View {
                 if !subtitle.isEmpty { Text(subtitle).font(.subheadline).foregroundStyle(Brand.secondary) }
             }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: selected ? (multiple ? "checkmark.square.fill" : "checkmark.circle.fill") : (multiple ? "square" : "circle"))
-                .font(.title3).foregroundStyle(Brand.blue).accessibilityHidden(true)
+                .font(.title3).foregroundStyle(accent).accessibilityHidden(true)
         }
         .padding(16).frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .background(selected ? Brand.blue.opacity(0.07) : .clear)
+        .background(selected ? accent.opacity(0.07) : .clear)
         .contentShape(Rectangle())
     }
 }

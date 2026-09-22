@@ -10,9 +10,9 @@ struct PassageSource: View {
             HStack(spacing: 8) {
                 Image(systemName: item.media.lowercased() == "tv" ? "tv" : "radio")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Brand.blue)
+                    .foregroundStyle(item.kindColor)
                     .frame(width: 30, height: 30)
-                    .background(Brand.blue.opacity(0.07), in: RoundedRectangle(cornerRadius: 9))
+                    .background(item.kindColor.opacity(0.07), in: RoundedRectangle(cornerRadius: 9))
                     .accessibilityHidden(true)
                 Text(item.channel)
                     .font(.subheadline.weight(.semibold))
@@ -49,13 +49,15 @@ struct PassageByline: View {
         .padding(.leading, 12)
         .overlay(alignment: .leading) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(Brand.blue.opacity(0.3)).frame(width: 3)
+                .fill(item.kindColor.opacity(0.3)).frame(width: 3)
                 .accessibilityHidden(true)
         }
     }
 }
 
 extension FeedItem {
+    var kindColor: Color { isCitation ? Brand.citation : Brand.blue }
+
     var readableDuration: String {
         let seconds = max(0, durationSec)
         if seconds < 60 { return "\(seconds) s" }
