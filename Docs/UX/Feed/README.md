@@ -1,5 +1,22 @@
 # Le fil — une lecture plus éditoriale
 
+## Cartes allégées — présentation actuelle
+
+À la demande de l’utilisateur, le bandeau « Lire et écouter » est retiré. Toute la carte continue d’ouvrir la fiche de séquence.
+
+- En haut : média à gauche, date courte et heure à droite (`22/09 · 10:45`). La fiche de séquence partage cet affichage ; VoiceOver reçoit la date complète.
+- Au centre : titre, puis personnalité et affiliation.
+- En bas : **Citation** ou **Intervention**, avec un pictogramme distinct ; durée d’écoute à droite, accompagnée d’un casque. Le type n’est plus répété dans l’affiliation du fil.
+- Les deux lignes de métadonnées passent en colonne aux tailles d’accessibilité. La durée reste masquée lorsqu’aucun média ou aucune durée positive n’est disponible.
+
+[Cartes claires](cartes-allegees-clair.png) · [Cartes sombres](cartes-allegees-sombre.png) · [Type et durée au texte maximal](metadonnees-grands-caracteres.png).
+
+Compilation SDK iOS 27 et deux parcours existants réussis dans `build/FeedMetadata.xcresult` (zéro échec) : navigation carte → fiche → lecture en sombre et en très grands caractères ; filtres et audit du fil sur les cartes entièrement visibles. Captures inspectées, données fictives, iPhone 17 Pro / iOS 26.4. Application normale relancée. Journal : `/tmp/infometrie-feed-metadata.log`.
+
+Les sections suivantes conservent l’historique de la première présentation, avec son bandeau d’action.
+
+## Première présentation
+
 Itération du 22 septembre 2026, après validation de la navigation générale. Le parcours reste **lire le fil, puis écouter un passage**, pour un public de 45 à 80 ans.
 
 ## Choix de présentation

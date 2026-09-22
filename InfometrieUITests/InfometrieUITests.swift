@@ -213,13 +213,13 @@ final class InfometrieUITests: XCTestCase {
         capture("06-texte-accessible", app: app)
         let first = app.buttons["feed-item-1"]
         reveal(first, in: app, down: false)
-        // Inspect the card itself, including its action, beyond the large-text header.
+        // Inspect the card and its metadata beyond the large-text header.
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.82))
             .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.30)))
         capture("06-carte-texte-accessible", app: app)
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.75))
             .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.48)))
-        capture("06-carte-action-accessible", app: app)
+        capture("06-carte-metadonnees-accessibles", app: app)
         XCTAssertTrue(first.isHittable)
         first.tap()
         let play = app.buttons["play-sequence"]
@@ -255,6 +255,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertEqual(app.tabBars.buttons.count, 3)
         XCTAssertTrue(app.buttons["feed-item-1"].isHittable)
         XCTAssertGreaterThanOrEqual(app.buttons["edit-filters"].frame.height, 52)
+        capture("16-fil-cartes", app: app)
         app.buttons["edit-filters"].tap()
         reveal(app.buttons["filter-kind-2"], in: app, down: false)
         app.buttons["filter-kind-2"].tap()

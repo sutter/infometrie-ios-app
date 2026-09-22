@@ -1,28 +1,22 @@
 import SwiftUI
 
-/// One destination and one generous touch target, with a distinct reading area and action.
+/// The whole card opens the passage; metadata describes it without a separate action.
 struct FeedCard: View {
     let item: FeedItem
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 16) {
-                PassageSource(item: item)
-                Text(item.title)
-                    .font(.system(.title3, design: .serif, weight: .semibold))
-                    .lineSpacing(3)
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                PassageByline(item: item)
-            }
-            .padding(20)
-
-            action
-                .padding(.horizontal, 20).padding(.vertical, 14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Brand.blue.opacity(0.06))
+        VStack(alignment: .leading, spacing: 16) {
+            PassageSource(item: item)
+            Text(item.title)
+                .font(.system(.title3, design: .serif, weight: .semibold))
+                .lineSpacing(3)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+            PassageByline(item: item, showsKind: false)
+            metadata
         }
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Brand.card)
         .clipShape(RoundedRectangle(cornerRadius: 22))
@@ -33,24 +27,17 @@ struct FeedCard: View {
         .accessibilityHint(item.hasMedia ? "Ouvre le texte et le lecteur de ce passage" : "Ouvre le texte de ce passage")
     }
 
-    private var action: some View {
+    private var metadata: some View {
         AdaptiveRow {
-            HStack(spacing: 10) {
-                Image(systemName: item.hasMedia ? "play.fill" : "text.alignleft")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 30, height: 30)
-                    .background(Brand.action, in: Circle())
-                    .accessibilityHidden(true)
-                Text(item.hasMedia ? "Lire et écouter" : "Lire le passage")
-                    .font(.body.weight(.semibold)).foregroundStyle(Brand.blue)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Label(item.kindLabel, systemImage: item.isCitation ? "quote.bubble" : "waveform")
+                .font(.subheadline.weight(.semibold)).foregroundStyle(Brand.blue)
+                .fixedSize(horizontal: false, vertical: true)
             if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
             if item.hasMedia && item.durationSec > 0 {
-                Text(item.readableDuration).font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
+                Label(item.readableDuration, systemImage: "headphones")
+                    .font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityLabel("Durée : \(item.readableDuration)")
+                    .accessibilityLabel("Durée d’écoute : \(item.readableDuration)")
             }
         }
     }

@@ -1,5 +1,13 @@
 # Validation du portage
 
+## Cartes du fil allégées et dates — 22 septembre 2026
+
+Date et heure réunies dans l’en-tête du fil et de la fiche (`22/09 · 10:45`). Dans le fil, le bandeau « Lire et écouter » est retiré ; le type et la durée d’écoute occupent la dernière ligne. Toute la carte reste une destination vers la fiche. Voir [les captures actualisées](UX/Feed/README.md#cartes-allégées--présentation-actuelle).
+
+- Compilation SDK iOS 27 réussie et contrôle initial des dates validé dans `build/PassageDates.xcresult`.
+- Deux parcours existants réussis après l’allègement dans `build/FeedMetadata.xcresult` (`TEST SUCCEEDED`, zéro échec) : sombre/texte maximal avec ouverture de la fiche et lecture ; filtres/annulation et audit de contraste, texte tronqué et cibles tactiles du fil selon le périmètre existant.
+- Captures inspectées sur iPhone 17 Pro / iOS 26.4, avec données fictives. Application normale relancée. Journal : `/tmp/infometrie-feed-metadata.log`.
+
 ## Filtres du fil — 22 septembre 2026
 
 Présentation harmonisée avec le fil et la fiche : critères regroupés, sélection par coches et surfaces teintées, choix et validation persistants, récapitulatif avant l’enregistrement d’un suivi et carte des critères actifs dans le fil. Voir [les captures et les choix](UX/Filters/README.md).

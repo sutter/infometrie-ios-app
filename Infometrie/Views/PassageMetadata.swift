@@ -21,10 +21,11 @@ struct PassageSource: View {
             }
             if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
             if let date = item.date {
-                Text(date, style: .time)
+                Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) · \(date, style: .time)")
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(Brand.secondary)
-                    .fixedSize()
+                    .fixedSize(horizontal: !dynamicType.isAccessibilitySize, vertical: true)
+                    .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
             }
         }
     }
@@ -32,12 +33,17 @@ struct PassageSource: View {
 
 struct PassageByline: View {
     let item: FeedItem
+    var showsKind = true
+    private var details: String {
+        [item.party, showsKind ? item.kindLabel : ""].filter { !$0.isEmpty }.joined(separator: " · ")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(item.person).font(.body.weight(.medium)).foregroundStyle(.primary)
-            Text([item.party, item.kindLabel].filter { !$0.isEmpty }.joined(separator: " · "))
-                .font(.subheadline).foregroundStyle(Brand.secondary)
+            if !details.isEmpty {
+                Text(details).font(.subheadline).foregroundStyle(Brand.secondary)
+            }
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(.leading, 12)
