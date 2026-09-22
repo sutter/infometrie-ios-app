@@ -6,6 +6,8 @@ Une seconde itération centrée sur **Le fil et ses cartes** est maintenant impl
 
 Le même style est maintenant décliné dans la **fiche de séquence** : [choix, captures et validation du lecteur synchronisé](Sequence/README.md).
 
+Le parcours des **filtres du fil** reprend cette présentation : [critères, sélection et enregistrement d’un suivi](Filters/README.md).
+
 ## Audit de départ
 
 Captures prises le 22 septembre 2026 dans le simulateur iPhone 17 Pro, pendant les parcours XCTest de cette intervention (`build/UXBaseline.xcresult`, trois tests réussis). Données de démonstration fictives.

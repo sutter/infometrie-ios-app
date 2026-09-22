@@ -18,17 +18,32 @@ struct FeedView: View {
                     }.disabled(playable.isEmpty).accessibilityIdentifier("start-podcast")
                 }.buttonStyle(ActionButtonStyle())
                 if isFiltered {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(model.filters.isEmpty ? "Toutes les personnalités" : model.filters.summary)
-                            .font(.subheadline)
-                        if !model.filters.interventions || !model.filters.citations {
-                            Text(model.filters.citations ? "Citations uniquement" : "Interventions uniquement")
-                                .font(.subheadline).foregroundStyle(Brand.secondary)
+                    VStack(alignment: .leading, spacing: 0) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Votre sélection")
+                                .font(.system(.title3, design: .serif, weight: .semibold))
+                                .accessibilityAddTraits(.isHeader)
+                            Text(model.filters.isEmpty ? "Toutes les personnalités" : model.filters.summary)
+                                .font(.body).fixedSize(horizontal: false, vertical: true)
+                            if !model.filters.interventions || !model.filters.citations {
+                                Text(model.filters.citations ? "Citations uniquement" : "Interventions uniquement")
+                                    .font(.subheadline).foregroundStyle(Brand.secondary)
+                            }
+                        }.padding(20)
+                        Divider().padding(.horizontal, 20)
+                        Button { Task { await model.apply(SearchFilters()) } } label: {
+                            Label("Tout afficher", systemImage: "arrow.counterclockwise")
+                                .font(.body.weight(.semibold)).foregroundStyle(Brand.blue)
+                                .padding(.horizontal, 20).padding(.vertical, 12)
+                                .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                                .contentShape(Rectangle())
                         }
-                        Button("Tout afficher") { Task { await model.apply(SearchFilters()) } }
-                            .frame(minHeight: 44).accessibilityIdentifier("clear-filters")
-                    }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Brand.card, in: RoundedRectangle(cornerRadius: 16))
+                        .buttonStyle(.plain).background(Brand.blue.opacity(0.04))
+                        .accessibilityIdentifier("clear-filters")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading).background(Brand.card)
+                    .clipShape(RoundedRectangle(cornerRadius: 22))
+                    .overlay { RoundedRectangle(cornerRadius: 22).strokeBorder(.primary.opacity(0.06)) }
                 }
                 if model.isDemo { DemoBanner() }
                 if let error = model.feedError { ErrorNotice(message: error) { Task { await model.refresh(reset: true) } } }

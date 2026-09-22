@@ -101,13 +101,17 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["edit-filters"].tap()
         app.buttons["pick-persons"].tap()
         app.buttons["choice-Camille Martin"].tap()
+        wait(app.staticTexts["choice-count"], key: "label", equals: "1 sélection")
+        capture("15-personnalites", app: app)
         app.buttons["confirm-choices"].tap()
+        XCTAssertTrue(app.buttons["pick-persons"].waitForExistence(timeout: 3))
         capture("02-filtres", app: app)
         let save = app.buttons["save-search"]
-        if !save.isHittable { app.swipeUp() }
+        reveal(save, in: app, down: false)
         save.tap()
         let field = app.textFields["search-name"]
         XCTAssertTrue(field.waitForExistence(timeout: 3))
+        capture("15-enregistrer-suivi", app: app)
         let name = "Veille test " + UUID().uuidString.prefix(6)
         field.tap(); field.typeText(String(name))
         app.buttons["confirm-save-search"].tap()
@@ -252,6 +256,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.buttons["feed-item-1"].isHittable)
         XCTAssertGreaterThanOrEqual(app.buttons["edit-filters"].frame.height, 52)
         app.buttons["edit-filters"].tap()
+        reveal(app.buttons["filter-kind-2"], in: app, down: false)
         app.buttons["filter-kind-2"].tap()
         app.buttons["apply-search"].tap()
         XCTAssertTrue(app.staticTexts["Citations uniquement"].waitForExistence(timeout: 5))
@@ -260,6 +265,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 5))
         // Cancelling the sheet must leave the applied criteria unchanged.
         app.buttons["edit-filters"].tap()
+        reveal(app.buttons["filter-kind-1"], in: app, down: false)
         app.buttons["filter-kind-1"].tap()
         app.buttons["Annuler"].tap()
         XCTAssertFalse(app.buttons["clear-filters"].exists)
@@ -269,6 +275,101 @@ final class InfometrieUITests: XCTestCase {
         try auditVisibleFeed(app)
         capture("14-fil-contraste", app: app)
 
+    }
+
+    @MainActor
+    func testFilterSearchMultipleSelectionIntersectionAndReset() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--demo", "--reset-demo", "-appearance", "light"]
+        app.launch()
+        XCTAssertTrue(app.buttons["edit-filters"].waitForExistence(timeout: 10))
+        app.buttons["edit-filters"].tap()
+        XCTAssertTrue(app.buttons["pick-persons"].waitForExistence(timeout: 5))
+        capture("15-filtres-initial", app: app)
+        app.buttons["pick-persons"].tap()
+        app.buttons["choice-Alex Morgan"].tap()
+        app.buttons["choice-Camille Martin"].tap()
+        wait(app.staticTexts["choice-count"], key: "label", equals: "2 sélections")
+
+        let search = app.searchFields.firstMatch
+        search.tap(); search.typeText("Camille")
+        XCTAssertTrue(app.buttons["choice-Camille Martin"].exists)
+        XCTAssertFalse(app.buttons["choice-Alex Morgan"].exists)
+        wait(app.staticTexts["choice-count"], key: "label", equals: "2 sélections")
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 7) + "zzzz")
+        XCTAssertFalse(app.buttons["choice-Camille Martin"].exists)
+        XCTAssertTrue(app.buttons["confirm-choices"].isHittable)
+        wait(app.staticTexts["choice-count"], key: "label", equals: "2 sélections")
+        // Confirm while searching: hidden selections must remain selected.
+        app.buttons["confirm-choices"].tap()
+        XCTAssertTrue(app.buttons["pick-parties"].waitForExistence(timeout: 5))
+        app.buttons["pick-parties"].tap()
+        app.buttons["choice-DEMO-A"].tap()
+        app.buttons["confirm-choices"].tap()
+        XCTAssertTrue(app.staticTexts["Seules les personnalités choisies appartenant aux partis sélectionnés seront affichées."].waitForExistence(timeout: 5))
+        capture("15-filtres-combines", app: app)
+        app.buttons["apply-search"].tap()
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["feed-item-2"].exists, "Alex est exclu par le parti choisi")
+        XCTAssertFalse(app.buttons["feed-item-3"].exists, "Sam appartient au parti mais ne fait pas partie des personnalités choisies")
+        capture("15-fil-filtre", app: app)
+
+        app.buttons["edit-filters"].tap()
+        reveal(app.buttons["reset-search"], in: app, down: false)
+        app.buttons["reset-search"].tap()
+        app.navigationBars["Filtrer le fil"].buttons["Annuler"].tap()
+        XCTAssertTrue(app.buttons["clear-filters"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["feed-item-2"].exists, "Annuler une remise à zéro conserve les filtres appliqués")
+
+        app.buttons["edit-filters"].tap()
+        app.buttons["pick-persons"].tap()
+        wait(app.staticTexts["choice-count"], key: "label", equals: "2 sélections")
+        app.buttons["clear-choices"].tap()
+        wait(app.staticTexts["choice-count"], key: "label", equals: "Toutes les personnalités")
+        app.buttons["confirm-choices"].tap()
+        reveal(app.buttons["reset-search"], in: app, down: false)
+        app.buttons["reset-search"].tap()
+        app.buttons["apply-search"].tap()
+        XCTAssertTrue(app.buttons["feed-item-2"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["clear-filters"].exists)
+    }
+
+    @MainActor
+    func testFiltersDarkAppearanceAndMaximumText() {
+        let app = XCUIApplication()
+        for largeText in [false, true] {
+            app.launchArguments = ["--uitesting", "--demo", "-appearance", largeText ? "light" : "dark"]
+            if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
+            app.launch()
+            XCTAssertTrue(app.buttons["edit-filters"].waitForExistence(timeout: 10))
+            app.buttons["edit-filters"].tap()
+            XCTAssertTrue(app.buttons["pick-persons"].waitForExistence(timeout: 5))
+            let suffix = largeText ? "grand-texte" : "sombre"
+            capture("15-filtres-\(suffix)", app: app)
+            app.buttons["pick-persons"].tap()
+            let person = app.buttons["choice-Camille Martin"]
+            reveal(person, in: app, down: false)
+            if largeText { capture("15-personnalites-grand-texte-liste", app: app) }
+            person.tap()
+            wait(app.staticTexts["choice-count"], key: "label", equals: "1 sélection")
+            capture("15-personnalites-\(suffix)", app: app)
+            let confirm = app.buttons["confirm-choices"]
+            XCTAssertTrue(confirm.isHittable)
+            XCTAssertGreaterThanOrEqual(confirm.frame.height, 52)
+            XCTAssertLessThanOrEqual(confirm.frame.maxX, app.frame.maxX)
+            confirm.tap()
+            let interventions = app.buttons["filter-kind-1"]
+            reveal(interventions, in: app, down: false)
+            interventions.tap()
+            capture("15-types-\(suffix)", app: app)
+            let apply = app.buttons["apply-search"]
+            XCTAssertTrue(apply.isHittable)
+            XCTAssertGreaterThanOrEqual(apply.frame.height, 52)
+            XCTAssertLessThanOrEqual(apply.frame.maxX, app.frame.maxX)
+            apply.tap()
+            XCTAssertTrue(app.staticTexts["Interventions uniquement"].waitForExistence(timeout: 5))
+            app.terminate()
+        }
     }
 
     @MainActor
@@ -410,10 +511,22 @@ final class InfometrieUITests: XCTestCase {
             let bounds = app.frame
             let top = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY + 12 : bounds.minY + 100
             let slider = app.sliders["player-position"]
-            let bottom = slider.exists ? slider.frame.minY - 12 : bounds.maxY - 150
+            let filterFooter = ["confirm-save-search", "confirm-choices", "apply-search"].map { app.buttons[$0] }.first { $0.exists && $0.isHittable }
+            let choiceCount = app.staticTexts["choice-count"]
+            // The fixed selection summary can span several lines at maximum text size.
+            // Its top, rather than the confirmation button, bounds the scrolling list.
+            let filterBottom = choiceCount.exists && choiceCount.isHittable
+                ? choiceCount.frame.minY - 28 : filterFooter.map { $0.frame.minY - 28 }
+            let bottom = slider.exists ? slider.frame.minY - 12 : filterBottom ?? bounds.maxY - 150
             if element.exists && element.isHittable {
                 let contentControl = ["sequence-summary", "sequence-context", "transcript-follow"].contains(element.identifier)
+                    || ["save-search", "reset-search", "clear-choices"].contains(element.identifier)
+                    || ["filter-kind-", "choice-", "pick-"].contains { element.identifier.hasPrefix($0) }
                 if element.elementType != .link && !contentControl { return }
+                // A large-text choice can be taller than the viewport. Its center
+                // remains a valid tap target when it lies above the fixed footer.
+                if element.identifier.hasPrefix("choice-"), element.frame.height > bottom - top,
+                   element.frame.midY >= top, element.frame.midY <= bottom { return }
                 // XCTest may report content controls as hittable underneath the
                 // dock. Expose the complete word or disclosure/follow control.
                 if element.frame.minY >= top && element.frame.maxY <= bottom { return }
@@ -421,8 +534,11 @@ final class InfometrieUITests: XCTestCase {
             let upper = top + (bottom - top) * 0.15
             let lower = top + (bottom - top) * 0.85
             let origin = app.coordinate(withNormalizedOffset: .zero)
-            let start = origin.withOffset(CGVector(dx: bounds.width - 8, dy: down ? upper : lower))
-            let end = origin.withOffset(CGVector(dx: bounds.width - 8, dy: down ? lower : upper))
+            // Native List does not scroll when a drag starts beyond its cell area.
+            // Keep filter gestures inside the list, away from the sheet's edge.
+            let x = filterFooter == nil ? bounds.width - 8 : bounds.width * 0.90
+            let start = origin.withOffset(CGVector(dx: x, dy: down ? upper : lower))
+            let end = origin.withOffset(CGVector(dx: x, dy: down ? lower : upper))
             start.press(forDuration: 0.05, thenDragTo: end)
         }
 

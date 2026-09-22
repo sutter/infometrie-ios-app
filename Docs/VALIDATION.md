@@ -1,5 +1,16 @@
 # Validation du portage
 
+## Filtres du fil — 22 septembre 2026
+
+Présentation harmonisée avec le fil et la fiche : critères regroupés, sélection par coches et surfaces teintées, choix et validation persistants, récapitulatif avant l’enregistrement d’un suivi et carte des critères actifs dans le fil. Voir [les captures et les choix](UX/Filters/README.md).
+
+- Compilation SDK iOS 27 réussie ; aucun changement du client API, des règles de filtrage ou de la lecture.
+- **Quatre parcours distincts validés** : recherche/sélection multiple/intersection/remise à zéro, suivis/persistance/lecture et types de passages/annulation dans `build/FiltersRedesign.xcresult` ; sombre et texte maximal dans `build/FiltersFinal.xcresult` (1 test, zéro échec, `TEST SUCCEEDED`).
+- Les contrôles en texte maximal ont nécessité une correction du pilote : défilement au-dessus de tout le récapitulatif fixe et toucher du centre visible d’une ligne plus haute que la zone de liste. La sélection est vérifiée par son compteur avant confirmation.
+- Captures inspectées dans `Docs/UX/Filters/`, uniquement avec données fictives. Exécution sur iPhone 17 Pro / iOS 26.4 ; application normale relancée.
+
+Logs : `/tmp/infometrie-filters-build.log`, `/tmp/infometrie-filters-ui.log`, `/tmp/infometrie-filters-final.log`.
+
 ## Fiche de séquence — 22 septembre 2026
 
 Continuité visuelle avec le fil : titre éditorial, source/heure et identité partagées, verbatim avec bandeau de synchronisation, résumé et contexte dépliables, durée dans l’action initiale et sauts de 10 secondes mieux délimités. Voir [les choix et les captures](UX/Sequence/README.md).
