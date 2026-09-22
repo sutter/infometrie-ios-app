@@ -1,0 +1,237 @@
+openapi: 3.0.0
+info:
+  title: IActus
+  description: "Backend IActus (Boussole) : API mobile (journal politique temps réel), portail client web et administration."
+  version: "0.5.0-20260921185015"
+
+servers:
+  - url: "/"
+
+tags:
+  - name: general
+    description: Health and readiness probes
+  - name: mobile
+    description: Mobile API (customer JWT)
+  - name: admin
+    description: Yacast internal authentication (ACL)
+
+paths:
+  /healthz:
+    get:
+      summary: "Checks if service is running"
+      operationId: "routeHealthz"
+      tags: [general]
+      responses:
+        200:
+          description: "Service is running"
+
+  /readiness:
+    get:
+      summary: "Checks if service is ready to handle requests"
+      operationId: "routeReadiness"
+      tags: [general]
+      responses:
+        200:
+          description: "Service is ready"
+        503:
+          description: "Service is not ready"
+
+  /auth:
+    post:
+      summary: "Authenticates a Yacast internal user against the ACL service (admin area)"
+      operationId: "routeAuth"
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        201:
+          description: "JWT issued"
+        401:
+          description: "Invalid credentials"
+
+  /rest/v1/auth/login:
+    post:
+      summary: "Authenticates a mobile app and registers (or transfers) the device"
+      operationId: "routeMobileLogin"
+      tags: [mobile]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, device_uid]
+              properties:
+                email: { type: string }
+                password: { type: string }
+                device_uid: { type: string, description: "Stable per-install identifier" }
+                device_name: { type: string }
+                device_model: { type: string }
+                replace_device_id:
+                  type: integer
+                  description: "Device to revoke when the quota is reached (transfer)"
+      responses:
+        201:
+          description: "JWT issued"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  expires: { type: integer }
+                  device_id: { type: integer }
+                  email: { type: string }
+                  fullname: { type: string }
+                  organisation: { type: string }
+        401:
+          description: "Invalid credentials"
+        403:
+          description: "Subscription inactive"
+        409:
+          description: "Device quota reached; body lists registered devices for a transfer"
+
+  /rest/v1/feed:
+    get:
+      summary: "Journal: interventions and citations, newest first"
+      operationId: "routeMobileFeed"
+      tags: [mobile]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: since_seq
+          in: query
+          schema: { type: integer }
+          description: "Observation cursor: 0 asks for the head of the journal, otherwise only items observed after this seq. Send back the last_seq of the previous response."
+        - name: persons
+          in: query
+          schema: { type: string }
+          description: "Comma-separated person names"
+        - name: parties
+          in: query
+          schema: { type: string }
+          description: "Comma-separated party codes"
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, maximum: 200 }
+      responses:
+        200:
+          description: "Feed page, with the last_seq cursor for the next poll"
+
+  /rest/v1/persons:
+    get:
+      summary: "Panel personalities (filter sheet)"
+      operationId: "routeMobilePersons"
+      tags: [mobile]
+      security: [{ bearerAuth: [] }]
+      responses:
+        200:
+          description: "Personalities"
+
+  /rest/v1/parties:
+    get:
+      summary: "Panel parties (filter sheet)"
+      operationId: "routeMobileParties"
+      tags: [mobile]
+      security: [{ bearerAuth: [] }]
+      responses:
+        200:
+          description: "Parties"
+
+  /rest/v1/sequences/{id}:
+    get:
+      summary: "Sequence detail: title, summary, verbatim, playlist path, and where the passage (play_from, duration_sec) and the verbatim's speech (speech_start, speech_duration_sec) sit in the media"
+      operationId: "routeMobileSequence"
+      tags: [mobile]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        200:
+          description: "Sequence"
+        404:
+          description: "Unknown sequence"
+
+  /rest/v1/sequences/{id}/words:
+    get:
+      summary: "Word timing of the sequence's verbatim, read from the STT service and cached by the backend: the transcribed sentences over the speech, each with its words, times in milliseconds relative to origin (= play_from)"
+      operationId: "routeMobileWords"
+      tags: [mobile]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        200:
+          description: "Word timing"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sequence: { type: integer }
+                  origin: { type: string, format: date-time, description: "play_from of the sequence; every *_ms below counts from it" }
+                  sentences:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        text: { type: string }
+                        start_ms: { type: integer }
+                        end_ms: { type: integer }
+                        words:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              text: { type: string }
+                              start_ms: { type: integer }
+                              end_ms: { type: integer }
+        404:
+          description: "Unknown sequence, or no STT source configured (the app then estimates the words from the speech rate)"
+        502:
+          description: "The STT service did not answer"
+
+  /rest/v1/hls/{id}/{file}:
+    get:
+      summary: "HLS proxy: playlist (index.m3u8) and segments of a sequence"
+      operationId: "routeMobileHLS"
+      tags: [mobile]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: file
+          in: path
+          required: true
+          schema: { type: string }
+        - name: margin
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, maximum: 60, default: 0 }
+          description: "Seconds of context served before and after the passage (the playlist's segments repeat it). The playlist carries EXT-X-PROGRAM-DATE-TIME so the player can locate play_from in its window."
+      responses:
+        200:
+          description: "Media stream"
+        404:
+          description: "Unknown media"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
