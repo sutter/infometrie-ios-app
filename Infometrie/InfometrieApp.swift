@@ -4,12 +4,14 @@ import SwiftUI
 struct InfometrieApp: App {
     @State private var model = makeAppModel()
     @AppStorage("appearance") private var appearance = "system"
+    @AppStorage("comfortableReading") private var comfortableReading = true
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(model)
                 .environment(\.locale, Locale(identifier: "fr_FR"))
                 .tint(Brand.blue)
+                .dynamicTypeSize((comfortableReading ? DynamicTypeSize.xLarge : .xSmall)...)
                 .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
         }
     }
@@ -38,11 +40,12 @@ struct RootView: View {
             } else if model.isAuthenticated {
                 TabView(selection: $binding.tab) {
                     Tab("Le fil", systemImage: "dot.radiowaves.left.and.right", value: .feed) { NavigationStack { FeedView() } }
-                    Tab("Recherches", systemImage: "bookmark", value: .saved) { NavigationStack { SavedSearchesView() } }
+                    Tab("Mes suivis", systemImage: "bookmark", value: .saved) { NavigationStack { SavedSearchesView() } }
                     Tab("Compte", systemImage: "person.crop.circle", value: .account) { NavigationStack { AccountView() } }
-                    Tab("Explorer", systemImage: "magnifyingglass", value: .search, role: .search) { NavigationStack { SearchView() } }
                 }
-                .tabBarMinimizeBehavior(.onScrollDown)
+                .sheet(isPresented: $binding.isSearchPresented) {
+                    NavigationStack { SearchView() }.environment(model)
+                }
                 .sheet(isPresented: Binding(get: { model.player.isPodcast }, set: { if !$0 { model.player.stop() } })) {
                     PodcastView().environment(model)
                 }

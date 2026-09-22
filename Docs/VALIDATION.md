@@ -1,5 +1,44 @@
 # Validation du portage
 
+## Fiche de séquence — 22 septembre 2026
+
+Continuité visuelle avec le fil : titre éditorial, source/heure et identité partagées, verbatim avec bandeau de synchronisation, résumé et contexte dépliables, durée dans l’action initiale et sauts de 10 secondes mieux délimités. Voir [les choix et les captures](UX/Sequence/README.md).
+
+- Compilation SDK iOS 27 réussie (`/tmp/infometrie-sequence-build.log`).
+- **Cinq parcours distincts validés** : synchronisation précise de la fiche et du podcast dans `build/SequenceRedesign.xcresult` ; mode sombre/texte maximal, parcours complet et synchronisation estimée dans `build/SequenceVerified.xcresult` (3 tests, zéro échec).
+- Les deux échecs initiaux venaient du pilote touchant des boutons recouverts par le lecteur fixe. Le défilement du pilote expose désormais entièrement les commandes de contenu concernées avant de les toucher. Aucun changement de la logique de synchronisation.
+- Inspection visuelle de la présentation avant/après, du thème sombre et des grandes tailles. Exécution sur iPhone 17 Pro / iOS 26.4.
+
+Le contrôle final des sections dépliées passe dans `build/SequenceFinal.xcresult` (1 test, zéro échec), avec contenu du résumé et rôle vérifiés. Captures retenues dans `Docs/UX/Sequence/`. Application normale relancée après les tests.
+
+Logs : `/tmp/infometrie-sequence-ui.log`, `/tmp/infometrie-sequence-verified.log`, `/tmp/infometrie-sequence-final.log`.
+
+## Nouvelle présentation du fil — 22 septembre 2026
+
+Refonte ciblée des cartes : titres éditoriaux, source et heure séparées, personne sans avatar d’initiales, bandeau « Lire et écouter » et durées en minutes/secondes. L’en-tête rapproche les premiers résultats. Voir [les captures et les choix](UX/Feed/README.md).
+
+- Compilation SDK iOS 27 réussie (`/tmp/infometrie-feed-build.log`).
+- Trois parcours ciblés réussis, zéro échec, dans `build/FeedRedesign.xcresult` : lecture/filtres/suivis/podcast ; sombre et texte maximal ; filtres et audit de contraste/texte tronqué/cibles tactiles sur le fil.
+- Contrôle visuel complémentaire de la carte au texte maximal et de son action après défilement : `build/FeedLargeText.xcresult`, un test réussi.
+- Captures inspectées dans `Docs/UX/Feed/`. Le périmètre de l’audit de contraste reste celui décrit ci-dessous, limité aux cartes entièrement visibles puis exposées par défilement.
+- Application relancée dans le simulateur iPhone 17 Pro, iOS 26.4. Aucun changement du client API ou du moteur de lecture dans cette itération.
+
+Logs UI : `/tmp/infometrie-feed-ui.log`, `/tmp/infometrie-feed-large-text.log`.
+
+## Refonte UX — 22 septembre 2026
+
+Parcours principal confirmé : lire le fil, puis écouter un passage. Trois onglets stables, filtres en feuille, texte prioritaire, commandes de lecture persistantes et texte confortable activé par défaut. Voir [l’audit, les choix et les captures avant/après](UX/README.md).
+
+- Compilation Swift 6 / SDK iOS 27 réussie ; exécution sur iPhone 17 Pro, iOS 26.4.
+- **34 tests du cœur réussis**, sans modification du contrat API ni du moteur de synchronisation.
+- **10 parcours UI distincts validés** au fil des vérifications : les trois parcours de connexion et les deux parcours du podcast dans `build/UXIteration2.xcresult` ; le parcours complet des suivis et la synchronisation précise dans `build/UXFinal.xcresult` ; grands caractères, filtres/audit du fil et synchronisation estimée dans `build/UXAccessibilityFinal.xcresult` (3 tests, 0 échec, `TEST SUCCEEDED`).
+- L’audit automatisé porte sur le contraste, les zones tactiles et le texte tronqué du fil, avec contrôle des cartes entièrement exposées, puis défilement et nouveau contrôle. Les cartes partiellement recouvertes par la navigation native sont hors périmètre du contraste à cet instant et consignées en pièce jointe. Aucun résultat de certification globale n’est revendiqué.
+- Les premières itérations ont relevé le contraste trop faible des textes secondaires et deux limites du pilote XCTest (geste sur la barre fixe, puis lien déclaré accessible alors que son centre était recouvert). Le contraste a été renforcé et les gestes du pilote adaptés à la zone de lecture. Le clic sur un mot au texte maximal est désormais vérifié effectivement.
+- Le dernier contrôle de la séparation entre l’en-tête et le fil défilant passe dans `build/UXVerified.xcresult` (1 test, 0 échec).
+- Captures retenues dans `Docs/UX/After/`, issues des parcours réussis correspondants. L’application normale a été relancée dans le simulateur après les tests.
+
+Logs : `/tmp/infometrie-ux-core.log`, `/tmp/infometrie-ux-tests-2.log`, `/tmp/infometrie-ux-final.log`, `/tmp/infometrie-ux-accessibility-final.log`, `/tmp/infometrie-ux-verified.log`.
+
 ## Correction de connexion — 22 septembre 2026
 
 La réponse réelle HTTP 409 contient `error: true`, `max_devices: 2` et deux appareils. L’ancien modèle attendait `error` comme texte : tout le décodage échouait, puis le repli affichait « 0 appareils » et une liste vide. Le modèle décode maintenant uniquement le quota et les appareils, sans valeur inventée en cas de réponse malformée.

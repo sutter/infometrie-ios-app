@@ -1,27 +1,27 @@
 # InfoMétrie pour iOS
 
-Portage natif en **Swift 6 / SwiftUI**, reconstitué depuis `infometrie-0.4.0-hls-test.apk`, puis aligné sur le Swagger officiel. Interface française avec navigation, onglets et contrôles Liquid Glass natifs. Projet Xcode autonome, sans dépendance applicative tierce.
+Portage natif en **Swift 6 / SwiftUI**, reconstitué depuis `infometrie-0.4.0-hls-test.apk`, puis aligné sur le Swagger officiel. Interface française avec navigation native, texte agrandissable et commandes d’écoute persistantes. Projet Xcode autonome, sans dépendance applicative tierce.
 
 ## Lancer l’application
 
 1. Ouvrir **[Infometrie.xcodeproj](Infometrie.xcodeproj)** dans Xcode 27.
 2. Choisir le schéma **Infometrie**, puis un simulateur iPhone ou iPad sous iOS 26 ou ultérieur.
 3. Lancer avec **⌘R**.
-4. Choisir **Découvrir l’interface** pour la démonstration, ou saisir les identifiants du serveur de test InfoMétrie.
+4. Choisir **Essayer la démonstration** pour la démonstration, ou saisir les identifiants du serveur de test InfoMétrie.
 
 Le SDK utilisé est iOS 27 ; le minimum de déploiement est iOS 26. Les composants natifs adoptent le rendu du système d’exécution. Sur iPhone physique, sélectionner son équipe Apple dans **Signing & Capabilities** et, si nécessaire, un bundle identifier appartenant à cette équipe. Aucune signature de distribution ni publication n’a été effectuée.
 
-[Voir les captures de l’application](Docs/Screenshots/README.md).
+[Voir la refonte UX et les captures avant/après](Docs/UX/README.md).
 
 ## Fonctions reprises
 
 - Connexion, restauration sécurisée de session, limite d’appareils avec remplacement confirmé, déconnexion et révocation.
 - Fil des dernières 24 heures, rafraîchissement manuel et périodique, interventions et citations.
 - Recherche par personnalités et partis, filtres cumulés, sélecteurs avec recherche textuelle.
-- Recherches enregistrées par compte sur l’appareil, archivage, restauration et suppression.
-- Séquences : contexte, résumé, verbatim cliquable, lecture audio/vidéo HLS, position de lecture et sauts de 10 secondes.
+- Mes suivis : filtres enregistrés par compte sur l’appareil, archivage, restauration et suppression.
+- Séquences : texte cliquable en premier, résumé dépliable, lecture audio/vidéo HLS et commandes fixes (pause, curseur, sauts de 10 secondes).
 - Podcast chronologique des résultats avec média, file de lecture, précédent/suivant et enchaînement automatique.
-- Thèmes système, clair et sombre ; mise en page iPhone/iPad et taille de texte système.
+- Thèmes système, clair et sombre ; texte confortable activé par défaut, réglable dans Compte, et prise en charge des tailles d’accessibilité du système.
 
 Les contenus sont proposés en consultation seule. Les alertes et le résumé quotidien, déjà annoncés comme à venir dans l’APK, ne sont pas présentés comme fonctionnels.
 

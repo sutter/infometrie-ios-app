@@ -3,8 +3,9 @@ import Observation
 
 @MainActor @Observable
 final class AppModel {
-    enum Tab: Hashable { case feed, search, saved, account }
+    enum Tab: Hashable { case feed, saved, account }
     var tab: Tab = .feed
+    var isSearchPresented = false
     var session: Session?
     var isDemo = false
     var isRestoring = true
@@ -110,7 +111,7 @@ final class AppModel {
         wordTimingTasks = [:]; wordTimings = [:]; wordTimingStates = [:]
         requestID = UUID(); player.stop()
         items = []; persons = []; parties = []; savedSearches = []
-        filters = SearchFilters(); draft = SearchFilters(); tab = .feed
+        filters = SearchFilters(); draft = SearchFilters(); tab = .feed; isSearchPresented = false
         lastSeq = 0; lastRefresh = nil; feedError = nil; choicesError = nil
         isRefreshing = false; quota = nil; notice = nil
     }
@@ -150,7 +151,7 @@ final class AppModel {
     }
     func apply(_ value: SearchFilters) async {
         let changed = value.persons != filters.persons || value.parties != filters.parties
-        filters = value; draft = value; tab = .feed
+        filters = value; draft = value; tab = .feed; isSearchPresented = false
         for index in savedSearches.indices where savedSearches[index].filters == value && !savedSearches[index].isArchived {
             savedSearches[index].lastUsedAt = Date()
         }
@@ -161,7 +162,12 @@ final class AppModel {
             await refresh(reset: true)
         }
     }
-    func newSearch() { draft = SearchFilters(); tab = .search }
+    func openSearch(_ value: SearchFilters) {
+        draft = value
+        if !draft.hasKinds { draft.interventions = true; draft.citations = true }
+        isSearchPresented = true
+    }
+    func newSearch() { openSearch(SearchFilters()) }
     func saveSearch(name: String) {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
@@ -176,11 +182,11 @@ final class AppModel {
     func delete(_ search: SavedSearch) { savedSearches.removeAll { $0.id == search.id }; persistSearches() }
     private func loadSearches() {
         do { savedSearches = try searches.load(account: accountID) }
-        catch { savedSearches = []; notice = "Les recherches enregistrées n’ont pas pu être lues." }
+        catch { savedSearches = []; notice = "Les suivis enregistrés n’ont pas pu être lus." }
     }
     private func persistSearches() {
         do { try searches.save(savedSearches, account: accountID) }
-        catch { notice = "Impossible d’enregistrer vos recherches sur cet appareil." }
+        catch { notice = "Impossible d’enregistrer vos suivis sur cet appareil." }
     }
     func sequence(_ item: FeedItem) async throws -> SequenceDetail {
         if isDemo { return DemoContent.detail(item) }

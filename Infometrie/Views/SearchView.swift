@@ -4,91 +4,102 @@ struct SearchView: View {
     @Environment(AppModel.self) private var model
     @State private var showSave = false
     @State private var name = ""
+    @State private var saved = false
+    private var kind: Binding<Int> {
+        Binding(get: { model.draft.interventions && model.draft.citations ? 0 : model.draft.interventions ? 1 : 2 }, set: {
+            model.draft.interventions = $0 != 2
+            model.draft.citations = $0 != 1
+        })
+    }
 
     var body: some View {
         @Bindable var model = model
         Form {
-            if model.isDemo { Section { DemoBanner().listRowInsets(EdgeInsets()) }.listRowBackground(Color.clear) }
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    Image(systemName: "scope").font(.largeTitle).foregroundStyle(Brand.blue).padding(.bottom, 4)
-                    Text("Une veille qui vous ressemble.").font(.title2.weight(.bold))
-                    Text("Choisissez les voix et les sujets politiques que vous souhaitez suivre.")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                }.padding(.vertical, 12)
-            }.listRowBackground(Color.clear).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
-
-            Section("Types de passage") {
-                Toggle(isOn: $model.draft.interventions) { Label("Interventions", systemImage: "waveform") }
-                    .accessibilityIdentifier("filter-interventions")
-                Toggle(isOn: $model.draft.citations) { Label("Citations", systemImage: "quote.bubble") }
-                    .accessibilityIdentifier("filter-citations")
-            }
             Section {
                 NavigationLink {
                     ChoicePicker(title: "Personnalités", choices: model.persons.map { .init(value: $0.name, title: $0.name, subtitle: [$0.party, $0.role].filter { !$0.isEmpty }.joined(separator: " · ")) }, selected: $model.draft.persons)
                 } label: {
                     selectionRow("Personnalités", symbol: "person.2", selections: model.draft.persons)
                 }.accessibilityIdentifier("pick-persons")
-            } footer: { Text("Le fil garde les interventions et citations de ces personnalités.") }
-            Section {
                 NavigationLink {
                     ChoicePicker(title: "Partis politiques", choices: model.parties.map { .init(value: $0.code, title: $0.name, subtitle: $0.code) }, selected: $model.draft.parties)
                 } label: {
                     selectionRow("Partis politiques", symbol: "building.columns", selections: model.draft.parties)
                 }.accessibilityIdentifier("pick-parties")
-            } footer: {
-                Text(model.draft.persons.isEmpty || model.draft.parties.isEmpty
-                     ? "Sans personnalité ni parti, le fil couvre tout le panel InfoMétrie."
-                     : "Avec les deux listes, seules les personnalités choisies appartenant aux partis sélectionnés sont conservées.")
+            } header: { Text("Qui souhaitez-vous suivre ?") } footer: {
+                Text(model.draft.persons.isEmpty && model.draft.parties.isEmpty
+                     ? "Sans sélection, toutes les personnalités sont affichées."
+                     : !model.draft.persons.isEmpty && !model.draft.parties.isEmpty
+                         ? "Seules les personnalités choisies appartenant aux partis sélectionnés seront affichées."
+                         : "Le fil affichera les passages correspondant à votre sélection.")
+            }
+            Section("Quels passages ?") {
+                ForEach(Array(["Tous les passages", "Interventions uniquement", "Citations uniquement"].enumerated()), id: \.offset) { index, title in
+                    Button { kind.wrappedValue = index } label: {
+                        HStack {
+                            Text(title).foregroundStyle(.primary)
+                            Spacer()
+                            Image(systemName: kind.wrappedValue == index ? "checkmark.circle.fill" : "circle").foregroundStyle(Brand.blue)
+                        }.frame(minHeight: 44).contentShape(Rectangle())
+                    }.accessibilityAddTraits(kind.wrappedValue == index ? .isSelected : [])
+                        .accessibilityIdentifier("filter-kind-\(index)")
+                }
             }
             if let error = model.choicesError {
-                Section { ErrorNotice(message: error) { Task { await model.loadChoices() } }.listRowInsets(EdgeInsets()) }
-                    .listRowBackground(Color.clear)
+                Section { ErrorNotice(message: error) { Task { await model.loadChoices() } } }
             }
             Section {
-                Button { Task { await model.apply(model.draft) } } label: {
-                    Label("Voir les résultats", systemImage: "arrow.right").fontWeight(.semibold).frame(maxWidth: .infinity).padding(.vertical, 9)
-                }.buttonStyle(.glassProminent).disabled(!model.draft.hasKinds).accessibilityIdentifier("apply-search")
                 Button { name = ""; showSave = true } label: {
-                    Label("Sauvegarder ma recherche", systemImage: "bookmark").frame(maxWidth: .infinity).padding(.vertical, 7)
-                }.buttonStyle(.glass).disabled(!model.draft.hasKinds).accessibilityIdentifier("save-search")
-                if !model.draft.hasKinds { Text("Sélectionnez au moins un type de passage.").font(.caption).foregroundStyle(.secondary) }
-            }.listRowBackground(Color.clear).listRowSeparator(.hidden).listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                    Label("Enregistrer ce suivi", systemImage: "bookmark")
+                }.frame(minHeight: 44).accessibilityIdentifier("save-search")
+                Button("Réinitialiser les filtres") { model.draft = SearchFilters() }
+                    .frame(minHeight: 44).accessibilityIdentifier("reset-search")
+            } footer: { Text("Un suivi enregistré se retrouve dans « Mes suivis ».") }
         }
-        .navigationTitle("Explorer")
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Effacer", systemImage: "arrow.counterclockwise") { model.draft = SearchFilters() } } }
-        .sheet(isPresented: $showSave) {
+        .navigationTitle("Filtrer le fil").navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) { Button("Annuler") { model.isSearchPresented = false } }
+        }
+        .safeAreaInset(edge: .bottom) {
+            Button { Task { await model.apply(model.draft) } } label: { Text("Afficher les résultats") }
+                .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("apply-search")
+                .padding(16).background(Brand.background)
+        }
+        .sheet(isPresented: $showSave, onDismiss: {
+            if saved { model.isSearchPresented = false }
+        }) {
             NavigationStack {
                 Form {
                     Section {
                         TextField("Ex. Ma veille politique", text: $name).accessibilityIdentifier("search-name")
-                        Text(model.draft.summary).font(.subheadline).foregroundStyle(.secondary)
-                    } header: { Text("Nom de la recherche") } footer: { Text("Retrouvez ce fil en un geste dans vos recherches. Il reste enregistré sur cet appareil.") }
+                        Text(model.draft.isEmpty ? "Toutes les personnalités" : model.draft.summary).font(.subheadline).foregroundStyle(Brand.secondary)
+                    } header: { Text("Nom du suivi") } footer: { Text("Ce suivi reste enregistré sur cet appareil.") }
                 }
-                .navigationTitle("Enregistrer la recherche").navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Annuler") { showSave = false } }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Enregistrer") { model.saveSearch(name: name); showSave = false; model.tab = .saved }
-                            .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                            .accessibilityIdentifier("confirm-save-search")
-                    }
+                .navigationTitle("Enregistrer un suivi").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Annuler") { showSave = false } } }
+                .safeAreaInset(edge: .bottom) {
+                    Button("Enregistrer") {
+                        model.saveSearch(name: name)
+                        saved = true
+                        model.tab = .saved
+                        showSave = false
+                    }.buttonStyle(ActionButtonStyle(prominent: true))
+                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .accessibilityIdentifier("confirm-save-search")
+                        .padding(16).background(Brand.background)
                 }
-            }.presentationDetents([.medium]).presentationDragIndicator(.visible)
+            }
         }
     }
     private func selectionRow(_ title: String, symbol: String, selections: Set<String>) -> some View {
-        HStack(spacing: 13) {
-            Image(systemName: symbol).foregroundStyle(Brand.blue).frame(width: 25)
-            VStack(alignment: .leading, spacing: 5) {
+        Label {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                Text(selections.isEmpty ? "Tout le panel" : selections.sorted().joined(separator: ", "))
-                    .font(.caption).foregroundStyle(.secondary).lineLimit(3)
+                Text(selections.isEmpty ? "Tous" : selections.sorted().joined(separator: ", "))
+                    .font(.subheadline).foregroundStyle(Brand.secondary).fixedSize(horizontal: false, vertical: true)
             }
-            Spacer()
-            if !selections.isEmpty { Text("\(selections.count)").font(.caption.weight(.semibold)).foregroundStyle(Brand.blue) }
-        }.padding(.vertical, 5)
+        } icon: { Image(systemName: symbol).foregroundStyle(Brand.blue) }
+            .padding(.vertical, 8)
     }
 }
 
@@ -100,6 +111,7 @@ struct ChoicePicker: View {
         let subtitle: String
     }
     @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
     let title: String
     let choices: [Choice]
     @Binding var selected: Set<String>
@@ -110,34 +122,38 @@ struct ChoicePicker: View {
     }
     var body: some View {
         List {
+            Section {
+                if !selected.isEmpty {
+                    Text(selected.sorted().joined(separator: ", ")).font(.subheadline)
+                    Button("Tout effacer") { selected.removeAll() }.frame(minHeight: 44)
+                } else { Text("Tous sont inclus").foregroundStyle(Brand.secondary) }
+            } header: { Text("\(selected.count) sélectionné(s)") }
             if choices.isEmpty {
                 ContentUnavailableView {
                     Label("Liste indisponible", systemImage: "person.crop.circle.badge.questionmark")
-                } description: { Text(model.choicesError ?? "Le référentiel ne contient aucun élément.") } actions: {
+                } description: { Text(model.choicesError ?? "La liste est vide.") } actions: {
                     Button("Réessayer") { Task { await model.loadChoices() } }
                 }
-            } else if filtered.isEmpty {
-                ContentUnavailableView.search(text: query)
-            }
+            } else if filtered.isEmpty { ContentUnavailableView.search(text: query) }
             ForEach(filtered) { choice in
                 Button {
                     if selected.contains(choice.value) { selected.remove(choice.value) } else { selected.insert(choice.value) }
                 } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
                             Text(choice.title).foregroundStyle(.primary)
-                            if !choice.subtitle.isEmpty { Text(choice.subtitle).font(.caption).foregroundStyle(.secondary) }
+                            if !choice.subtitle.isEmpty { Text(choice.subtitle).font(.subheadline).foregroundStyle(Brand.secondary) }
                         }
                         Spacer()
                         Image(systemName: selected.contains(choice.value) ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(selected.contains(choice.value) ? Brand.blue : .secondary.opacity(0.4)).font(.title3)
-                    }.padding(.vertical, 5)
+                            .foregroundStyle(Brand.blue).font(.title3)
+                    }.padding(.vertical, 8).frame(minHeight: 52).contentShape(Rectangle())
                 }.accessibilityAddTraits(selected.contains(choice.value) ? .isSelected : [])
                     .accessibilityIdentifier("choice-\(choice.value)")
             }
         }
         .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, prompt: "Nom, prénom ou parti")
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Tout effacer") { selected.removeAll() }.disabled(selected.isEmpty) } }
+        .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Terminé") { dismiss() }.accessibilityIdentifier("confirm-choices") } }
     }
 }

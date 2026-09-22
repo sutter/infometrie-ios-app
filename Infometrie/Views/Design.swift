@@ -6,7 +6,12 @@ enum Brand {
             ? UIColor(red: 0.48, green: 0.59, blue: 1, alpha: 1)
             : UIColor(red: 0.19, green: 0.28, blue: 0.87, alpha: 1)
     })
-    static let navy = Color(red: 0.075, green: 0.105, blue: 0.24)
+    static let secondary = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.76, green: 0.78, blue: 0.83, alpha: 1)
+            : UIColor(red: 0.30, green: 0.33, blue: 0.39, alpha: 1)
+    })
+    static let action = Color(red: 0.19, green: 0.28, blue: 0.78)
     static let background = Color(uiColor: .systemGroupedBackground)
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
 }
@@ -25,19 +30,43 @@ struct Wordmark: View {
     }
 }
 
-struct Eyebrow: View {
-    let text: String
-    var body: some View { Text(text.uppercased()).font(.system(.caption2, design: .monospaced, weight: .semibold)).tracking(1.4).foregroundStyle(.secondary) }
+/// Shared controls grow with Dynamic Type and retain a generous hit area.
+struct ActionButtonStyle: ButtonStyle {
+    var prominent = false
+    @Environment(\.isEnabled) private var isEnabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.semibold))
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .foregroundStyle(prominent ? Color.white : Brand.blue)
+            .background(prominent ? Brand.action : Brand.card, in: RoundedRectangle(cornerRadius: 16))
+            .overlay { if !prominent { RoundedRectangle(cornerRadius: 16).strokeBorder(Brand.blue.opacity(0.35)) } }
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.45)
+    }
+}
+
+/// A row at regular sizes becomes a column before labels become cramped.
+struct AdaptiveRow<Content: View>: View {
+    @Environment(\.dynamicTypeSize) private var dynamicType
+    @ViewBuilder var content: () -> Content
+    var body: some View {
+        let layout = dynamicType.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(spacing: 12))
+        layout { content() }
+    }
 }
 
 struct KindBadge: View {
     let item: FeedItem
     var body: some View {
         Label(item.kindLabel, systemImage: item.isCitation ? "quote.bubble" : "waveform")
-            .font(.caption2.weight(.semibold))
+            .font(.subheadline.weight(.medium))
             .foregroundStyle(item.isCitation ? Color.purple : Brand.blue)
-            .padding(.horizontal, 9).padding(.vertical, 5)
-            .background((item.isCitation ? Color.purple : Brand.blue).opacity(0.08), in: Capsule())
     }
 }
 
@@ -46,24 +75,10 @@ struct PersonAvatar: View {
     var size: CGFloat = 42
     var body: some View {
         Text(item.initials).font(.system(size: size * 0.32, weight: .semibold, design: .rounded))
-            .foregroundStyle(item.isCitation ? .purple : Brand.blue)
+            .foregroundStyle(Brand.blue)
             .frame(width: size, height: size)
-            .background((item.isCitation ? Color.purple : Brand.blue).opacity(0.08), in: RoundedRectangle(cornerRadius: size * 0.34))
+            .background(Brand.blue.opacity(0.06), in: RoundedRectangle(cornerRadius: size * 0.34))
             .accessibilityHidden(true)
-    }
-}
-
-struct WaveformArt: View {
-    var color: Color = .white
-    var body: some View {
-        GeometryReader { geometry in
-            HStack(alignment: .center, spacing: 3) {
-                ForEach(0..<18, id: \.self) { index in
-                    let value = 0.15 + abs(sin(Double(index) * 1.9)) * (0.22 + 0.6 * abs(sin(Double(index) * 0.18)))
-                    Capsule().fill(color.opacity(0.30 + value * 0.6)).frame(height: geometry.size.height * value)
-                }
-            }.frame(maxHeight: .infinity)
-        }.accessibilityHidden(true)
     }
 }
 
@@ -78,7 +93,7 @@ struct DemoBanner: View {
                 }.frame(maxWidth: .infinity, alignment: .leading)
             } else { Label("Démonstration · données fictives", systemImage: "sparkles") }
         }
-            .font(.caption.weight(.medium)).foregroundStyle(Brand.blue)
+            .font(.footnote.weight(.medium)).foregroundStyle(Brand.blue)
             .padding(.horizontal, 12).padding(.vertical, 8)
             .frame(maxWidth: .infinity).background(Brand.blue.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
             .accessibilityIdentifier("demo-banner")
@@ -91,45 +106,9 @@ struct ErrorNotice: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label(message, systemImage: "exclamationmark.circle").font(.subheadline)
-            if let retry { Button("Réessayer", action: retry).font(.subheadline.weight(.semibold)) }
+            if let retry { Button("Réessayer", action: retry).buttonStyle(ActionButtonStyle()) }
         }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 18))
             .accessibilityElement(children: .contain)
-    }
-}
-
-struct FeedCard: View {
-    let item: FeedItem
-    var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            HStack(spacing: 10) {
-                Label(item.channel, systemImage: item.media.lowercased() == "tv" ? "tv" : "radio")
-                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                Spacer()
-                if let date = item.date { Text(date, style: .time).font(.caption.monospacedDigit()).foregroundStyle(.tertiary) }
-            }
-            HStack(alignment: .top, spacing: 12) {
-                PersonAvatar(item: item)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.person).font(.headline).foregroundStyle(.primary)
-                    Text([item.party, item.role].filter { !$0.isEmpty }.joined(separator: " · "))
-                        .font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                }
-                Spacer(minLength: 0)
-            }
-            Text(item.title).font(.system(.title3, design: .default, weight: .semibold)).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
-            HStack {
-                KindBadge(item: item)
-                Spacer()
-                if item.hasMedia {
-                    Text(item.durationLabel).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                    Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(Brand.blue)
-                } else { Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary) }
-            }
-        }
-        .padding(19).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Brand.card, in: RoundedRectangle(cornerRadius: 24))
-        .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(.primary.opacity(0.035)) }
-        .accessibilityElement(children: .combine)
     }
 }

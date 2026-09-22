@@ -3,6 +3,7 @@ import AVKit
 
 struct SequenceView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dynamicTypeSize) private var dynamicType
     let item: FeedItem
     @State private var detail: SequenceDetail?
     @State private var error: String?
@@ -12,116 +13,161 @@ struct SequenceView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 23) {
-                if model.isDemo { DemoBanner() }
-                HStack { KindBadge(item: item); Spacer(); Label(item.channel, systemImage: item.media == "tv" ? "tv" : "radio").font(.caption.weight(.semibold)).foregroundStyle(.secondary) }
-                Text(item.title).font(.system(.largeTitle, design: .rounded, weight: .bold)).tracking(-0.7)
-                HStack(spacing: 13) {
-                    PersonAvatar(item: item, size: 50)
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(item.person).font(.headline)
-                        Text([item.party, item.role].filter { !$0.isEmpty }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
-                    }
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 16) {
+                    PassageSource(item: item)
+                    Text(item.title)
+                        .font(.system(.title2, design: .serif, weight: .semibold))
+                        .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("sequence-title")
+                    PassageByline(item: item)
                 }
-                if item.hasMedia {
-                    if isCurrent {
-                        PlayerPanel().environment(model)
-                    } else {
-                        Button { model.player.start(items: [item], app: model, podcast: false) } label: {
-                            VStack(spacing: 20) {
-                                WaveformArt().frame(height: 64).padding(.horizontal, 15)
-                                HStack {
-                                    Image(systemName: "play.circle.fill").font(.largeTitle)
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text("Lire cette séquence").font(.headline)
-                                        Text(model.isDemo ? "Son de démonstration · \(item.durationLabel)" : "\(item.durationLabel) · \(item.channel)").font(.caption).foregroundStyle(.white.opacity(0.65))
-                                    }
-                                    Spacer()
-                                }
-                            }.foregroundStyle(.white).padding(24)
-                                .background(Brand.navy.gradient, in: RoundedRectangle(cornerRadius: 25))
-                        }.buttonStyle(.plain).accessibilityIdentifier("play-sequence")
-                    }
+                if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
+                if isCurrent, item.video, !model.isDemo {
+                    NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
-                VStack(alignment: .leading, spacing: 10) {
-                    if !item.show.isEmpty { Label(item.show, systemImage: "antenna.radiowaves.left.and.right") }
-                    if let date = item.date { Label(date.formatted(date: .long, time: .shortened), systemImage: "calendar") }
-                    if item.isCitation && !item.citedBy.isEmpty { Label("Mention par \(item.citedBy)", systemImage: "quote.bubble") }
-                }.font(.caption).foregroundStyle(.secondary)
                 if let error {
                     ErrorNotice(message: error) { self.error = nil; reload += 1 }
                 } else if let detail = displayDetail {
-                    if !detail.resume.isEmpty { textSection(title: "Résumé", text: detail.resume) }
                     if !detail.verbatim.isEmpty {
                         TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: isCurrent) { word in
                             if isCurrent { model.player.seekToWord(word, sequenceID: detail.id) }
                             else { model.player.start(items: [item], app: model, podcast: false, atWord: word) }
                         }.id(detail.id)
-                    } else { Text("Le verbatim n’est pas disponible pour cette séquence.").font(.subheadline).foregroundStyle(.secondary) }
-                } else { ProgressView("Chargement du verbatim…").frame(maxWidth: .infinity).padding(30) }
-                Label("Consultation seule · sans export ni partage", systemImage: "lock")
-                    .font(.caption2).foregroundStyle(.tertiary).frame(maxWidth: .infinity)
-            }.padding(22).frame(maxWidth: 720).frame(maxWidth: .infinity)
+                    } else { Text("Le texte n’est pas disponible pour ce passage.").foregroundStyle(Brand.secondary) }
+                    if !detail.resume.isEmpty {
+                        SequenceDisclosure(title: "Lire le résumé", icon: "text.alignleft") {
+                            Text(detail.resume).font(.body).lineSpacing(6)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }.accessibilityIdentifier("sequence-summary")
+                    }
+                } else { ProgressView("Chargement du texte…").frame(maxWidth: .infinity).padding(30) }
+                SequenceDisclosure(title: "À propos du passage", icon: "info.circle") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        KindBadge(item: item)
+                        if !item.party.isEmpty { Text(item.party) }
+                        if !item.role.isEmpty { Text(item.role) }
+                        if !item.show.isEmpty { Label(item.show, systemImage: "antenna.radiowaves.left.and.right") }
+                        if let date = item.date { Label(date.formatted(date: .long, time: .shortened), systemImage: "calendar") }
+                        if item.isCitation && !item.citedBy.isEmpty { Label("Mention par \(item.citedBy)", systemImage: "quote.bubble") }
+                    }.font(.subheadline).foregroundStyle(Brand.secondary)
+                }.accessibilityIdentifier("sequence-context")
+                if model.isDemo { DemoBanner() }
+            }.padding(20).frame(maxWidth: 720).frame(maxWidth: .infinity)
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if item.hasMedia {
+                if isCurrent { PlaybackDock() }
+                else {
+                    Button { model.player.start(items: [item], app: model, podcast: false) } label: {
+                        AdaptiveRow {
+                            Label("Écouter ce passage", systemImage: "play.fill")
+                            if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
+                            if item.durationSec > 0 {
+                                Text(item.readableDuration).font(.subheadline.monospacedDigit())
+                                    .accessibilityLabel("Durée : \(item.readableDuration)")
+                            }
+                        }
+                    }.buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("play-sequence")
+                        .padding(16).frame(maxWidth: 720).frame(maxWidth: .infinity).background(Brand.card)
+                        .overlay(alignment: .top) { Divider() }
+                }
+            }
+        }
+        .scrollEdgeEffectHidden(true, for: .bottom)
+        .scrollEdgeEffectStyle(.hard, for: .top)
         .background(Brand.background).navigationTitle("Séquence").navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .task(id: reload) {
             do { detail = try await model.sequence(item) }
             catch { if !Task.isCancelled { self.error = model.message(for: error) } }
         }
         .onDisappear { if isCurrent { model.player.stop() } }
     }
-    private func textSection(title: String, text: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.title2.bold())
-            Text(text).font(.body).foregroundStyle(.secondary).lineSpacing(5)
+}
+
+private struct SequenceDisclosure<Content: View>: View {
+    let title: String
+    let icon: String
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        DisclosureGroup {
+            content().frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 4).padding(.bottom, 20)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: icon).font(.system(size: 16, weight: .medium))
+                    .frame(width: 32, height: 32)
+                    .background(Brand.blue.opacity(0.07), in: RoundedRectangle(cornerRadius: 9))
+                    .accessibilityHidden(true)
+                Text(title).font(.body.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundStyle(Brand.blue).frame(minHeight: 56).padding(.vertical, 4)
         }
+        .tint(Brand.blue).padding(.horizontal, 20)
+        .background(Brand.card, in: RoundedRectangle(cornerRadius: 20))
+        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(.primary.opacity(0.06)) }
     }
 }
 
-struct PlayerPanel: View {
+/// The text can scroll independently; the timeline and transport stay within reach.
+struct PlaybackDock: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dynamicTypeSize) private var dynamicType
     private var playback: PlaybackModel { model.player }
     var body: some View {
-        VStack(spacing: 18) {
-            if playback.current?.video == true && !model.isDemo {
-                NativeVideo(player: playback.player).aspectRatio(16 / 9, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 16))
+        VStack(spacing: 10) {
+            if playback.error != nil {
+                Text("Écoute indisponible").font(.headline)
+                Button("Réessayer l’écoute") { playback.retry() }.buttonStyle(ActionButtonStyle(prominent: true))
             } else {
-                WaveformArt(color: Brand.blue).frame(height: 70).padding(.horizontal, 15).padding(.top, 10)
-            }
-            if let error = playback.error { ErrorNotice(message: error) { playback.retry() } }
-            if playback.isLoading { ProgressView("Préparation de la lecture…").font(.caption) }
-            VStack(spacing: 4) {
-                Slider(value: Binding(get: { min(playback.position, max(1, playback.duration)) }, set: { playback.scrub(to: $0) }), in: 0...max(1, playback.duration), onEditingChanged: { editing in
-                    if editing { playback.beginScrubbing() } else { playback.endScrubbing() }
-                })
-                    .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
-                    .accessibilityLabel("Position dans la séquence")
-                    .accessibilityIdentifier("player-position")
-                HStack {
-                    Text(clock(playback.position)).accessibilityIdentifier("player-elapsed"); Spacer()
-                    Text(playback.ended ? "Fin de la lecture" : "−\(clock(max(0, playback.duration - playback.position)))")
-                }.font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-            }
-            HStack(spacing: 25) {
-                if playback.isPodcast {
-                    Button { playback.previous() } label: { Image(systemName: "backward.end.fill") }
-                        .disabled(!playback.hasPrevious).accessibilityLabel("Séquence précédente")
+                if playback.isLoading { ProgressView("Préparation de l’écoute…").font(.subheadline) }
+                VStack(spacing: 0) {
+                    Slider(value: Binding(get: { min(playback.position, max(1, playback.duration)) }, set: { playback.scrub(to: $0) }), in: 0...max(1, playback.duration), onEditingChanged: { editing in
+                        if editing { playback.beginScrubbing() } else { playback.endScrubbing() }
+                    })
+                        .frame(minHeight: 44)
+                        .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
+                        .accessibilityLabel("Position dans le passage")
+                        .accessibilityIdentifier("player-position")
+                    HStack {
+                        Text(clock(playback.position)).accessibilityIdentifier("player-elapsed")
+                        Spacer()
+                        Text(clock(playback.duration)).accessibilityLabel("Durée totale, \(clock(playback.duration))")
+                    }.font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
                 }
-                Button { playback.seek(playback.position - 10) } label: { Image(systemName: "gobackward.10") }.accessibilityLabel("Reculer de 10 secondes")
-                Button { playback.toggle() } label: {
-                    Image(systemName: playback.isPlaying ? "pause.fill" : playback.ended ? "arrow.counterclockwise" : "play.fill")
-                        .font(.title2).frame(width: 54, height: 54)
-                }.buttonStyle(.glassProminent)
-                    .accessibilityLabel(playback.isPlaying ? "Pause" : playback.ended ? "Recommencer" : "Lecture")
-                    .accessibilityIdentifier("player-toggle")
-                Button { playback.seek(playback.position + 10) } label: { Image(systemName: "goforward.10") }.accessibilityLabel("Avancer de 10 secondes")
-                if playback.isPodcast {
-                    Button { playback.next() } label: { Image(systemName: "forward.end.fill") }
-                        .disabled(!playback.hasNext).accessibilityLabel("Séquence suivante").accessibilityIdentifier("player-next")
+                if dynamicType.isAccessibilitySize {
+                    playButton
+                    HStack(spacing: 16) { skipButton(forward: false); skipButton(forward: true) }
+                } else {
+                    HStack(spacing: 12) { skipButton(forward: false); playButton; skipButton(forward: true) }
                 }
-            }.font(.system(size: 22)).disabled(playback.isLoading || playback.error != nil)
-            if model.isDemo { Text("Audio instrumental de démonstration").font(.caption2).foregroundStyle(.secondary) }
-        }.padding(20).background(Brand.card, in: RoundedRectangle(cornerRadius: 25))
+            }
+        }
+        .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
+        .frame(maxWidth: 720).frame(maxWidth: .infinity)
+        .background(Brand.card).overlay(alignment: .top) { Divider() }
+    }
+    private var playButton: some View {
+        Button { playback.toggle() } label: {
+            Label(playback.isPlaying ? "Pause" : playback.ended ? "Réécouter" : "Écouter", systemImage: playback.isPlaying ? "pause.fill" : playback.ended ? "arrow.counterclockwise" : "play.fill")
+        }.buttonStyle(ActionButtonStyle(prominent: true))
+            .disabled(playback.isLoading || playback.error != nil)
+            .accessibilityIdentifier("player-toggle")
+    }
+    private func skipButton(forward: Bool) -> some View {
+        Button { playback.seek(playback.position + (forward ? 10 : -10)) } label: {
+            Image(systemName: forward ? "goforward.10" : "gobackward.10")
+                .font(.title2).frame(minWidth: 52, maxWidth: dynamicType.isAccessibilitySize ? .infinity : 60, minHeight: 56)
+                .background(Brand.blue.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+                .contentShape(Rectangle())
+        }.buttonStyle(.plain).foregroundStyle(Brand.blue)
+            .disabled(playback.isLoading || playback.error != nil)
+            .accessibilityLabel(forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes")
     }
     private func clock(_ seconds: Double) -> String {
         let value = seconds.isFinite ? max(0, Int(seconds)) : 0
@@ -134,44 +180,52 @@ struct PodcastView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    if model.isDemo { DemoBanner() }
-                    VStack(alignment: .leading, spacing: 9) {
-                        Eyebrow(text: "Le podcast de votre veille")
-                        Text(model.player.current?.title ?? "Votre sélection").font(.system(.title, design: .rounded, weight: .bold))
-                        Text(model.player.current?.person ?? "").font(.subheadline).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Passage \(model.player.index + 1) sur \(model.player.queue.count)").font(.subheadline).foregroundStyle(Brand.secondary)
+                        Text(model.player.current?.person ?? "").font(.headline).foregroundStyle(Brand.blue)
+                        Text(model.player.current?.title ?? "Votre sélection").font(.title2.bold())
                     }
-                    PlayerPanel()
+                    AdaptiveRow {
+                        Button { model.player.previous() } label: { Label("Précédent", systemImage: "backward.end.fill") }
+                            .disabled(!model.player.hasPrevious).accessibilityLabel("Séquence précédente")
+                        Button { model.player.next() } label: { Label("Suivant", systemImage: "forward.end.fill") }
+                            .disabled(!model.player.hasNext).accessibilityLabel("Séquence suivante").accessibilityIdentifier("player-next")
+                    }.buttonStyle(ActionButtonStyle())
+                    if let error = model.player.error { ErrorNotice(message: error) }
+                    if model.player.current?.video == true, !model.isDemo {
+                        NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
                     if let detail = model.player.detail, !detail.verbatim.isEmpty {
                         TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: true) { word in
                             model.player.seekToWord(word, sequenceID: detail.id)
                         }.id(detail.id)
                     }
                     VStack(alignment: .leading, spacing: 16) {
-                        HStack { Text("À l’écoute").font(.title2.bold()); Spacer(); Text("\(model.player.queue.count) séquences").font(.caption).foregroundStyle(.secondary) }
-                        Text("Du plus ancien au plus récent").font(.caption).foregroundStyle(.secondary)
+                        Text("Tous les passages").font(.title2.bold())
+                        Text("Du plus ancien au plus récent").font(.subheadline).foregroundStyle(Brand.secondary)
                         ForEach(Array(model.player.queue.enumerated()), id: \.element.id) { index, item in
                             Button { model.player.select(index) } label: {
-                                HStack(spacing: 13) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 12).fill(index == model.player.index ? Brand.blue : Color.primary.opacity(0.04))
-                                        Image(systemName: index == model.player.index ? "waveform" : "play.fill")
-                                            .foregroundStyle(index == model.player.index ? .white : .secondary)
-                                    }.frame(width: 40, height: 40)
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Text(item.person).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-                                        Text(item.title).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                                HStack(spacing: 14) {
+                                    Image(systemName: index == model.player.index ? "speaker.wave.2.fill" : "play.circle")
+                                        .foregroundStyle(Brand.blue).font(.title2).accessibilityHidden(true)
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(item.person).font(.headline).foregroundStyle(.primary)
+                                        Text(item.title).font(.body).foregroundStyle(.primary)
+                                        Text(item.durationLabel).font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
                                     }
-                                    Spacer()
-                                    Text(item.durationLabel).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                                }.padding(.vertical, 7)
+                                }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Brand.card, in: RoundedRectangle(cornerRadius: 16))
                             }.buttonStyle(.plain).accessibilityIdentifier("queue-item-\(index)")
+                                .accessibilityAddTraits(index == model.player.index ? .isSelected : [])
                         }
                     }
-                }.padding(22).frame(maxWidth: 720).frame(maxWidth: .infinity)
+                    if model.isDemo { DemoBanner() }
+                }.padding(20).frame(maxWidth: 720).frame(maxWidth: .infinity)
             }
-            .background(Brand.background).navigationTitle("Podcast").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fermer", systemImage: "xmark") { model.player.stop() }.accessibilityIdentifier("close-podcast") } }
+            .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock() }
+            .background(Brand.background).navigationTitle("Tout écouter").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fermer") { model.player.stop() }.accessibilityIdentifier("close-podcast") } }
         }.presentationDragIndicator(.visible)
     }
 }
