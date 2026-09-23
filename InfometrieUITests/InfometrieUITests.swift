@@ -2,6 +2,56 @@ import XCTest
 
 final class InfometrieUITests: XCTestCase {
     @MainActor
+    func testReadingComfortUpdatesTextImmediatelyAndPersists() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--demo", "-appearance", "light",
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+        XCTAssertTrue(navigationButton("Compte", in: app).waitForExistence(timeout: 10))
+        navigationButton("Compte", in: app).tap()
+        let toggle = app.switches["comfortable-reading"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        let original = toggle.value as? String
+        func setComfort(_ enabled: Bool) {
+            reveal(toggle, in: app, down: false)
+            if toggle.value as? String != (enabled ? "1" : "0") { toggle.tap() }
+            wait(toggle, key: "value", equals: enabled ? "1" : "0")
+        }
+        func passageTitleHeight() -> CGFloat {
+            navigationButton("Le fil", in: app).tap()
+            let first = app.buttons["feed-item-1"]
+            XCTAssertTrue(first.waitForExistence(timeout: 5))
+            reveal(first, in: app, down: false)
+            first.tap()
+            let title = app.staticTexts["sequence-title"]
+            XCTAssertTrue(title.waitForExistence(timeout: 5))
+            let height = title.frame.height
+            app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
+            navigationButton("Compte", in: app).tap()
+            return height
+        }
+        setComfort(false)
+        let standardHeading = app.staticTexts["Confort de lecture"].frame.height
+        let standardPassage = passageTitleHeight()
+        capture("22-lecture-standard", app: app)
+        setComfort(true)
+        let enlargedHeading = app.staticTexts["Confort de lecture"].frame.height
+        let enlargedPassage = passageTitleHeight()
+        capture("22-lecture-confort", app: app)
+        XCTAssertGreaterThan(enlargedHeading, standardHeading, "Le compte doit réagir immédiatement au réglage")
+        XCTAssertGreaterThan(enlargedPassage, standardPassage, "Le réglage doit aussi agrandir les fiches")
+        app.terminate(); app.launch()
+        XCTAssertTrue(navigationButton("Compte", in: app).waitForExistence(timeout: 10))
+        navigationButton("Compte", in: app).tap()
+        XCTAssertEqual(toggle.value as? String, "1", "Le choix doit être conservé après relance")
+        XCTAssertEqual(app.staticTexts["Confort de lecture"].frame.height, enlargedHeading, accuracy: 1)
+        setComfort(false)
+        XCTAssertEqual(app.staticTexts["Confort de lecture"].frame.height, standardHeading, accuracy: 1,
+                       "Désactiver le confort doit rétablir la taille de l’appareil")
+        if original == "1" { setComfort(true) }
+    }
+
+    @MainActor
     func testPublicationsUseServerKindsResetCursorAndHaveNoAudio() {
         let app = loginTestApp()
         app.launchArguments += ["--feed-kinds-fixture"]
