@@ -76,7 +76,13 @@ struct SavedSearchesView: View {
         .background(Brand.background)
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbar(sizeClass == .regular ? .hidden : .visible, for: .navigationBar)
-        .toolbar { if sizeClass != .regular { ToolbarItem(placement: .principal) { Wordmark(size: 21) } } }
+        .toolbarBackground(Brand.background, for: .navigationBar)
+        .toolbar {
+            if sizeClass != .regular {
+                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21) }
+                    .sharedBackgroundVisibility(.hidden)
+            }
+        }
         .alert("Supprimer ce suivi ?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button("Annuler", role: .cancel) { deleting = nil }
             Button("Supprimer", role: .destructive) { if let deleting { model.delete(deleting) }; deleting = nil }

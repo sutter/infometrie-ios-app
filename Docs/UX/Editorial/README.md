@@ -6,6 +6,14 @@ Le premier résultat du fil occupe toute la largeur. Les suivants sont présent�
 
 Les trois destinations gardent leurs piles de navigation. L’iPad utilise l’en-tête éditorial et l’iPhone sa barre d’onglets native. Les catégories soulignées utilisent les filtres existants et exposent leur état sélectionné à l’accessibilité.
 
+## Harmonisation de la navigation iPhone
+
+La barre native utilise le bordeaux pour l’icône et le libellé sélectionnés, avec l’indicateur système conservé. « Le fil » est représenté par le symbole de journal `newspaper`. Les commandes internes des pages gardent leur teinte bleu nuit. Le logo est aligné à gauche sur les trois destinations compactes, sans capsule de fond supplémentaire.
+
+Le fil rétablit l’effet de bord inférieur natif avec une transition douce : le contenu s’atténue derrière la barre pendant le défilement. Le bandeau éditorial iPad conserve sa présentation.
+
+Vérification du 23 septembre 2026 : compilation réussie, puis **2 exécutions réussies** du parcours `testEditorialNavigationPreservesFeedSelection`, sur iPhone 17 Pro et iPad mini, dans `build/EditorialNavigationPolish.xcresult`. Ce parcours vérifie les trois destinations, la conservation du filtre, l’ouverture d’une séquence et le retour au fil ; il contrôle aussi l’absence de deuxième navigation principale sur iPad. Les trois sélections iPhone, l’alignement du logo, le fondu du fil et le bandeau iPad ont été inspectés visuellement. Exécution en portrait et thème clair sur iOS/iPadOS 26.4 ; les tailles maximales et VoiceOver n’ont pas été revérifiés dans cette passe.
+
 ## Déclinaison sur les autres écrans
 
 Le thème s’applique aussi aux suivis actifs et archivés, au compte, à la connexion, à la limite d’appareils, aux filtres et sélecteurs, à l’enregistrement d’un suivi, aux fiches de passage, au verbatim et à l’écoute continue.

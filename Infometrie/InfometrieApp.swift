@@ -42,22 +42,26 @@ struct RootView: View {
                 VStack(spacing: 0) {
                     if horizontalSizeClass == .regular { EditorialNavigation() }
                     TabView(selection: $binding.tab) {
-                        Tab("Le fil", systemImage: "dot.radiowaves.left.and.right", value: .feed) {
+                        Tab("Le fil", systemImage: "newspaper", value: .feed) {
                             NavigationStack {
                                 FeedView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
+                            .tint(Brand.blue)
                         }
                         Tab("Mes suivis", systemImage: "bookmark", value: .saved) {
                             NavigationStack {
                                 SavedSearchesView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
+                            .tint(Brand.blue)
                         }
                         Tab("Compte", systemImage: "person.crop.circle", value: .account) {
                             NavigationStack {
                                 AccountView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
+                            .tint(Brand.blue)
                         }
                     }
+                    .tint(Brand.citation)
                     .toolbarBackground(Brand.background, for: .tabBar)
                 }
                 .background(Brand.background)

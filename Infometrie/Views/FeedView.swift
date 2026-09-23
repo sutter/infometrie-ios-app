@@ -46,7 +46,7 @@ struct FeedView: View {
             }
             .refreshable { await model.refresh(reset: true) }
         }
-        .scrollEdgeEffectHidden(true, for: .bottom)
+        .scrollEdgeEffectStyle(.soft, for: .bottom)
         .scrollEdgeEffectStyle(.hard, for: .top)
         .background(Brand.background)
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)

@@ -73,7 +73,13 @@ struct AccountView: View {
         .background(Brand.background)
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbar(sizeClass == .regular ? .hidden : .visible, for: .navigationBar)
-        .toolbar { if sizeClass != .regular { ToolbarItem(placement: .principal) { Wordmark(size: 21) } } }
+        .toolbarBackground(Brand.background, for: .navigationBar)
+        .toolbar {
+            if sizeClass != .regular {
+                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21) }
+                    .sharedBackgroundVisibility(.hidden)
+            }
+        }
         .confirmationDialog("Se déconnecter ?", isPresented: $showLogout, titleVisibility: .visible) {
             Button("Se déconnecter", role: .destructive) { model.logout() }
         } message: { Text("Vos suivis seront conservés sur cet appareil.") }
