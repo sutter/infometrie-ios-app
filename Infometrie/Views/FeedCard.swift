@@ -7,14 +7,16 @@ struct FeedCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            PassageSource(item: item)
+            personHeading
             Text(item.title)
                 .font(.system(.title3, design: .serif, weight: .semibold))
                 .lineSpacing(3)
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
-            PassageByline(item: item, showsKind: false)
-            metadata
+            VStack(alignment: .leading, spacing: 8) {
+                PassageSource(item: item)
+                metadata
+            }
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -25,6 +27,22 @@ struct FeedCard: View {
         .contentShape(RoundedRectangle(cornerRadius: 22))
         .accessibilityElement(children: .combine)
         .accessibilityHint(item.hasMedia ? "Ouvre le texte et le lecteur de ce passage" : "Ouvre le texte de ce passage")
+    }
+
+    private var personHeading: some View {
+        HStack(alignment: .top, spacing: 12) {
+            PersonAvatar(item: item)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.person)
+                    .font(.headline).foregroundStyle(.primary)
+                let details = [item.role, item.party == item.role ? "" : item.party]
+                    .filter { !$0.isEmpty }.joined(separator: " · ")
+                if !details.isEmpty {
+                    Text(details).font(.subheadline).foregroundStyle(Brand.secondary)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private var metadata: some View {
