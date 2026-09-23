@@ -6,9 +6,9 @@ struct FeedCard: View {
     var prominent = false
     @Environment(\.dynamicTypeSize) private var dynamicType
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @ScaledMetric(relativeTo: .title) private var headlineSize = 29.0
-    @ScaledMetric(relativeTo: .title) private var columnSize = 35.0
-    @ScaledMetric(relativeTo: .largeTitle) private var leadSize = 52.0
+    @ScaledMetric(relativeTo: .title) private var headlineSize = 25.0
+    @ScaledMetric(relativeTo: .title) private var columnSize = 30.0
+    @ScaledMetric(relativeTo: .largeTitle) private var leadSize = 44.0
     @ScaledMetric(relativeTo: .headline) private var nameSize = 20.0
     @ScaledMetric(relativeTo: .body) private var avatarSize = 60.0
 
