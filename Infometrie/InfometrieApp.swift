@@ -10,7 +10,7 @@ struct InfometrieApp: App {
             RootView()
                 .environment(model)
                 .environment(\.locale, Locale(identifier: "fr_FR"))
-                .tint(Brand.blue)
+                .tint(Brand.primary)
                 .dynamicTypeSize((comfortableReading ? DynamicTypeSize.xLarge : .xSmall)...)
                 .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
         }
@@ -32,6 +32,7 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicType
     private var activityKey: String { "\(model.isAuthenticated)-\(model.isDemo)-\(scenePhase == .active)" }
     var body: some View {
         @Bindable var binding = model
@@ -39,29 +40,32 @@ struct RootView: View {
             if model.isRestoring {
                 VStack(spacing: 24) { Wordmark(); ProgressView("Ouverture d’InfoMétrie…") }
             } else if model.isAuthenticated {
-                VStack(spacing: 0) {
-                    if horizontalSizeClass == .regular { EditorialNavigation() }
+                let layout = horizontalSizeClass == .regular && !dynamicType.isAccessibilitySize
+                    ? AnyLayout(HStackLayout(alignment: .top, spacing: 0))
+                    : AnyLayout(VStackLayout(spacing: 0))
+                layout {
+                    if horizontalSizeClass == .regular { MainNavigation() }
                     TabView(selection: $binding.tab) {
-                        Tab("Le fil", systemImage: "newspaper", value: .feed) {
+                        Tab("Le fil", systemImage: "house", value: .feed) {
                             NavigationStack {
                                 FeedView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
-                            .tint(Brand.blue)
+                            .tint(Brand.primary)
                         }
                         Tab("Mes suivis", systemImage: "bookmark", value: .saved) {
                             NavigationStack {
                                 SavedSearchesView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
-                            .tint(Brand.blue)
+                            .tint(Brand.primary)
                         }
                         Tab("Compte", systemImage: "person.crop.circle", value: .account) {
                             NavigationStack {
                                 AccountView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
-                            .tint(Brand.blue)
+                            .tint(Brand.primary)
                         }
                     }
-                    .tint(Brand.citation)
+                    .tint(Brand.primary)
                     .toolbarBackground(Brand.background, for: .tabBar)
                 }
                 .background(Brand.background)
@@ -95,44 +99,65 @@ struct RootView: View {
     }
 }
 
-/// Keep the three navigation stacks while giving the iPad a magazine masthead.
-private struct EditorialNavigation: View {
+/// The iPad separates destinations from the filters inside the timeline.
+private struct MainNavigation: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 28) {
-                Wordmark()
-                destinations.fixedSize(horizontal: true, vertical: false)
-                    .frame(maxWidth: .infinity)
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                Wordmark()
-                destinations
+        Group {
+            if dynamicType.isAccessibilitySize {
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 8) { destinations }
+                            .padding(.horizontal, 20)
+                    }
+                    .onChange(of: model.tab, initial: true) { _, tab in
+                        proxy.scrollTo(tab, anchor: .center)
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .overlay(alignment: .bottom) { AppRule() }
+            } else {
+                VStack(alignment: .leading, spacing: 24) {
+                    Wordmark(size: 22).padding(.horizontal, 12).padding(.top, 12)
+                    VStack(alignment: .leading, spacing: 6) { destinations }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 12).padding(.vertical, 16)
+                .frame(width: 192).frame(maxHeight: .infinity)
+                .overlay(alignment: .trailing) {
+                    Rectangle().fill(Brand.sidebarRule).frame(width: 0.5).accessibilityHidden(true)
+                }
             }
         }
-        .padding(.top, 8)
-        .overlay(alignment: .bottom) { EditorialRule() }
-        .padding(.horizontal, EditorialLayout.wideMargin)
-        .frame(maxWidth: EditorialLayout.maximumWidth).frame(maxWidth: .infinity)
-        .background(Brand.background)
+        .background(Brand.sidebar)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Navigation principale")
         .accessibilityIdentifier("primary-navigation")
     }
 
-    private var destinations: some View {
-        HStack(spacing: 16) {
-            destination("Le fil", tab: .feed, identifier: "navigation-feed")
-            destination("Mes suivis", tab: .saved, identifier: "navigation-saved")
-            destination("Compte", tab: .account, identifier: "navigation-account")
-        }
+    @ViewBuilder private var destinations: some View {
+        destination("Le fil", symbol: "house", tab: .feed, identifier: "navigation-feed")
+        destination("Mes suivis", symbol: "bookmark", tab: .saved, identifier: "navigation-saved")
+        destination("Compte", symbol: "person.crop.circle", tab: .account, identifier: "navigation-account")
     }
 
-    private func destination(_ title: String, tab: AppModel.Tab, identifier: String) -> some View {
-        EditorialTabButton(title: title, selected: model.tab == tab, accent: Brand.citation) {
-            model.tab = tab
+    private func destination(_ title: String, symbol: String, tab: AppModel.Tab, identifier: String) -> some View {
+        let selected = model.tab == tab
+        return Button { model.tab = tab } label: {
+            Label(title, systemImage: selected ? "\(symbol).fill" : symbol)
+                .font(.body.weight(selected ? .bold : .medium))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12).padding(.vertical, 12)
+                .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                .foregroundStyle(selected ? Brand.selectionForeground : Brand.ink)
+                .background(selected ? Brand.selection : .clear, in: RoundedRectangle(cornerRadius: 16))
+                .contentShape(RoundedRectangle(cornerRadius: 16))
         }
+        .buttonStyle(.plain)
+        .id(tab)
+        .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier(identifier)
     }
 }

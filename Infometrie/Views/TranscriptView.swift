@@ -25,14 +25,14 @@ struct TranscriptView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            EditorialRule()
+            AppRule()
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 10) {
-                    Image(systemName: "text.quote").foregroundStyle(Brand.citation).accessibilityHidden(true)
+                    Image(systemName: "text.quote").foregroundStyle(Brand.primary).accessibilityHidden(true)
                     Text("Le texte")
                         .accessibilityIdentifier("transcript-position")
                         .accessibilityValue(activeWord.map { "Mot \($0 + 1) sur \(timeline.words.count)" } ?? (isCurrent ? "Aucun mot actif" : "En attente de lecture"))
-                }.font(.system(.title2, design: .serif, weight: .semibold)).foregroundStyle(Brand.ink)
+                }.font(.headline).foregroundStyle(Brand.ink)
                 if canSeek {
                     Text("Touchez un mot pour rejoindre ce passage.")
                         .font(.subheadline).foregroundStyle(Brand.secondary)
@@ -41,7 +41,7 @@ struct TranscriptView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         ForEach(timeline.passages) { passage in
-                            Text(attributed(passage)).font(.system(.body, design: .serif)).lineSpacing(7)
+                            Text(attributed(passage)).font(.body).lineSpacing(3)
                                 .foregroundStyle(Brand.ink).tint(Brand.ink)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .id(passage.id)
@@ -82,7 +82,7 @@ struct TranscriptView: View {
                             .font(.subheadline.weight(.medium)).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
                             .contentShape(Rectangle())
-                    }.buttonStyle(.plain).foregroundStyle(Brand.blue).accessibilityIdentifier("transcript-follow")
+                    }.buttonStyle(.plain).foregroundStyle(Brand.primary).accessibilityIdentifier("transcript-follow")
                         .accessibilityValue(followsPlayback ? "Activé" : "Désactivé")
                 }
                 if isCurrent, let notice = model.player.transcriptNotice {
@@ -90,7 +90,7 @@ struct TranscriptView: View {
                 }
                 if timeline.hasPreciseTimings {
                     Label("Synchronisation par mot", systemImage: "checkmark.circle.fill")
-                        .font(.footnote).foregroundStyle(Brand.blue).accessibilityIdentifier("transcript-precise")
+                        .font(.footnote).foregroundStyle(Brand.primary).accessibilityIdentifier("transcript-precise")
                 } else if model.wordTimingStates[detail.id] == .loading {
                     HStack(spacing: 8) { ProgressView(); Text("Chargement des repères précis…") }
                         .font(.footnote).foregroundStyle(Brand.secondary)
@@ -108,7 +108,7 @@ struct TranscriptView: View {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(alignment: .top) { EditorialRule() }
+            .overlay(alignment: .top) { AppRule() }
         }
 
     }
@@ -130,8 +130,8 @@ struct TranscriptView: View {
                 result[range][AttributeScopes.SwiftUIAttributes.UnderlineStyleAttribute.self] = Text.LineStyle(pattern: .solid, color: .clear)
             }
             if word.id == currentWord {
-                result[range][AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute.self] = Brand.citation
-                result[range][AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute.self] = Brand.citation.opacity(0.12)
+                result[range][AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute.self] = Brand.selectionForeground
+                result[range][AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute.self] = Brand.selection
             }
         }
         return result

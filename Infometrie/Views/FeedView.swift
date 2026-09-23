@@ -4,49 +4,52 @@ struct FeedView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicType
-    @ScaledMetric(relativeTo: .largeTitle) private var wideTitleSize = 112.0
-    @ScaledMetric(relativeTo: .largeTitle) private var compactTitleSize = 52.0
     private var playable: [FeedItem] { model.visibleItems.filter(\.canPlay).sorted { $0.at < $1.at } }
     private var hasAudienceFilters: Bool { !model.filters.isEmpty }
     private var usesWideLayout: Bool { horizontalSizeClass == .regular }
 
     var body: some View {
-        GeometryReader { geometry in
-            let usesColumns = usesWideLayout && geometry.size.width >= 650 && dynamicType <= .xxLarge
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    feedHeading.padding(.bottom, 20)
-                    filterControls
-                    if hasAudienceFilters { selectionSummary.padding(.top, 20) }
-                    if model.isDemo { DemoBanner().padding(.top, 8) }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0, pinnedViews: dynamicType.isAccessibilitySize ? [] : [.sectionHeaders]) {
+                feedHeading.padding(.vertical, 12)
+                Section {
+                    if hasAudienceFilters { selectionSummary.padding(.vertical, 12) }
+                    if model.isDemo { DemoBanner() }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.refresh(reset: true) } }
-                            .padding(.top, 20)
+                            .padding(.vertical, 12)
                     }
                     if model.isRefreshing && model.items.isEmpty {
-                        ProgressView("Chargement du fil…").frame(maxWidth: .infinity).padding(.vertical, 60)
+                        ProgressView("Chargement du fil…").frame(maxWidth: .infinity).padding(.vertical, 40)
                     } else if model.visibleItems.isEmpty && model.feedError == nil {
                         VStack(alignment: .leading, spacing: 12) {
-                            EditorialEmptyState(title: "Aucun passage pour le moment", icon: "text.magnifyingglass", message: "Aucun résultat sur les dernières 24 heures avec ces critères.")
+                            AppEmptyState(title: "Aucun passage pour le moment", icon: "text.magnifyingglass", message: "Aucun résultat sur les dernières 24 heures avec ces critères.")
                             Button("Modifier les filtres") { model.openSearch(model.filters) }
                                 .buttonStyle(ActionButtonStyle())
                         }
                     } else {
-                        passages(inColumns: usesColumns)
+                        ForEach(model.visibleItems) { item in
+                            NavigationLink { SequenceView(item: item) } label: {
+                                FeedCard(item: item).padding(.vertical, 14)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
+                            AppRule()
+                        }
                     }
                     if let date = model.lastRefresh {
                         Text("Mis à jour à \(date.formatted(date: .omitted, time: .shortened))")
                             .font(.footnote).foregroundStyle(Brand.secondary)
-                            .frame(maxWidth: .infinity).padding(.vertical, 24)
+                            .frame(maxWidth: .infinity).padding(.vertical, 20)
                     }
-                }
-                .padding(.horizontal, usesWideLayout ? EditorialLayout.wideMargin : 20)
-                .padding(.top, usesWideLayout ? 28 : 12).padding(.bottom, 24)
-                .frame(maxWidth: EditorialLayout.maximumWidth).frame(maxWidth: .infinity)
+                } header: { filterControls }
             }
-            .refreshable { await model.refresh(reset: true) }
+            .padding(.horizontal, 20).padding(.bottom, 24)
+            .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
-        .scrollEdgeEffectStyle(.soft, for: .bottom)
+        .refreshable { await model.refresh(reset: true) }
+        .clipped() // Keep scrolling content below the iPad status bar.
+        .scrollEdgeEffectHidden(true, for: .bottom)
         .scrollEdgeEffectStyle(.hard, for: .top)
         .background(Brand.background)
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
@@ -63,117 +66,43 @@ struct FeedView: View {
     }
 
     private var feedHeading: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .center, spacing: 20) {
-                    title.fixedSize(horizontal: true, vertical: true)
-                    Spacer(minLength: 0)
-                    listenButton.fixedSize(horizontal: true, vertical: true)
-                }
-                VStack(alignment: .leading, spacing: 16) {
-                    title
-                    listenButton
-                }
-            }
-            Rectangle().fill(Brand.citation).frame(width: 48, height: 8).accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(Date.now, format: .dateTime.weekday(.wide).day().month(.wide).year())
-                    .textCase(.none)
-                    .font(.system(.body, design: .serif))
-                    .accessibilityIdentifier("feed-date")
-                HStack(spacing: 6) {
-                    Text("24 h").accessibilityHint("Passages des dernières 24 heures")
-                    Text("·").accessibilityHidden(true)
+        AdaptiveRow {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Le fil").font(.title2.bold()).foregroundStyle(Brand.ink)
+                    .accessibilityAddTraits(.isHeader)
+                HStack(spacing: 4) {
+                    Text("24 h ·").accessibilityHint("Passages des dernières 24 heures")
                     Text(model.visibleItems.count == 1 ? "1 passage" : "\(model.visibleItems.count) passages")
-                }.font(.subheadline)
+                }
+                .font(.footnote).foregroundStyle(Brand.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .foregroundStyle(Brand.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+            if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
+            if usesWideLayout { filtersButton }
+            listenButton
         }
-    }
-
-    private var title: some View {
-        Text("Le fil")
-            .font(.system(size: usesWideLayout ? wideTitleSize : compactTitleSize, weight: .bold, design: .serif))
-            .tracking(-2)
-            .foregroundStyle(Brand.ink)
-            .fixedSize(horizontal: false, vertical: true)
-            .accessibilityAddTraits(.isHeader)
     }
 
     private var filterControls: some View {
         VStack(spacing: 0) {
-            if usesWideLayout {
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .bottom, spacing: 12) {
-                        FeedKindPicker().fixedSize(horizontal: true, vertical: false)
-                        Spacer(minLength: 0)
-                        filtersButton
-                    }
-                    VStack(alignment: .leading, spacing: 8) {
-                        FeedKindPicker()
-                        filtersButton
-                    }
-                }
-            } else { FeedKindPicker() }
-            EditorialRule()
+            FeedKindPicker()
+            AppRule()
         }
+        .background(Brand.background)
     }
 
     private var selectionSummary: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Votre sélection").font(.system(.title3, design: .serif, weight: .semibold))
-                .foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
-            Text(model.filters.summary).font(.body).foregroundStyle(Brand.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(model.filters.summary).font(.subheadline).foregroundStyle(Brand.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button { Task { await model.apply(SearchFilters()) } } label: {
                 Label("Tout afficher", systemImage: "arrow.counterclockwise")
-                    .font(.body.weight(.semibold)).frame(minHeight: 48)
+                    .font(.subheadline.weight(.semibold)).frame(minHeight: 48)
             }
-            .buttonStyle(.plain).foregroundStyle(Brand.blue)
+            .buttonStyle(.plain).foregroundStyle(Brand.primary)
             .accessibilityIdentifier("clear-filters")
-            EditorialRule()
+            AppRule()
         }
-    }
-
-    @ViewBuilder private func passages(inColumns: Bool) -> some View {
-        let items = model.visibleItems
-        if let first = items.first {
-            passage(first, prominent: usesWideLayout && !dynamicType.isAccessibilitySize)
-                .padding(.vertical, 24)
-            EditorialRule()
-            if inColumns {
-                ForEach(Array(stride(from: 1, to: items.count, by: 2)), id: \.self) { index in
-                    HStack(alignment: .top, spacing: 40) {
-                        passage(items[index]).frame(maxWidth: .infinity, alignment: .topLeading)
-                        if index + 1 < items.count {
-                            passage(items[index + 1]).frame(maxWidth: .infinity, alignment: .topLeading)
-                        } else {
-                            Color.clear.frame(maxWidth: .infinity, maxHeight: 0).accessibilityHidden(true)
-                        }
-                    }
-                    .overlay {
-                        if index + 1 < items.count {
-                            Rectangle().fill(Brand.rule).frame(width: 0.5).accessibilityHidden(true)
-                        }
-                    }
-                    .padding(.vertical, 28)
-                    EditorialRule()
-                }
-            } else {
-                ForEach(Array(items.dropFirst())) { item in
-                    passage(item).padding(.vertical, 24)
-                    EditorialRule()
-                }
-            }
-        }
-    }
-
-    private func passage(_ item: FeedItem, prominent: Bool = false) -> some View {
-        NavigationLink { SequenceView(item: item) } label: {
-            FeedCard(item: item, prominent: prominent)
-        }
-        .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
     }
 
     private var filtersButton: some View {
@@ -185,7 +114,7 @@ struct FeedView: View {
                 .padding(.horizontal, 8).frame(minHeight: 48)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain).foregroundStyle(Brand.blue)
+        .buttonStyle(.plain).foregroundStyle(Brand.primary)
         .accessibilityIdentifier("edit-filters")
         .accessibilityValue(hasAudienceFilters ? "Filtres actifs" : "")
     }
@@ -195,10 +124,10 @@ struct FeedView: View {
             Label("Tout écouter", systemImage: "play.fill")
                 .font(.subheadline.weight(.semibold))
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 20).padding(.vertical, 14)
+                .padding(.horizontal, 14).padding(.vertical, 10)
                 .frame(minHeight: 48)
-                .foregroundStyle(Brand.background)
-                .background(Brand.ink, in: Capsule())
+                .foregroundStyle(Brand.primaryForeground)
+                .background(Brand.primary, in: Capsule())
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -211,7 +140,6 @@ struct FeedView: View {
 private struct FeedKindPicker: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
-    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private enum Kind: Int, CaseIterable {
         case all, interventions, citations, tweets
@@ -235,9 +163,10 @@ private struct FeedKindPicker: View {
             if dynamicType.isAccessibilitySize { verticalChoices }
             else {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 0) {
                         ForEach(Kind.allCases, id: \.self) { kind in
                             choice(kind).fixedSize(horizontal: true, vertical: false)
+                                .frame(maxWidth: .infinity)
                         }
                     }
                     verticalChoices
@@ -261,7 +190,7 @@ private struct FeedKindPicker: View {
     }
 
     private func choice(_ kind: Kind) -> some View {
-        EditorialTabButton(title: kind.title, selected: selection == kind, compact: sizeClass != .regular) {
+        AppTabButton(title: kind.title, selected: selection == kind, compact: true) {
             var filters = model.filters
             filters.selectKind(kind.rawValue)
             guard filters != model.filters else { return }

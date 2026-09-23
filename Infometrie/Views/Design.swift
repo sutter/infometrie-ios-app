@@ -1,39 +1,45 @@
 import SwiftUI
 
+/// Minimal Neutral by Luis Llanes (tweakcn), converted from OKLCH to sRGB.
+/// Source tokens: Docs/UX/SocialFeed/minimal-neutral.json.
 enum Brand {
-    static let blue = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.76, green: 0.83, blue: 0.96, alpha: 1)
-            : UIColor(red: 0.07, green: 0.12, blue: 0.21, alpha: 1)
-    })
-    static let citation = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.98, green: 0.60, blue: 0.65, alpha: 1)
-            : UIColor(red: 0.59, green: 0.10, blue: 0.20, alpha: 1)
-    })
-    static let secondary = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.76, green: 0.78, blue: 0.83, alpha: 1)
-            : UIColor(red: 0.30, green: 0.33, blue: 0.39, alpha: 1)
-    })
-    static let background = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.07, green: 0.08, blue: 0.10, alpha: 1)
-            : UIColor(red: 0.995, green: 0.991, blue: 0.977, alpha: 1)
-    })
-    static let ink = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.94, green: 0.94, blue: 0.91, alpha: 1)
-            : UIColor(red: 0.05, green: 0.09, blue: 0.16, alpha: 1)
-    })
-    static let rule = Brand.secondary.opacity(0.28)
+    static let background = color(light: 0xFFFFFF, dark: 0x171717)
+    static let ink = color(light: 0x0A0A0A, dark: 0xFAFAFA)
+    static let primary = color(light: 0x171717, dark: 0xE5E5E5)
+    static let primaryForeground = color(light: 0xFAFAFA, dark: 0x171717)
+    static let secondary = color(light: 0x737373, dark: 0xA1A1A1)
+    static let surface = color(light: 0xEEEEEE, dark: 0x262626)
+    static let input = color(light: 0xF5F5F5, dark: 0x262626)
+    static let selection = color(light: 0xEEEEEE, dark: 0x404040)
+    static let selectionForeground = color(light: 0x171717, dark: 0xFAFAFA)
+    static let rule = color(light: 0xEEEEEE, dark: 0x262626)
+    static let sidebar = color(light: 0xFAFAFA, dark: 0x262626)
+    static let sidebarRule = color(light: 0xE5E5E5, dark: 0x282828)
+    static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
+
+    // The original muted foreground is intended for the page background.
+    // A slightly stronger neutral keeps small labels at 4.5:1 on tinted surfaces.
+    static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
+
+    private static func color(light: UInt32, dark: UInt32) -> Color {
+        Color(uiColor: UIColor { traits in
+            let value = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(
+                red: CGFloat((value >> 16) & 0xFF) / 255,
+                green: CGFloat((value >> 8) & 0xFF) / 255,
+                blue: CGFloat(value & 0xFF) / 255,
+                alpha: 1
+            )
+        })
+    }
 }
 
 struct Wordmark: View {
-    var size: CGFloat = 27
+    var size: CGFloat = 22
     var body: some View {
         Text("InfoMétrie")
-        .font(.system(size: size, weight: .bold, design: .serif))
+        .font(.system(size: size, weight: .bold))
+        .tracking(-0.7)
         .foregroundStyle(Brand.ink)
         .fixedSize(horizontal: true, vertical: false)
         .accessibilityElement(children: .ignore).accessibilityLabel("InfoMétrie")
@@ -51,8 +57,8 @@ struct ActionButtonStyle: ButtonStyle {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 16).padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 52)
-            .foregroundStyle(prominent ? Brand.background : Brand.ink)
-            .background(prominent ? Brand.ink : .clear, in: Capsule())
+            .foregroundStyle(prominent ? Brand.primaryForeground : Brand.ink)
+            .background(prominent ? Brand.primary : .clear, in: Capsule())
             .overlay { if !prominent { Capsule().strokeBorder(Brand.rule) } }
             .contentShape(Capsule())
             .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.45)
@@ -83,17 +89,18 @@ struct KindBadge: View {
 /// The API names embedded logos; unknown keys retain a readable media identity.
 struct ChannelMark: View {
     let item: FeedItem
+    var size: CGFloat = 20
     var body: some View {
         Group {
             if let name = item.channelLogoAsset, let logo = UIImage(named: name) {
                 Image(uiImage: logo).resizable().scaledToFit()
             } else if item.isTweet || item.media.lowercased() == "x" || item.channelKey.lowercased() == "x" {
-                Text("𝕏").font(.system(size: 20, weight: .semibold, design: .monospaced))
+                Text("𝕏").font(.system(size: size * 0.75, weight: .semibold, design: .monospaced))
             } else {
                 Image(systemName: item.media.lowercased() == "tv" ? "tv" : item.media.lowercased() == "radio" ? "radio" : "newspaper")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: size * 0.8, weight: .medium))
             }
-        }.frame(width: 24, height: 24).foregroundStyle(Brand.citation).accessibilityHidden(true)
+        }.frame(width: size, height: size).foregroundStyle(Brand.primary).accessibilityHidden(true)
     }
 }
 
@@ -102,9 +109,9 @@ struct PersonAvatar: View {
     var size: CGFloat = 42
     var body: some View {
         Text(item.initials).font(.system(size: size * 0.32, weight: .semibold))
-            .foregroundStyle(Brand.citation)
+            .foregroundStyle(Brand.primary)
             .frame(width: size, height: size)
-            .background(Brand.citation.opacity(0.07), in: Circle())
+            .background(Brand.surface, in: Circle())
             .accessibilityHidden(true)
     }
 }
@@ -127,42 +134,36 @@ struct DemoBanner: View {
     }
 }
 
-enum EditorialLayout {
-    static let maximumWidth: CGFloat = 1040
+enum AppLayout {
+    static let maximumWidth: CGFloat = 1100
     static let readingWidth: CGFloat = 760
-    static let wideMargin: CGFloat = 36
+    static let wideMargin: CGFloat = 24
 }
 
-struct EditorialPageHeading: View {
+struct PageHeading: View {
     let title: String
     var subtitle: String?
-    @Environment(\.horizontalSizeClass) private var sizeClass
-    @ScaledMetric(relativeTo: .largeTitle) private var compactSize = 40.0
-    @ScaledMetric(relativeTo: .largeTitle) private var wideSize = 56.0
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.system(size: sizeClass == .regular ? wideSize : compactSize, weight: .bold, design: .serif))
-                .tracking(-0.6).foregroundStyle(Brand.ink)
+                .font(.title2.bold()).foregroundStyle(Brand.ink)
                 .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
-            Rectangle().fill(Brand.citation).frame(width: 40, height: 5).accessibilityHidden(true)
             if let subtitle {
-                Text(subtitle).font(.body).foregroundStyle(Brand.secondary)
+                Text(subtitle).font(.subheadline).foregroundStyle(Brand.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-struct EditorialSection<Content: View>: View {
+struct AppSection<Content: View>: View {
     let title: String
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            EditorialRule()
-            Text(title).font(.system(.title2, design: .serif, weight: .semibold))
+        VStack(alignment: .leading, spacing: 12) {
+            AppRule()
+            Text(title).font(.headline)
                 .foregroundStyle(Brand.ink).fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             content()
@@ -170,15 +171,15 @@ struct EditorialSection<Content: View>: View {
     }
 }
 
-struct EditorialEmptyState: View {
+struct AppEmptyState: View {
     let title: String
     let icon: String
     let message: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Image(systemName: icon).font(.title2).foregroundStyle(Brand.citation).accessibilityHidden(true)
-            Text(title).font(.system(.title2, design: .serif, weight: .semibold))
+            Image(systemName: icon).font(.title2).foregroundStyle(Brand.primary).accessibilityHidden(true)
+            Text(title).font(.title3.bold())
                 .foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
             Text(message).font(.body).foregroundStyle(Brand.secondary)
         }
@@ -187,14 +188,14 @@ struct EditorialEmptyState: View {
     }
 }
 
-/// Retain native back and dismissal controls, with the same paper and serif as the pages.
-private struct EditorialNavigationTitle: ViewModifier {
+/// Keep native navigation controls and a consistent title across sheets and details.
+private struct AppNavigationTitle: ViewModifier {
     let title: String
     func body(content: Content) -> some View {
         content.navigationTitle(title).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text(title).font(.system(.headline, design: .serif, weight: .semibold))
+                    Text(title).font(.headline)
                         .foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
                 }
             }
@@ -203,27 +204,27 @@ private struct EditorialNavigationTitle: ViewModifier {
 }
 
 extension View {
-    func editorialNavigationTitle(_ title: String) -> some View {
-        modifier(EditorialNavigationTitle(title: title))
+    func appNavigationTitle(_ title: String) -> some View {
+        modifier(AppNavigationTitle(title: title))
     }
 
-    func editorialInput() -> some View {
-        background(Brand.secondary.opacity(0.035), in: RoundedRectangle(cornerRadius: 6))
-            .overlay(alignment: .bottom) { Rectangle().fill(Brand.secondary.opacity(0.5)).frame(height: 1) }
+    func appInput() -> some View {
+        background(Brand.input, in: RoundedRectangle(cornerRadius: 12))
+            .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(Brand.rule) }
     }
 }
 
-struct EditorialRule: View {
+struct AppRule: View {
     var body: some View {
         Rectangle().fill(Brand.rule).frame(height: 0.5).accessibilityHidden(true)
     }
 }
 
 /// A visible underline and a selected trait make the state independent of color.
-struct EditorialTabButton: View {
+struct AppTabButton: View {
     let title: String
     let selected: Bool
-    var accent: Color = Brand.ink
+    var accent: Color = Brand.primary
     var compact = false
     let action: () -> Void
 
@@ -236,7 +237,7 @@ struct EditorialTabButton: View {
                 .padding(.horizontal, compact ? 8 : 12).padding(.vertical, 12)
                 .frame(minWidth: 44, minHeight: 48)
                 .overlay(alignment: .bottom) {
-                    if selected { Rectangle().fill(accent).frame(height: 3) }
+                    if selected { Capsule().fill(accent).frame(height: 3) }
                 }
                 .contentShape(Rectangle())
         }
@@ -254,8 +255,8 @@ struct ErrorNotice: View {
                 .foregroundStyle(Brand.ink).fixedSize(horizontal: false, vertical: true)
             if let retry { Button("Réessayer", action: retry).buttonStyle(ActionButtonStyle()) }
         }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Brand.citation.opacity(0.05))
-            .overlay(alignment: .leading) { Rectangle().fill(Brand.citation).frame(width: 3) }
+            .background(Brand.surface)
+            .overlay(alignment: .leading) { Rectangle().fill(Brand.destructive).frame(width: 3) }
             .accessibilityElement(children: .contain)
     }
 }

@@ -12,36 +12,36 @@ struct LoginView: View {
         @Bindable var model = model
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 20) {
                     Wordmark(size: 32).padding(.top, 25)
-                    EditorialPageHeading(title: "Connectez-vous", subtitle: "Retrouvez votre fil et écoutez les passages qui vous intéressent.")
-                    EditorialRule()
+                    PageHeading(title: "Connectez-vous", subtitle: "Retrouvez votre fil et écoutez les passages qui vous intéressent.")
+                    AppRule()
                     VStack(alignment: .leading, spacing: 18) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Email").font(.body.weight(.medium))
-                            TextField("Email", text: $model.email, prompt: Text(verbatim: "vous@organisation.fr").foregroundStyle(Brand.secondary))
+                            TextField("Email", text: $model.email, prompt: Text(verbatim: "vous@organisation.fr").foregroundStyle(Brand.secondaryOnSurface))
                                 .textContentType(.username).keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never).autocorrectionDisabled()
                                 .focused($focused, equals: .email).submitLabel(.next).onSubmit { focused = .password }
-                                .padding(15).editorialInput()
+                                .padding(15).appInput()
                                 .accessibilityIdentifier("login-email")
                         }
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Mot de passe").font(.body.weight(.medium))
                             HStack {
                                 Group {
-                                    if showPassword { TextField("Mot de passe", text: $password, prompt: Text("Votre mot de passe").foregroundStyle(Brand.secondary)) }
-                                    else { SecureField("Mot de passe", text: $password, prompt: Text("Votre mot de passe").foregroundStyle(Brand.secondary)) }
+                                    if showPassword { TextField("Mot de passe", text: $password, prompt: Text("Votre mot de passe").foregroundStyle(Brand.secondaryOnSurface)) }
+                                    else { SecureField("Mot de passe", text: $password, prompt: Text("Votre mot de passe").foregroundStyle(Brand.secondaryOnSurface)) }
                                 }.textContentType(.password).textInputAutocapitalization(.never).autocorrectionDisabled().focused($focused, equals: .password)
                                     .submitLabel(.go).onSubmit { signIn() }.accessibilityIdentifier("login-password")
-                                Button { showPassword.toggle() } label: { Image(systemName: showPassword ? "eye.slash" : "eye").foregroundStyle(Brand.blue).frame(width: 52, height: 52).contentShape(Rectangle()) }
+                                Button { showPassword.toggle() } label: { Image(systemName: showPassword ? "eye.slash" : "eye").foregroundStyle(Brand.primary).frame(width: 52, height: 52).contentShape(Rectangle()) }
                                     .accessibilityLabel(showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe")
-                            }.padding(.leading, 15).padding(.trailing, 4).editorialInput()
+                            }.padding(.leading, 15).padding(.trailing, 4).appInput()
                         }
                         if let error = model.loginError { ErrorNotice(message: error).accessibilityIdentifier("login-error") }
                         Button(action: signIn) {
                             HStack {
-                                if model.isLoggingIn { ProgressView().tint(Brand.background) }
+                                if model.isLoggingIn { ProgressView().tint(Brand.primaryForeground) }
                                 Text(model.isLoggingIn ? "Connexion…" : "Se connecter").fontWeight(.semibold)
                                 if !model.isLoggingIn { Image(systemName: "arrow.right") }
                             }.frame(maxWidth: .infinity)
@@ -65,7 +65,7 @@ struct LoginView: View {
             .sheet(item: $model.quota) { quota in
                 NavigationStack {
                     List {
-                        EditorialPageHeading(title: "Vos appareils").padding(.vertical, 20)
+                        PageHeading(title: "Vos appareils").padding(.vertical, 20)
                             .listRowBackground(Color.clear).listRowSeparator(.hidden)
                         Section {
                             Text("Votre compte autorise \(quota.maximum) appareils. Choisissez celui que vous souhaitez remplacer pour vous connecter ici. L’appareil remplacé sera déconnecté.")
@@ -83,13 +83,13 @@ struct LoginView: View {
                             }
                             if quota.devices.isEmpty { Text("Gérez vos appareils sur le portail web InfoMétrie.").foregroundStyle(Brand.secondary) }
                         } header: {
-                            Text("Appareils autorisés").font(.system(.title2, design: .serif, weight: .semibold))
+                            Text("Appareils autorisés").font(.headline)
                                 .foregroundStyle(Brand.ink).textCase(nil)
                         }
                         .listRowBackground(Color.clear)
                     }
                     .listStyle(.plain).scrollContentBackground(.hidden).background(Brand.background)
-                    .editorialNavigationTitle("Limite d’appareils")
+                    .appNavigationTitle("Limite d’appareils")
                     .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Annuler") { model.quota = nil } } }
                     .confirmationDialog("Remplacer cet appareil ?", isPresented: Binding(get: { selectedDevice != nil }, set: { if !$0 { selectedDevice = nil } }), titleVisibility: .visible) {
                         Button("Remplacer cet appareil", role: .destructive) {

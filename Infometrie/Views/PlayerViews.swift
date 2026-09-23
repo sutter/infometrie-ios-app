@@ -26,8 +26,8 @@ struct SequenceView: View {
                 } else if let detail = displayDetail {
                     if displayItem.isTweet {
                         if !detail.verbatim.isEmpty && detail.verbatim != displayItem.title {
-                            EditorialSection(title: "La publication") {
-                                Text(detail.verbatim).font(.system(.body, design: .serif)).lineSpacing(7)
+                            AppSection(title: "La publication") {
+                                Text(detail.verbatim).font(.body).lineSpacing(3)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .accessibilityIdentifier("publication-text")
                             }
@@ -44,7 +44,7 @@ struct SequenceView: View {
                     } else { Text("Le texte n’est pas disponible pour ce passage.").foregroundStyle(Brand.secondary) }
                     if !displayItem.isTweet && !detail.resume.isEmpty {
                         SequenceDisclosure(title: "Lire le résumé", icon: "text.alignleft") {
-                            Text(detail.resume).font(.system(.body, design: .serif)).lineSpacing(6)
+                            Text(detail.resume).font(.body).lineSpacing(3)
                                 .fixedSize(horizontal: false, vertical: true)
                         }.accessibilityIdentifier("sequence-summary")
                     }
@@ -60,7 +60,7 @@ struct SequenceView: View {
                     }.font(.subheadline).foregroundStyle(Brand.secondary)
                 }.accessibilityIdentifier("sequence-context")
                 if model.isDemo { DemoBanner() }
-            }.padding(20).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
+            }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if displayItem.isTweet, let url = displayItem.publicationURL {
@@ -68,8 +68,8 @@ struct SequenceView: View {
                     .buttonStyle(ActionButtonStyle(prominent: true))
                     .accessibilityIdentifier("open-publication")
                     .accessibilityHint("Ouvre la publication dans X ou votre navigateur")
-                    .padding(16).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
-                    .background(Brand.background).overlay(alignment: .top) { EditorialRule() }
+                    .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+                    .background(Brand.background).overlay(alignment: .top) { AppRule() }
             } else if displayItem.canPlay {
                 if isCurrent { PlaybackDock() }
                 else {
@@ -83,14 +83,14 @@ struct SequenceView: View {
                             }
                         }
                     }.buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("play-sequence")
-                        .padding(16).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.background)
-                        .overlay(alignment: .top) { EditorialRule() }
+                        .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.background)
+                        .overlay(alignment: .top) { AppRule() }
                 }
             }
         }
         .scrollEdgeEffectHidden(true, for: .bottom)
         .scrollEdgeEffectStyle(.hard, for: .top)
-        .background(Brand.background).editorialNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
+        .background(Brand.background).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
         .toolbar(.hidden, for: .tabBar)
         .task(id: reload) {
             do { detail = try await model.sequence(item) }
@@ -113,15 +113,15 @@ private struct SequenceDisclosure<Content: View>: View {
             HStack(spacing: 12) {
                 Image(systemName: icon).font(.system(size: 16, weight: .medium))
                     .frame(width: 32, height: 32)
-                    .foregroundStyle(Brand.citation)
+                    .foregroundStyle(Brand.primary)
                     .accessibilityHidden(true)
-                Text(title).font(.system(.title3, design: .serif, weight: .semibold))
+                Text(title).font(.headline)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .foregroundStyle(Brand.blue).frame(minHeight: 56).padding(.vertical, 4)
+            .foregroundStyle(Brand.primary).frame(minHeight: 56).padding(.vertical, 4)
         }
-        .tint(Brand.citation)
-        .overlay(alignment: .top) { EditorialRule() }
+        .tint(Brand.primary)
+        .overlay(alignment: .top) { AppRule() }
     }
 }
 
@@ -160,8 +160,8 @@ struct PlaybackDock: View {
             }
         }
         .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
-        .frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
-        .background(Brand.background).overlay(alignment: .top) { EditorialRule() }
+        .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+        .background(Brand.background).overlay(alignment: .top) { AppRule() }
     }
     private var playButton: some View {
         Button { playback.toggle() } label: {
@@ -176,7 +176,7 @@ struct PlaybackDock: View {
                 .font(.title2).frame(minWidth: 52, maxWidth: dynamicType.isAccessibilitySize ? .infinity : 60, minHeight: 56)
                 .overlay { Capsule().strokeBorder(Brand.rule) }
                 .contentShape(Rectangle())
-        }.buttonStyle(.plain).foregroundStyle(Brand.blue)
+        }.buttonStyle(.plain).foregroundStyle(Brand.primary)
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityLabel(forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes")
     }
@@ -213,32 +213,32 @@ struct PodcastView: View {
                             model.player.seekToWord(word, sequenceID: detail.id)
                         }.id(detail.id)
                     }
-                    EditorialSection(title: "Tous les passages") {
+                    AppSection(title: "Tous les passages") {
                         Text("Du plus ancien au plus récent").font(.subheadline).foregroundStyle(Brand.secondary)
                         ForEach(Array(model.player.queue.enumerated()), id: \.element.id) { index, item in
                             Button { model.player.select(index) } label: {
                                 HStack(spacing: 14) {
                                     Image(systemName: index == model.player.index ? "speaker.wave.2.fill" : "play.circle")
-                                        .foregroundStyle(Brand.citation).font(.title2).accessibilityHidden(true)
+                                        .foregroundStyle(Brand.primary).font(.title2).accessibilityHidden(true)
                                     VStack(alignment: .leading, spacing: 6) {
-                                        Text(item.person).font(.headline).foregroundStyle(.primary)
-                                        Text(item.title).font(.system(.title3, design: .serif, weight: .medium)).foregroundStyle(Brand.ink)
-                                        Text(item.durationLabel).font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
+                                        Text(item.person).font(.headline).foregroundStyle(Brand.ink)
+                                        Text(item.title).font(.body).foregroundStyle(Brand.ink)
+                                        Text(item.durationLabel).font(.subheadline.monospacedDigit()).foregroundStyle(index == model.player.index ? Brand.secondaryOnSurface : Brand.secondary)
                                     }
-                                }.padding(.vertical, 18).padding(.horizontal, 12)
+                                }.padding(.vertical, 12).padding(.horizontal, 12)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(index == model.player.index ? Brand.citation.opacity(0.05) : .clear)
-                                    .overlay(alignment: .bottom) { EditorialRule() }
+                                    .background(index == model.player.index ? Brand.selection : .clear)
+                                    .overlay(alignment: .bottom) { AppRule() }
                                     .contentShape(Rectangle())
                             }.buttonStyle(.plain).accessibilityIdentifier("queue-item-\(index)")
                                 .accessibilityAddTraits(index == model.player.index ? .isSelected : [])
                         }
                     }
                     if model.isDemo { DemoBanner() }
-                }.padding(20).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
+                }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock() }
-            .background(Brand.background).editorialNavigationTitle("Tout écouter")
+            .background(Brand.background).appNavigationTitle("Tout écouter")
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fermer") { model.player.stop() }.accessibilityIdentifier("close-podcast") } }
         }.presentationDragIndicator(.visible)
     }

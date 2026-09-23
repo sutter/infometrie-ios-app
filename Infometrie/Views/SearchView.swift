@@ -10,9 +10,9 @@ struct SearchView: View {
     var body: some View {
         @Bindable var model = model
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                EditorialPageHeading(title: "Filtrer", subtitle: "Composez le fil qui vous intéresse.")
-                EditorialSection(title: "Qui suivre ?") {
+            VStack(alignment: .leading, spacing: 20) {
+                PageHeading(title: "Filtrer", subtitle: "Composez le fil qui vous intéresse.")
+                AppSection(title: "Qui suivre ?") {
                     VStack(spacing: 0) {
                         NavigationLink {
                             ChoicePicker(title: "Personnalités", allTitle: "Toutes les personnalités", choices: model.persons.map {
@@ -21,7 +21,7 @@ struct SearchView: View {
                         } label: {
                             FilterSelectionRow(title: "Personnalités", icon: "person.2", summary: model.draft.persons.isEmpty ? "Toutes" : model.draft.persons.sorted().joined(separator: ", "), isSelected: !model.draft.persons.isEmpty)
                         }.accessibilityIdentifier("pick-persons")
-                        Divider().padding(.horizontal, 20)
+                        AppRule().padding(.horizontal, 20)
                         NavigationLink {
                             ChoicePicker(title: "Partis politiques", allTitle: "Tous les partis", choices: model.parties.map {
                                 .init(value: $0.code, title: $0.name, subtitle: $0.code)
@@ -31,33 +31,33 @@ struct SearchView: View {
                         }.accessibilityIdentifier("pick-parties")
                         if !model.draft.persons.isEmpty && !model.draft.parties.isEmpty {
                             Text("Seules les personnalités choisies appartenant aux partis sélectionnés seront affichées.")
-                                .font(.footnote).foregroundStyle(Brand.secondary)
+                                .font(.footnote).foregroundStyle(Brand.secondaryOnSurface)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Brand.blue.opacity(0.04))
+                                .background(Brand.surface)
                         }
-                    }.buttonStyle(.plain).overlay(alignment: .bottom) { EditorialRule() }
+                    }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }
                 }
 
-                EditorialSection(title: "Quels contenus ?") {
+                AppSection(title: "Quels contenus ?") {
                     VStack(spacing: 0) {
                         if kind == nil {
                             FilterChoiceRow(title: model.draft.kindSummary, subtitle: "Types conservés dans ce suivi", selected: true, multiple: false)
                                 .accessibilityAddTraits(.isSelected)
-                            Divider().padding(.horizontal, 20)
+                            AppRule().padding(.horizontal, 20)
                         }
                         ForEach(Array(passageKinds.enumerated()), id: \.offset) { index, option in
-                            if index > 0 { Divider().padding(.horizontal, 20) }
+                            if index > 0 { AppRule().padding(.horizontal, 20) }
                             Button {
                                 model.draft.selectKind(index)
                             } label: {
-                                FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false, accent: Brand.citation)
+                                FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false, accent: Brand.primary)
                             }
                             .buttonStyle(.plain)
                             .accessibilityAddTraits(kind == index ? .isSelected : [])
                             .accessibilityIdentifier("filter-kind-\(index)")
                         }
-                    }.overlay(alignment: .bottom) { EditorialRule() }
+                    }.overlay(alignment: .bottom) { AppRule() }
                 }
 
                 if let error = model.choicesError {
@@ -65,17 +65,17 @@ struct SearchView: View {
                 }
                 Button { name = ""; saved = false; showSave = true } label: {
                     FilterSelectionRow(title: "Enregistrer ce suivi", icon: "bookmark", summary: "Retrouvez ces filtres dans « Mes suivis ».", isSelected: false)
-                }.buttonStyle(.plain).overlay(alignment: .bottom) { EditorialRule() }.accessibilityIdentifier("save-search")
+                }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }.accessibilityIdentifier("save-search")
                 Button { model.draft = SearchFilters() } label: {
                     Label("Réinitialiser les filtres", systemImage: "arrow.counterclockwise")
                         .font(.body.weight(.medium)).frame(maxWidth: .infinity, minHeight: 52)
                         .fixedSize(horizontal: false, vertical: true).contentShape(Rectangle())
-                }.buttonStyle(.plain).foregroundStyle(Brand.blue).accessibilityIdentifier("reset-search")
-            }.padding(20).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
+                }.buttonStyle(.plain).foregroundStyle(Brand.primary).accessibilityIdentifier("reset-search")
+            }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .background(Brand.background)
         .scrollEdgeEffectHidden(true, for: .bottom).scrollEdgeEffectStyle(.hard, for: .top)
-        .editorialNavigationTitle("Filtrer le fil")
+        .appNavigationTitle("Filtrer le fil")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Annuler") { model.isSearchPresented = false } }
         }
@@ -90,34 +90,34 @@ struct SearchView: View {
         }) {
             NavigationStack {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 28) {
-                        EditorialPageHeading(title: "Nouveau suivi")
-                        EditorialSection(title: "Donnez-lui un nom") {
+                    VStack(alignment: .leading, spacing: 20) {
+                        PageHeading(title: "Nouveau suivi")
+                        AppSection(title: "Donnez-lui un nom") {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Nom du suivi").font(.headline)
-                                TextField("Nom du suivi", text: $name, prompt: Text("Ex. Ma veille politique").foregroundStyle(Brand.secondary))
+                                TextField("Nom du suivi", text: $name, prompt: Text("Ex. Ma veille politique").foregroundStyle(Brand.secondaryOnSurface))
                                     .font(.body).autocorrectionDisabled().submitLabel(.done)
                                     .onSubmit { save() }.accessibilityIdentifier("search-name")
-                                    .padding(16).editorialInput()
+                                    .padding(16).appInput()
                                 Text("Vous le retrouverez dans « Mes suivis ».")
                                     .font(.subheadline).foregroundStyle(Brand.secondary)
                             }
                         }
-                        EditorialSection(title: "Les filtres de ce suivi") {
+                        AppSection(title: "Les filtres de ce suivi") {
                             VStack(alignment: .leading, spacing: 16) {
                                 recap("Personnalités", value: model.draft.persons.isEmpty ? "Toutes" : model.draft.persons.sorted().joined(separator: ", "))
-                                Divider()
+                                AppRule()
                                 recap("Partis politiques", value: model.draft.parties.isEmpty ? "Tous" : partyNames(model.draft.parties, in: model.parties))
-                                Divider()
+                                AppRule()
                                 recap("Contenus", value: model.draft.kindSummary)
                             }.frame(maxWidth: .infinity, alignment: .leading)
                         }
-                    }.padding(20).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
+                    }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                 }
                 .background(Brand.background)
                 .scrollDismissesKeyboard(.interactively)
                 .scrollEdgeEffectHidden(true, for: .bottom).scrollEdgeEffectStyle(.hard, for: .top)
-                .editorialNavigationTitle("Enregistrer un suivi")
+                .appNavigationTitle("Enregistrer un suivi")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Annuler") { showSave = false } } }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     FilterFooter {
@@ -164,31 +164,31 @@ struct ChoicePicker: View {
     }
     var body: some View {
         List {
-            EditorialPageHeading(title: title)
+            PageHeading(title: title)
                 .padding(.vertical, 20)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                 .listRowBackground(Color.clear).listRowSeparator(.hidden)
             Button { selected.removeAll() } label: {
                 FilterChoiceRow(title: allTitle, subtitle: "Sans restriction", selected: selected.isEmpty, multiple: false)
-            }.buttonStyle(.plain).overlay(alignment: .bottom) { EditorialRule() }
+            }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }
                 .accessibilityAddTraits(selected.isEmpty ? .isSelected : [])
                 .accessibilityIdentifier("clear-choices")
                 .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 20, trailing: 20))
                 .listRowBackground(Color.clear).listRowSeparator(.hidden)
             if choices.isEmpty {
                 VStack(alignment: .leading, spacing: 16) {
-                    EditorialEmptyState(title: "Liste indisponible", icon: "person.crop.circle.badge.questionmark", message: model.choicesError ?? "La liste est vide.")
+                    AppEmptyState(title: "Liste indisponible", icon: "person.crop.circle.badge.questionmark", message: model.choicesError ?? "La liste est vide.")
                     Button("Réessayer") { Task { await model.loadChoices() } }.buttonStyle(ActionButtonStyle())
                 }.listRowBackground(Color.clear).listRowSeparator(.hidden)
             } else if filtered.isEmpty {
-                EditorialEmptyState(title: "Aucun résultat", icon: "magnifyingglass", message: "Aucun nom ne correspond à « \(query) ».").listRowBackground(Color.clear).listRowSeparator(.hidden)
+                AppEmptyState(title: "Aucun résultat", icon: "magnifyingglass", message: "Aucun nom ne correspond à « \(query) ».").listRowBackground(Color.clear).listRowSeparator(.hidden)
             }
             ForEach(filtered) { choice in
                 Button {
                     if selected.contains(choice.value) { selected.remove(choice.value) } else { selected.insert(choice.value) }
                 } label: {
                     FilterChoiceRow(title: choice.title, subtitle: choice.subtitle, selected: selected.contains(choice.value), multiple: true)
-                }.buttonStyle(.plain).overlay(alignment: .bottom) { EditorialRule() }
+                }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }
                     .accessibilityAddTraits(selected.contains(choice.value) ? .isSelected : [])
                     .accessibilityIdentifier("choice-\(choice.value)")
                     .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 12, trailing: 20))
@@ -197,7 +197,7 @@ struct ChoicePicker: View {
         }
         .listStyle(.plain).scrollContentBackground(.hidden).background(Brand.background)
         .scrollEdgeEffectHidden(true, for: .bottom).scrollEdgeEffectStyle(.hard, for: .top)
-        .editorialNavigationTitle(title)
+        .appNavigationTitle(title)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Rechercher un nom")
         .safeAreaInset(edge: .bottom, spacing: 0) {
             FilterFooter {
@@ -230,17 +230,17 @@ private struct FilterSelectionRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon).font(.system(size: 17, weight: .medium))
-                .foregroundStyle(Brand.citation).frame(width: 34, height: 34)
+                .foregroundStyle(Brand.primary).frame(width: 34, height: 34)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
                 Text(title).font(.body.weight(.semibold)).foregroundStyle(Brand.ink)
-                Text(summary).font(.subheadline).foregroundStyle(isSelected ? Brand.blue : Brand.secondary)
+                Text(summary).font(.subheadline).foregroundStyle(isSelected ? Brand.selectionForeground : Brand.secondary)
             }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Brand.secondary).accessibilityHidden(true)
         }
         .padding(16).frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .background(isSelected ? Brand.blue.opacity(0.04) : .clear)
+        .background(isSelected ? Brand.selection : .clear)
         .contentShape(Rectangle())
     }
 }
@@ -250,18 +250,18 @@ private struct FilterChoiceRow: View {
     let subtitle: String
     let selected: Bool
     let multiple: Bool
-    var accent: Color = Brand.citation
+    var accent: Color = Brand.primary
     var body: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.body.weight(.semibold)).foregroundStyle(Brand.ink)
-                if !subtitle.isEmpty { Text(subtitle).font(.subheadline).foregroundStyle(Brand.secondary) }
+                if !subtitle.isEmpty { Text(subtitle).font(.subheadline).foregroundStyle(selected ? Brand.secondaryOnSurface : Brand.secondary) }
             }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: selected ? (multiple ? "checkmark.square.fill" : "checkmark.circle.fill") : (multiple ? "square" : "circle"))
                 .font(.title3).foregroundStyle(accent).accessibilityHidden(true)
         }
         .padding(16).frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .background(selected ? accent.opacity(0.07) : .clear)
+        .background(selected ? Brand.selection : .clear)
         .contentShape(Rectangle())
     }
 }
@@ -270,7 +270,7 @@ private struct FilterFooter<Content: View>: View {
     @ViewBuilder var content: () -> Content
     var body: some View {
         VStack(alignment: .leading, spacing: 10, content: content)
-            .padding(16).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
-            .background(Brand.background).overlay(alignment: .top) { EditorialRule() }
+            .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+            .background(Brand.background).overlay(alignment: .top) { AppRule() }
     }
 }

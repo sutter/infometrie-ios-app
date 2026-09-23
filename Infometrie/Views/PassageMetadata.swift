@@ -10,7 +10,7 @@ struct PassageSource: View {
             HStack(spacing: 8) {
                 ChannelMark(item: item)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Brand.citation)
+                    .foregroundStyle(Brand.primary)
                     .frame(width: 30, height: 30)
                     .accessibilityHidden(true)
                 Text(item.channel)
@@ -39,8 +39,8 @@ struct PassageByline: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            PersonAvatar(item: item, size: 52)
+        HStack(alignment: .top, spacing: 12) {
+            PersonAvatar(item: item, size: 44)
             VStack(alignment: .leading, spacing: 5) {
                 Text(item.person).font(.headline).foregroundStyle(Brand.ink)
                 if !details.isEmpty { Text(details).font(.subheadline).foregroundStyle(Brand.secondary) }
@@ -52,19 +52,16 @@ struct PassageByline: View {
 struct PassageHeading: View {
     let item: FeedItem
     let titleIdentifier: String
-    @Environment(\.horizontalSizeClass) private var sizeClass
-    @ScaledMetric(relativeTo: .title) private var compactSize = 30.0
-    @ScaledMetric(relativeTo: .title) private var wideSize = 40.0
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 16) {
             PassageByline(item: item)
             Text(item.title)
-                .font(.system(size: sizeClass == .regular ? wideSize : compactSize, weight: .semibold, design: .serif))
-                .tracking(-0.4).foregroundStyle(Brand.ink).lineSpacing(3)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Brand.ink)
                 .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(titleIdentifier)
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 PassageSource(item: item)
                 AdaptiveRow {
                     KindBadge(item: item)
@@ -80,7 +77,7 @@ struct PassageHeading: View {
 }
 
 extension FeedItem {
-    var kindColor: Color { isCitation ? Brand.citation : Brand.blue }
+    var kindColor: Color { Brand.primary }
     var kindSymbol: String { isTweet ? "text.bubble" : isCitation ? "quote.bubble" : kind == "intervention" ? "waveform" : "doc.text" }
 
     var readableDuration: String {

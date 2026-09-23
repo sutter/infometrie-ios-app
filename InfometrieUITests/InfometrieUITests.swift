@@ -475,6 +475,12 @@ final class InfometrieUITests: XCTestCase {
             navigationButton("Mes suivis", in: app).tap()
             capture("20-suivis-\(suffix)", app: app)
             navigationButton("Compte", in: app).tap()
+            if largeText, app.buttons["navigation-account"].exists {
+                let accountTab = app.buttons["navigation-account"]
+                XCTAssertGreaterThanOrEqual(accountTab.frame.minX, app.frame.minX)
+                XCTAssertLessThanOrEqual(accountTab.frame.maxX, app.frame.maxX,
+                                        "La rubrique active doit rester entièrement visible en grand texte")
+            }
             capture("20-compte-\(suffix)", app: app)
             let appearance = app.buttons["appearance-picker"]
             reveal(appearance, in: app, down: false)
@@ -513,7 +519,7 @@ final class InfometrieUITests: XCTestCase {
     }
 
     @MainActor
-    func testEditorialNavigationPreservesFeedSelection() {
+    func testMainNavigationPreservesFeedSelection() {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--demo", "--reset-demo", "-appearance", "light"]
         app.launch()
@@ -542,7 +548,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
         XCTAssertTrue(citations.isSelected)
-        capture("19-navigation-editoriale", app: app)
+        capture("19-navigation-principale", app: app)
     }
 
     @MainActor
@@ -781,14 +787,21 @@ final class InfometrieUITests: XCTestCase {
             // including at the largest accessibility size, where it is taller.
             let bounds = app.frame
             let navigationBottom = app.navigationBars.allElementsBoundByIndex.map { $0.frame.maxY }.max()
-            let top = navigationBottom.map { $0 + 12 } ?? (bounds.minY + 100)
+            let mainNavigation = app.otherElements["primary-navigation"]
+            let navigationTop = mainNavigation.exists
+                ? (mainNavigation.frame.height > mainNavigation.frame.width ? mainNavigation.frame.minY : mainNavigation.frame.maxY)
+                : bounds.minY + 88
+            let top = navigationBottom.map { $0 + 12 } ?? (navigationTop + 12)
             // List creates offscreen rows lazily. Reading their identifier before
             // they exist causes XCTest to fail instead of scrolling to the row.
             let identifier = element.exists ? element.identifier : ""
             // The compact type row begins 8pt below the native navigation bar.
             // It is fully visible there; do not keep pulling to refresh in an
             // attempt to create the larger gap used by scrolling body controls.
-            let controlTop = identifier.hasPrefix("feed-kind-") ? top - 8 : top
+            let picker = app.otherElements["feed-kind-picker"]
+            let contentTop = identifier.hasPrefix("feed-item-") && picker.exists && picker.isHittable
+                ? max(top, picker.frame.maxY + 8) : top
+            let controlTop = identifier.hasPrefix("feed-kind-") ? top - 8 : contentTop
             let slider = app.sliders["player-position"]
             let filterFooter = ["confirm-save-search", "confirm-choices", "apply-search"].map { app.buttons[$0] }.first { $0.exists && $0.isHittable }
             let choiceCount = app.staticTexts["choice-count"]
@@ -800,14 +813,14 @@ final class InfometrieUITests: XCTestCase {
             if element.exists && element.isHittable {
                 let contentControl = ["sequence-summary", "sequence-context", "transcript-follow"].contains(identifier)
                     || ["save-search", "reset-search", "clear-choices", "start-podcast"].contains(identifier)
-                    || ["filter-kind-", "feed-kind-", "choice-", "pick-"].contains { identifier.hasPrefix($0) }
+                    || ["filter-kind-", "feed-kind-", "feed-item-", "choice-", "pick-"].contains { identifier.hasPrefix($0) }
                 if element.elementType != .link && !contentControl { return }
                 // A large-text choice can be taller than the viewport. Its center
                 // remains a valid tap target when it lies above the fixed footer.
                 if contentControl, element.frame.height > bottom - top,
                    element.frame.midY >= top, element.frame.midY <= bottom { return }
-                // XCTest may report content controls as hittable underneath the
-                // dock. Expose the complete word or disclosure/follow control.
+                // XCTest may report cards and controls as hittable underneath
+                // navigation or the dock. Bring their tap target into the content.
                 if element.frame.minY >= controlTop && element.frame.maxY <= bottom { return }
             }
             let upper = top + (bottom - top) * 0.15
@@ -832,14 +845,19 @@ final class InfometrieUITests: XCTestCase {
         var covered: [String] = []
         let tabBar = app.tabBars.firstMatch
         let navigationBar = app.navigationBars.firstMatch
-        let editorialNavigation = app.otherElements["primary-navigation"]
-        let top = editorialNavigation.exists ? editorialNavigation.frame.maxY : (navigationBar.exists ? navigationBar.frame.maxY : app.frame.minY)
+        let mainNavigation = app.otherElements["primary-navigation"]
+        let sidebar = mainNavigation.exists && mainNavigation.frame.height > mainNavigation.frame.width
+        let navigationTop = mainNavigation.exists && !sidebar ? mainNavigation.frame.maxY : (navigationBar.exists ? navigationBar.frame.maxY : app.frame.minY)
+        let picker = app.otherElements["feed-kind-picker"]
+        let top = picker.exists && picker.isHittable ? max(navigationTop, picker.frame.maxY) : navigationTop
         let bottom = tabBar.exists ? tabBar.frame.minY : app.frame.maxY
         let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "feed-item-")).allElementsBoundByIndex.map(\.frame)
-        let readingArea = CGRect(x: app.frame.minX, y: top, width: app.frame.width, height: bottom - top)
+        let leading = sidebar ? mainNavigation.frame.maxX : app.frame.minX
+        let readingArea = CGRect(x: leading, y: top, width: app.frame.maxX - leading, height: bottom - top)
         XCTAssertTrue(cards.contains { readingArea.contains($0) }, "Au moins une carte complète doit être contrôlée")
         let coveredCards = cards.filter { !readingArea.contains($0) }
         try app.performAccessibilityAudit(for: [.contrast, .textClipped, .hitRegion]) { issue in
+            print("Accessibility audit \(issue.auditType): \(issue.element?.debugDescription ?? "No exposed element")")
             // XCTest also inspects content physically covered by native navigation.
             // Only fully exposed cards are in scope. A partially covered card can
             // trigger contrast findings near Liquid Glass; the next audit checks

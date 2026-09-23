@@ -1,5 +1,7 @@
 # Refonte UX — lire le fil, puis écouter un passage
 
+La direction actuelle est le [fil dense inspiré des interfaces sociales](SocialFeed/README.md), appliqué le 23 septembre 2026. Les présentations éditoriales ci-dessous sont conservées comme historique.
+
 Public : 45 à 80 ans. Objectif confirmé : parcourir le fil, choisir un passage, lire son texte puis écouter l’extrait souhaité. La refonte conserve l’application native, le branchement API et le moteur de synchronisation.
 
 Une seconde itération centrée sur **Le fil et ses cartes** est maintenant implémentée : [voir la direction éditoriale, les captures et les vérifications](Feed/README.md). Les images ci-dessous conservent la référence de la première refonte.
