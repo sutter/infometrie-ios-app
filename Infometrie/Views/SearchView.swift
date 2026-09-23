@@ -10,8 +10,9 @@ struct SearchView: View {
     var body: some View {
         @Bindable var model = model
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                FilterSection(title: "Qui suivre ?") {
+            VStack(alignment: .leading, spacing: 28) {
+                EditorialPageHeading(title: "Filtrer", subtitle: "Composez le fil qui vous intéresse.")
+                EditorialSection(title: "Qui suivre ?") {
                     VStack(spacing: 0) {
                         NavigationLink {
                             ChoicePicker(title: "Personnalités", allTitle: "Toutes les personnalités", choices: model.persons.map {
@@ -35,10 +36,10 @@ struct SearchView: View {
                                 .padding(16).frame(maxWidth: .infinity, alignment: .leading)
                                 .background(Brand.blue.opacity(0.04))
                         }
-                    }.buttonStyle(.plain).filterCard()
+                    }.buttonStyle(.plain).overlay(alignment: .bottom) { EditorialRule() }
                 }
 
-                FilterSection(title: "Quels passages ?") {
+                EditorialSection(title: "Quels passages ?") {
                     VStack(spacing: 0) {
                         ForEach(Array(passageKinds.enumerated()), id: \.offset) { index, option in
                             if index > 0 { Divider().padding(.horizontal, 20) }
@@ -46,13 +47,13 @@ struct SearchView: View {
                                 model.draft.interventions = index != 2
                                 model.draft.citations = index != 1
                             } label: {
-                                FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false, accent: index == 2 ? Brand.citation : Brand.blue)
+                                FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false, accent: Brand.citation)
                             }
                             .buttonStyle(.plain)
                             .accessibilityAddTraits(kind == index ? .isSelected : [])
                             .accessibilityIdentifier("filter-kind-\(index)")
                         }
-                    }.filterCard()
+                    }.overlay(alignment: .bottom) { EditorialRule() }
                 }
 
                 if let error = model.choicesError {
@@ -60,17 +61,17 @@ struct SearchView: View {
                 }
                 Button { name = ""; saved = false; showSave = true } label: {
                     FilterSelectionRow(title: "Enregistrer ce suivi", icon: "bookmark", summary: "Retrouvez ces filtres dans « Mes suivis ».", isSelected: false)
-                }.buttonStyle(.plain).filterCard().accessibilityIdentifier("save-search")
+                }.buttonStyle(.plain).overlay(alignment: .bottom) { EditorialRule() }.accessibilityIdentifier("save-search")
                 Button { model.draft = SearchFilters() } label: {
                     Label("Réinitialiser les filtres", systemImage: "arrow.counterclockwise")
                         .font(.body.weight(.medium)).frame(maxWidth: .infinity, minHeight: 52)
                         .fixedSize(horizontal: false, vertical: true).contentShape(Rectangle())
                 }.buttonStyle(.plain).foregroundStyle(Brand.blue).accessibilityIdentifier("reset-search")
-            }.padding(20).frame(maxWidth: 720).frame(maxWidth: .infinity)
+            }.padding(20).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .background(Brand.background)
         .scrollEdgeEffectHidden(true, for: .bottom).scrollEdgeEffectStyle(.hard, for: .top)
-        .navigationTitle("Filtrer le fil").navigationBarTitleDisplayMode(.inline)
+        .editorialNavigationTitle("Filtrer le fil")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Annuler") { model.isSearchPresented = false } }
         }
@@ -85,33 +86,34 @@ struct SearchView: View {
         }) {
             NavigationStack {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        FilterSection(title: "Donnez-lui un nom") {
+                    VStack(alignment: .leading, spacing: 28) {
+                        EditorialPageHeading(title: "Nouveau suivi")
+                        EditorialSection(title: "Donnez-lui un nom") {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Nom du suivi").font(.headline)
-                                TextField("Ex. Ma veille politique", text: $name)
+                                TextField("Nom du suivi", text: $name, prompt: Text("Ex. Ma veille politique").foregroundStyle(Brand.secondary))
                                     .font(.body).autocorrectionDisabled().submitLabel(.done)
                                     .onSubmit { save() }.accessibilityIdentifier("search-name")
-                                    .padding(16).background(Brand.background, in: RoundedRectangle(cornerRadius: 12))
+                                    .padding(16).editorialInput()
                                 Text("Vous le retrouverez dans « Mes suivis ».")
                                     .font(.subheadline).foregroundStyle(Brand.secondary)
-                            }.padding(20).filterCard()
+                            }
                         }
-                        FilterSection(title: "Les filtres de ce suivi") {
+                        EditorialSection(title: "Les filtres de ce suivi") {
                             VStack(alignment: .leading, spacing: 16) {
                                 recap("Personnalités", value: model.draft.persons.isEmpty ? "Toutes" : model.draft.persons.sorted().joined(separator: ", "))
                                 Divider()
                                 recap("Partis politiques", value: model.draft.parties.isEmpty ? "Tous" : partyNames(model.draft.parties, in: model.parties))
                                 Divider()
                                 recap("Passages", value: passageKinds[kind].title)
-                            }.padding(20).frame(maxWidth: .infinity, alignment: .leading).filterCard()
+                            }.frame(maxWidth: .infinity, alignment: .leading)
                         }
-                    }.padding(20).frame(maxWidth: 720).frame(maxWidth: .infinity)
+                    }.padding(20).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
                 }
                 .background(Brand.background)
                 .scrollDismissesKeyboard(.interactively)
                 .scrollEdgeEffectHidden(true, for: .bottom).scrollEdgeEffectStyle(.hard, for: .top)
-                .navigationTitle("Enregistrer un suivi").navigationBarTitleDisplayMode(.inline)
+                .editorialNavigationTitle("Enregistrer un suivi")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Annuler") { showSave = false } } }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     FilterFooter {
@@ -158,28 +160,31 @@ struct ChoicePicker: View {
     }
     var body: some View {
         List {
+            EditorialPageHeading(title: title)
+                .padding(.vertical, 20)
+                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+                .listRowBackground(Color.clear).listRowSeparator(.hidden)
             Button { selected.removeAll() } label: {
                 FilterChoiceRow(title: allTitle, subtitle: "Sans restriction", selected: selected.isEmpty, multiple: false)
-            }.buttonStyle(.plain).filterCard()
+            }.buttonStyle(.plain).overlay(alignment: .bottom) { EditorialRule() }
                 .accessibilityAddTraits(selected.isEmpty ? .isSelected : [])
                 .accessibilityIdentifier("clear-choices")
                 .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 20, trailing: 20))
                 .listRowBackground(Color.clear).listRowSeparator(.hidden)
             if choices.isEmpty {
-                ContentUnavailableView {
-                    Label("Liste indisponible", systemImage: "person.crop.circle.badge.questionmark")
-                } description: { Text(model.choicesError ?? "La liste est vide.") } actions: {
+                VStack(alignment: .leading, spacing: 16) {
+                    EditorialEmptyState(title: "Liste indisponible", icon: "person.crop.circle.badge.questionmark", message: model.choicesError ?? "La liste est vide.")
                     Button("Réessayer") { Task { await model.loadChoices() } }.buttonStyle(ActionButtonStyle())
                 }.listRowBackground(Color.clear).listRowSeparator(.hidden)
             } else if filtered.isEmpty {
-                ContentUnavailableView.search(text: query).listRowBackground(Color.clear).listRowSeparator(.hidden)
+                EditorialEmptyState(title: "Aucun résultat", icon: "magnifyingglass", message: "Aucun nom ne correspond à « \(query) ».").listRowBackground(Color.clear).listRowSeparator(.hidden)
             }
             ForEach(filtered) { choice in
                 Button {
                     if selected.contains(choice.value) { selected.remove(choice.value) } else { selected.insert(choice.value) }
                 } label: {
                     FilterChoiceRow(title: choice.title, subtitle: choice.subtitle, selected: selected.contains(choice.value), multiple: true)
-                }.buttonStyle(.plain).filterCard()
+                }.buttonStyle(.plain).overlay(alignment: .bottom) { EditorialRule() }
                     .accessibilityAddTraits(selected.contains(choice.value) ? .isSelected : [])
                     .accessibilityIdentifier("choice-\(choice.value)")
                     .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 12, trailing: 20))
@@ -188,7 +193,7 @@ struct ChoicePicker: View {
         }
         .listStyle(.plain).scrollContentBackground(.hidden).background(Brand.background)
         .scrollEdgeEffectHidden(true, for: .bottom).scrollEdgeEffectStyle(.hard, for: .top)
-        .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+        .editorialNavigationTitle(title)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Rechercher un nom")
         .safeAreaInset(edge: .bottom, spacing: 0) {
             FilterFooter {
@@ -212,18 +217,6 @@ private func partyNames(_ codes: Set<String>, in parties: [Party]) -> String {
     codes.sorted().map { code in parties.first(where: { $0.code == code })?.name ?? code }.joined(separator: ", ")
 }
 
-private struct FilterSection<Content: View>: View {
-    let title: String
-    @ViewBuilder var content: () -> Content
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.system(.title3, design: .serif, weight: .semibold))
-                .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
-            content()
-        }
-    }
-}
-
 private struct FilterSelectionRow: View {
     let title: String
     let icon: String
@@ -232,11 +225,10 @@ private struct FilterSelectionRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon).font(.system(size: 17, weight: .medium))
-                .foregroundStyle(Brand.blue).frame(width: 34, height: 34)
-                .background(Brand.blue.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
+                .foregroundStyle(Brand.citation).frame(width: 34, height: 34)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
-                Text(title).font(.body.weight(.semibold)).foregroundStyle(.primary)
+                Text(title).font(.body.weight(.semibold)).foregroundStyle(Brand.ink)
                 Text(summary).font(.subheadline).foregroundStyle(isSelected ? Brand.blue : Brand.secondary)
             }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
@@ -253,11 +245,11 @@ private struct FilterChoiceRow: View {
     let subtitle: String
     let selected: Bool
     let multiple: Bool
-    var accent: Color = Brand.blue
+    var accent: Color = Brand.citation
     var body: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.body.weight(.semibold)).foregroundStyle(.primary)
+                Text(title).font(.body.weight(.semibold)).foregroundStyle(Brand.ink)
                 if !subtitle.isEmpty { Text(subtitle).font(.subheadline).foregroundStyle(Brand.secondary) }
             }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: selected ? (multiple ? "checkmark.square.fill" : "checkmark.circle.fill") : (multiple ? "square" : "circle"))
@@ -273,15 +265,7 @@ private struct FilterFooter<Content: View>: View {
     @ViewBuilder var content: () -> Content
     var body: some View {
         VStack(alignment: .leading, spacing: 10, content: content)
-            .padding(16).frame(maxWidth: 720).frame(maxWidth: .infinity)
-            .background(Brand.card).overlay(alignment: .top) { Divider() }
-    }
-}
-
-private extension View {
-    func filterCard() -> some View {
-        self.background(Brand.card)
-            .clipShape(RoundedRectangle(cornerRadius: 22))
-            .overlay { RoundedRectangle(cornerRadius: 22).strokeBorder(.primary.opacity(0.06)) }
+            .padding(16).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
+            .background(Brand.background).overlay(alignment: .top) { EditorialRule() }
     }
 }

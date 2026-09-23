@@ -31,6 +31,7 @@ private func makeAppModel() -> AppModel {
 struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     private var activityKey: String { "\(model.isAuthenticated)-\(model.isDemo)-\(scenePhase == .active)" }
     var body: some View {
         @Bindable var binding = model
@@ -38,11 +39,28 @@ struct RootView: View {
             if model.isRestoring {
                 VStack(spacing: 24) { Wordmark(); ProgressView("Ouverture d’InfoMétrie…") }
             } else if model.isAuthenticated {
-                TabView(selection: $binding.tab) {
-                    Tab("Le fil", systemImage: "dot.radiowaves.left.and.right", value: .feed) { NavigationStack { FeedView() } }
-                    Tab("Mes suivis", systemImage: "bookmark", value: .saved) { NavigationStack { SavedSearchesView() } }
-                    Tab("Compte", systemImage: "person.crop.circle", value: .account) { NavigationStack { AccountView() } }
+                VStack(spacing: 0) {
+                    if horizontalSizeClass == .regular { EditorialNavigation() }
+                    TabView(selection: $binding.tab) {
+                        Tab("Le fil", systemImage: "dot.radiowaves.left.and.right", value: .feed) {
+                            NavigationStack {
+                                FeedView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
+                            }
+                        }
+                        Tab("Mes suivis", systemImage: "bookmark", value: .saved) {
+                            NavigationStack {
+                                SavedSearchesView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
+                            }
+                        }
+                        Tab("Compte", systemImage: "person.crop.circle", value: .account) {
+                            NavigationStack {
+                                AccountView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
+                            }
+                        }
+                    }
+                    .toolbarBackground(Brand.background, for: .tabBar)
                 }
+                .background(Brand.background)
                 .sheet(isPresented: $binding.isSearchPresented) {
                     NavigationStack { SearchView() }.environment(model)
                 }
@@ -51,6 +69,9 @@ struct RootView: View {
                 }
             } else { LoginView() }
         }
+        .foregroundStyle(Brand.ink)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Brand.background)
         .task { @MainActor in await model.restore() }
         .task(id: activityKey) { @MainActor in
             guard model.isAuthenticated, scenePhase == .active else { model.player.pause(); return }
@@ -67,5 +88,47 @@ struct RootView: View {
         .alert("InfoMétrie", isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } })) {
             Button("OK", role: .cancel) { model.notice = nil }
         } message: { Text(model.notice ?? "") }
+    }
+}
+
+/// Keep the three navigation stacks while giving the iPad a magazine masthead.
+private struct EditorialNavigation: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 28) {
+                Wordmark()
+                destinations.fixedSize(horizontal: true, vertical: false)
+                    .frame(maxWidth: .infinity)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Wordmark()
+                destinations
+            }
+        }
+        .padding(.top, 8)
+        .overlay(alignment: .bottom) { EditorialRule() }
+        .padding(.horizontal, EditorialLayout.wideMargin)
+        .frame(maxWidth: EditorialLayout.maximumWidth).frame(maxWidth: .infinity)
+        .background(Brand.background)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Navigation principale")
+        .accessibilityIdentifier("primary-navigation")
+    }
+
+    private var destinations: some View {
+        HStack(spacing: 16) {
+            destination("Le fil", tab: .feed, identifier: "navigation-feed")
+            destination("Mes suivis", tab: .saved, identifier: "navigation-saved")
+            destination("Compte", tab: .account, identifier: "navigation-account")
+        }
+    }
+
+    private func destination(_ title: String, tab: AppModel.Tab, identifier: String) -> some View {
+        EditorialTabButton(title: title, selected: model.tab == tab, accent: Brand.citation) {
+            model.tab = tab
+        }
+        .accessibilityIdentifier(identifier)
     }
 }

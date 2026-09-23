@@ -14,37 +14,34 @@ struct LoginView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     Wordmark(size: 32).padding(.top, 25)
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Connectez-vous").font(.title.bold())
-                        Text("Retrouvez votre fil et écoutez les passages qui vous intéressent.")
-                            .font(.body).foregroundStyle(Brand.secondary)
-                    }
+                    EditorialPageHeading(title: "Connectez-vous", subtitle: "Retrouvez votre fil et écoutez les passages qui vous intéressent.")
+                    EditorialRule()
                     VStack(alignment: .leading, spacing: 18) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Email").font(.body.weight(.medium))
-                            TextField("vous@organisation.fr", text: $model.email)
+                            TextField("Email", text: $model.email, prompt: Text(verbatim: "vous@organisation.fr").foregroundStyle(Brand.secondary))
                                 .textContentType(.username).keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never).autocorrectionDisabled()
                                 .focused($focused, equals: .email).submitLabel(.next).onSubmit { focused = .password }
-                                .padding(15).background(Brand.background, in: RoundedRectangle(cornerRadius: 15))
+                                .padding(15).editorialInput()
                                 .accessibilityIdentifier("login-email")
                         }
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Mot de passe").font(.body.weight(.medium))
                             HStack {
                                 Group {
-                                    if showPassword { TextField("Votre mot de passe", text: $password) }
-                                    else { SecureField("Votre mot de passe", text: $password) }
+                                    if showPassword { TextField("Mot de passe", text: $password, prompt: Text("Votre mot de passe").foregroundStyle(Brand.secondary)) }
+                                    else { SecureField("Mot de passe", text: $password, prompt: Text("Votre mot de passe").foregroundStyle(Brand.secondary)) }
                                 }.textContentType(.password).textInputAutocapitalization(.never).autocorrectionDisabled().focused($focused, equals: .password)
                                     .submitLabel(.go).onSubmit { signIn() }.accessibilityIdentifier("login-password")
                                 Button { showPassword.toggle() } label: { Image(systemName: showPassword ? "eye.slash" : "eye").foregroundStyle(Brand.blue).frame(width: 52, height: 52).contentShape(Rectangle()) }
                                     .accessibilityLabel(showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe")
-                            }.padding(.leading, 15).padding(.trailing, 4).background(Brand.background, in: RoundedRectangle(cornerRadius: 15))
+                            }.padding(.leading, 15).padding(.trailing, 4).editorialInput()
                         }
                         if let error = model.loginError { ErrorNotice(message: error).accessibilityIdentifier("login-error") }
                         Button(action: signIn) {
                             HStack {
-                                if model.isLoggingIn { ProgressView().tint(.white) }
+                                if model.isLoggingIn { ProgressView().tint(Brand.background) }
                                 Text(model.isLoggingIn ? "Connexion…" : "Se connecter").fontWeight(.semibold)
                                 if !model.isLoggingIn { Image(systemName: "arrow.right") }
                             }.frame(maxWidth: .infinity)
@@ -53,7 +50,6 @@ struct LoginView: View {
                         .disabled(model.email.trimmingCharacters(in: .whitespaces).isEmpty || password.isEmpty || model.isLoggingIn)
                         .accessibilityIdentifier("login-submit")
                     }
-                    .padding(23).background(Brand.card, in: RoundedRectangle(cornerRadius: 28))
 
                     VStack(spacing: 18) {
                         Button { password = ""; focused = nil; model.enterDemo() } label: {
@@ -69,10 +65,13 @@ struct LoginView: View {
             .sheet(item: $model.quota) { quota in
                 NavigationStack {
                     List {
+                        EditorialPageHeading(title: "Vos appareils").padding(.vertical, 20)
+                            .listRowBackground(Color.clear).listRowSeparator(.hidden)
                         Section {
                             Text("Votre compte autorise \(quota.maximum) appareils. Choisissez celui que vous souhaitez remplacer pour vous connecter ici. L’appareil remplacé sera déconnecté.")
-                        }
-                        Section("Appareils autorisés") {
+                                .foregroundStyle(Brand.secondary).padding(.vertical, 12)
+                        }.listRowBackground(Color.clear).listRowSeparator(.hidden)
+                        Section {
                             ForEach(quota.devices) { device in
                                 Button { selectedDevice = device } label: {
                                     VStack(alignment: .leading, spacing: 5) {
@@ -83,9 +82,14 @@ struct LoginView: View {
                                 }
                             }
                             if quota.devices.isEmpty { Text("Gérez vos appareils sur le portail web InfoMétrie.").foregroundStyle(Brand.secondary) }
+                        } header: {
+                            Text("Appareils autorisés").font(.system(.title2, design: .serif, weight: .semibold))
+                                .foregroundStyle(Brand.ink).textCase(nil)
                         }
+                        .listRowBackground(Color.clear)
                     }
-                    .navigationTitle("Limite d’appareils").navigationBarTitleDisplayMode(.inline)
+                    .listStyle(.plain).scrollContentBackground(.hidden).background(Brand.background)
+                    .editorialNavigationTitle("Limite d’appareils")
                     .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Annuler") { model.quota = nil } } }
                     .confirmationDialog("Remplacer cet appareil ?", isPresented: Binding(get: { selectedDevice != nil }, set: { if !$0 { selectedDevice = nil } }), titleVisibility: .visible) {
                         Button("Remplacer cet appareil", role: .destructive) {

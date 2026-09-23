@@ -8,7 +8,7 @@ final class InfometrieUITests: XCTestCase {
         submitLogin(in: app, password: "valide")
         XCTAssertTrue(app.buttons["feed-item-901"].waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertFalse(app.staticTexts["demo-banner"].exists)
-        app.tabBars.buttons["Compte"].tap()
+        navigationButton("Compte", in: app).tap()
         XCTAssertTrue(app.staticTexts["Compte de test API"].exists)
         XCTAssertTrue(app.staticTexts["connexion@example.invalid"].exists)
         capture("12-compte-connecte-api", app: app)
@@ -16,14 +16,14 @@ final class InfometrieUITests: XCTestCase {
         app.terminate(); app.launch()
         XCTAssertTrue(app.buttons["feed-item-901"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.textFields["login-email"].exists)
-        app.tabBars.buttons["Compte"].tap()
+        navigationButton("Compte", in: app).tap()
         reveal(app.buttons["logout"], in: app, down: false)
         app.buttons["logout"].tap()
         app.sheets["Se déconnecter ?"].buttons["Se déconnecter"].tap()
         XCTAssertTrue(app.textFields["login-email"].waitForExistence(timeout: 5))
         app.terminate(); app.launch()
         XCTAssertTrue(app.textFields["login-email"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.tabBars.buttons["Le fil"].exists)
+        XCTAssertFalse(navigationButton("Le fil", in: app).exists)
     }
 
     @MainActor
@@ -32,8 +32,9 @@ final class InfometrieUITests: XCTestCase {
         app.launch()
         submitLogin(in: app, password: "invalide")
         XCTAssertTrue(app.staticTexts["Email ou mot de passe invalide."].waitForExistence(timeout: 5), app.debugDescription)
+        capture("20-connexion-erreur", app: app)
         XCTAssertTrue(app.buttons["login-submit"].isEnabled)
-        XCTAssertFalse(app.tabBars.buttons["Le fil"].exists)
+        XCTAssertFalse(navigationButton("Le fil", in: app).exists)
 
         submitLogin(in: app, password: "inactif", replacing: "invalide")
         XCTAssertTrue(app.staticTexts["Votre abonnement n’est pas actif. Gérez votre compte sur le portail web InfoMétrie."].waitForExistence(timeout: 5))
@@ -50,7 +51,7 @@ final class InfometrieUITests: XCTestCase {
         submitLogin(in: app, password: "quota")
         XCTAssertTrue(app.navigationBars["Limite d’appareils"].waitForExistence(timeout: 5), app.debugDescription)
         capture("13-limite-appareils-api", app: app)
-        XCTAssertFalse(app.tabBars.buttons["Le fil"].exists)
+        XCTAssertFalse(navigationButton("Le fil", in: app).exists)
         app.buttons.containing(.staticText, identifier: "Ancien iPhone").firstMatch.tap()
         XCTAssertTrue(app.buttons["Remplacer cet appareil"].waitForExistence(timeout: 5))
         app.buttons["Remplacer cet appareil"].tap()
@@ -127,7 +128,7 @@ final class InfometrieUITests: XCTestCase {
         app.navigationBars["Filtrer le fil"].buttons["Annuler"].tap()
 
         app.terminate(); app.launchArguments = ["--uitesting", "--demo", "-appearance", "light"]; app.launch()
-        app.tabBars.buttons["Mes suivis"].tap()
+        navigationButton("Mes suivis", in: app).tap()
         XCTAssertTrue(app.staticTexts[String(name)].waitForExistence(timeout: 5))
         app.buttons["saved-actions-\(name)"].tap()
         app.buttons["Archiver"].tap()
@@ -140,7 +141,7 @@ final class InfometrieUITests: XCTestCase {
         app.alerts.buttons["Supprimer"].tap()
         XCTAssertFalse(app.staticTexts[String(name)].exists)
 
-        app.tabBars.buttons["Le fil"].tap()
+        navigationButton("Le fil", in: app).tap()
         let first = app.buttons["feed-item-1"]
         XCTAssertTrue(first.waitForExistence(timeout: 3))
         first.tap()
@@ -173,7 +174,7 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["player-toggle"].tap()
         wait(app.buttons["player-toggle"], key: "label", equals: "Écouter")
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.navigationBars["Le fil"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["feed-kind-0"].waitForExistence(timeout: 5))
         reveal(app.buttons["start-podcast"], in: app, down: true)
         app.buttons["start-podcast"].tap()
         XCTAssertTrue(app.buttons["close-podcast"].waitForExistence(timeout: 5))
@@ -182,7 +183,7 @@ final class InfometrieUITests: XCTestCase {
         capture("04-podcast", app: app)
         app.buttons["close-podcast"].tap()
 
-        app.tabBars.buttons["Compte"].tap()
+        navigationButton("Compte", in: app).tap()
         for _ in 0..<3 {
             if app.buttons["logout"].exists && app.buttons["logout"].isHittable { break }
             app.swipeUp()
@@ -225,6 +226,7 @@ final class InfometrieUITests: XCTestCase {
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.75))
             .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.48)))
         capture("06-carte-metadonnees-accessibles", app: app)
+        reveal(first, in: app, down: true)
         XCTAssertTrue(first.isHittable)
         first.tap()
         let play = app.buttons["play-sequence"]
@@ -257,7 +259,7 @@ final class InfometrieUITests: XCTestCase {
         capture("00-connexion", app: app)
         if !app.buttons["enter-demo"].isHittable { app.swipeUp() }
         app.buttons["enter-demo"].tap()
-        XCTAssertEqual(app.tabBars.buttons.count, 3)
+        XCTAssertTrue(["Le fil", "Mes suivis", "Compte"].allSatisfy { navigationButton($0, in: app).exists })
         XCTAssertTrue(app.buttons["feed-item-1"].isHittable)
         // UIKit may report 43.99999999999999 for a 44pt toolbar target.
         XCTAssertGreaterThanOrEqual(app.buttons["edit-filters"].frame.height + 0.01, 44)
@@ -367,10 +369,20 @@ final class InfometrieUITests: XCTestCase {
             if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
             app.launch()
             XCTAssertTrue(app.buttons["edit-filters"].waitForExistence(timeout: 10))
+            let suffix = largeText ? "grand-texte" : "sombre"
+            navigationButton("Mes suivis", in: app).tap()
+            capture("20-suivis-\(suffix)", app: app)
+            navigationButton("Compte", in: app).tap()
+            capture("20-compte-\(suffix)", app: app)
+            let appearance = app.buttons["appearance-picker"]
+            reveal(appearance, in: app, down: false)
+            XCTAssertTrue(appearance.isHittable)
+            capture("20-reglages-\(suffix)", app: app)
+            navigationButton("Le fil", in: app).tap()
             app.buttons["edit-filters"].tap()
             XCTAssertTrue(app.buttons["pick-persons"].waitForExistence(timeout: 5))
-            let suffix = largeText ? "grand-texte" : "sombre"
             capture("15-filtres-\(suffix)", app: app)
+            reveal(app.buttons["pick-persons"], in: app, down: false)
             app.buttons["pick-persons"].tap()
             let person = app.buttons["choice-Camille Martin"]
             reveal(person, in: app, down: false)
@@ -396,6 +408,39 @@ final class InfometrieUITests: XCTestCase {
             XCTAssertTrue(app.buttons["feed-kind-1"].isSelected)
             app.terminate()
         }
+    }
+
+    @MainActor
+    func testEditorialNavigationPreservesFeedSelection() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--demo", "--reset-demo", "-appearance", "light"]
+        app.launch()
+        let citations = app.buttons["feed-kind-2"]
+        XCTAssertTrue(citations.waitForExistence(timeout: 10))
+        if app.buttons["navigation-feed"].exists {
+            XCTAssertFalse(app.tabBars.firstMatch.exists, "L’iPad ne doit afficher qu’une navigation principale")
+        }
+        citations.tap()
+        XCTAssertTrue(app.staticTexts["2 passages"].waitForExistence(timeout: 5))
+
+        let saved = navigationButton("Mes suivis", in: app)
+        saved.tap()
+        XCTAssertTrue(app.buttons["new-search"].waitForExistence(timeout: 5))
+        capture("20-suivis-vides", app: app)
+        let account = navigationButton("Compte", in: app)
+        account.tap()
+        XCTAssertTrue(app.switches["comfortable-reading"].waitForExistence(timeout: 5))
+        capture("20-compte", app: app)
+        let feed = navigationButton("Le fil", in: app)
+        feed.tap()
+        XCTAssertTrue(citations.waitForExistence(timeout: 5))
+        XCTAssertTrue(citations.isSelected)
+        XCTAssertTrue(app.staticTexts["2 passages"].exists)
+        app.buttons["feed-item-2"].tap()
+        XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
+        app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(citations.isSelected)
+        capture("19-navigation-editoriale", app: app)
     }
 
     @MainActor
@@ -564,6 +609,12 @@ final class InfometrieUITests: XCTestCase {
         capture("09-podcast-verbatim", app: app)
     }
 
+    @MainActor private func navigationButton(_ title: String, in app: XCUIApplication) -> XCUIElement {
+        let identifiers = ["Le fil": "navigation-feed", "Mes suivis": "navigation-saved", "Compte": "navigation-account"]
+        let editorial = app.buttons[identifiers[title] ?? ""]
+        return editorial.exists ? editorial : app.tabBars.buttons[title]
+    }
+
     @MainActor private func wait(_ element: XCUIElement, key: String, equals value: String) {
         let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "%K == %@", key, value), object: element)
         XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 8), .completed)
@@ -623,11 +674,15 @@ final class InfometrieUITests: XCTestCase {
             // Keep gestures inside the content above the persistent playback dock,
             // including at the largest accessibility size, where it is taller.
             let bounds = app.frame
-            let top = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY + 12 : bounds.minY + 100
+            let navigationBottom = app.navigationBars.allElementsBoundByIndex.map { $0.frame.maxY }.max()
+            let top = navigationBottom.map { $0 + 12 } ?? (bounds.minY + 100)
+            // List creates offscreen rows lazily. Reading their identifier before
+            // they exist causes XCTest to fail instead of scrolling to the row.
+            let identifier = element.exists ? element.identifier : ""
             // The compact type row begins 8pt below the native navigation bar.
             // It is fully visible there; do not keep pulling to refresh in an
             // attempt to create the larger gap used by scrolling body controls.
-            let controlTop = element.identifier.hasPrefix("feed-kind-") ? top - 8 : top
+            let controlTop = identifier.hasPrefix("feed-kind-") ? top - 8 : top
             let slider = app.sliders["player-position"]
             let filterFooter = ["confirm-save-search", "confirm-choices", "apply-search"].map { app.buttons[$0] }.first { $0.exists && $0.isHittable }
             let choiceCount = app.staticTexts["choice-count"]
@@ -637,13 +692,13 @@ final class InfometrieUITests: XCTestCase {
                 ? choiceCount.frame.minY - 28 : filterFooter.map { $0.frame.minY - 28 }
             let bottom = slider.exists ? slider.frame.minY - 12 : filterBottom ?? bounds.maxY - 150
             if element.exists && element.isHittable {
-                let contentControl = ["sequence-summary", "sequence-context", "transcript-follow"].contains(element.identifier)
-                    || ["save-search", "reset-search", "clear-choices", "start-podcast"].contains(element.identifier)
-                    || ["filter-kind-", "feed-kind-", "choice-", "pick-"].contains { element.identifier.hasPrefix($0) }
+                let contentControl = ["sequence-summary", "sequence-context", "transcript-follow"].contains(identifier)
+                    || ["save-search", "reset-search", "clear-choices", "start-podcast"].contains(identifier)
+                    || ["filter-kind-", "feed-kind-", "choice-", "pick-"].contains { identifier.hasPrefix($0) }
                 if element.elementType != .link && !contentControl { return }
                 // A large-text choice can be taller than the viewport. Its center
                 // remains a valid tap target when it lies above the fixed footer.
-                if element.identifier.hasPrefix("choice-"), element.frame.height > bottom - top,
+                if contentControl, element.frame.height > bottom - top,
                    element.frame.midY >= top, element.frame.midY <= bottom { return }
                 // XCTest may report content controls as hittable underneath the
                 // dock. Expose the complete word or disclosure/follow control.
@@ -652,11 +707,16 @@ final class InfometrieUITests: XCTestCase {
             let upper = top + (bottom - top) * 0.15
             let lower = top + (bottom - top) * 0.85
             let origin = app.coordinate(withNormalizedOffset: .zero)
-            // Native List does not scroll when a drag starts beyond its cell area.
-            // Keep filter gestures inside the list, away from the sheet's edge.
-            let x = filterFooter == nil ? bounds.width - 8 : bounds.width * 0.90
-            let start = origin.withOffset(CGVector(dx: x, dy: down ? upper : lower))
-            let end = origin.withOffset(CGVector(dx: x, dy: down ? lower : upper))
+            // iPad sheets are narrower than the app. Derive the gesture's x from
+            // their footer so a scroll cannot dismiss the sheet by touching outside.
+            let x = filterFooter.map { $0.frame.maxX - bounds.minX - 8 } ?? (bounds.width - 8)
+            let frame = element.exists ? element.frame : .zero
+            let towardTop = frame != .zero ? frame.minY < controlTop : down
+            let distance = frame == .zero ? lower - upper : min(lower - upper, max(44, towardTop ? controlTop - frame.minY : frame.maxY - bottom))
+            let startY = towardTop ? upper : lower
+            let endY = towardTop ? startY + distance : startY - distance
+            let start = origin.withOffset(CGVector(dx: x, dy: startY))
+            let end = origin.withOffset(CGVector(dx: x, dy: endY))
             start.press(forDuration: 0.05, thenDragTo: end)
         }
 
@@ -664,10 +724,13 @@ final class InfometrieUITests: XCTestCase {
 
     @MainActor private func auditVisibleFeed(_ app: XCUIApplication) throws {
         var covered: [String] = []
-        let tabBar = app.tabBars.firstMatch.frame
-        let navigationBar = app.navigationBars.firstMatch.frame
+        let tabBar = app.tabBars.firstMatch
+        let navigationBar = app.navigationBars.firstMatch
+        let editorialNavigation = app.otherElements["primary-navigation"]
+        let top = editorialNavigation.exists ? editorialNavigation.frame.maxY : (navigationBar.exists ? navigationBar.frame.maxY : app.frame.minY)
+        let bottom = tabBar.exists ? tabBar.frame.minY : app.frame.maxY
         let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "feed-item-")).allElementsBoundByIndex.map(\.frame)
-        let readingArea = CGRect(x: app.frame.minX, y: navigationBar.maxY, width: app.frame.width, height: tabBar.minY - navigationBar.maxY)
+        let readingArea = CGRect(x: app.frame.minX, y: top, width: app.frame.width, height: bottom - top)
         XCTAssertTrue(cards.contains { readingArea.contains($0) }, "Au moins une carte complète doit être contrôlée")
         let coveredCards = cards.filter { !readingArea.contains($0) }
         try app.performAccessibilityAudit(for: [.contrast, .textClipped, .hitRegion]) { issue in

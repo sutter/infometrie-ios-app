@@ -10,13 +10,12 @@ struct PassageSource: View {
             HStack(spacing: 8) {
                 Image(systemName: item.media.lowercased() == "tv" ? "tv" : "radio")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(item.kindColor)
+                    .foregroundStyle(Brand.citation)
                     .frame(width: 30, height: 30)
-                    .background(item.kindColor.opacity(0.07), in: RoundedRectangle(cornerRadius: 9))
                     .accessibilityHidden(true)
                 Text(item.channel)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Brand.ink)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
@@ -33,24 +32,49 @@ struct PassageSource: View {
 
 struct PassageByline: View {
     let item: FeedItem
-    var showsKind = true
     private var details: String {
-        [item.party, showsKind ? item.kindLabel : ""].filter { !$0.isEmpty }.joined(separator: " · ")
+        var values = [item.role, item.party].filter { !$0.isEmpty }
+        if values.count == 2, values[0] == values[1] { values.removeLast() }
+        return values.joined(separator: " · ")
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(item.person).font(.body.weight(.medium)).foregroundStyle(.primary)
-            if !details.isEmpty {
-                Text(details).font(.subheadline).foregroundStyle(Brand.secondary)
-            }
+        HStack(alignment: .top, spacing: 14) {
+            PersonAvatar(item: item, size: 52)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(item.person).font(.headline).foregroundStyle(Brand.ink)
+                if !details.isEmpty { Text(details).font(.subheadline).foregroundStyle(Brand.secondary) }
+            }.fixedSize(horizontal: false, vertical: true)
         }
-        .fixedSize(horizontal: false, vertical: true)
-        .padding(.leading, 12)
-        .overlay(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(item.kindColor.opacity(0.3)).frame(width: 3)
-                .accessibilityHidden(true)
+    }
+}
+
+struct PassageHeading: View {
+    let item: FeedItem
+    let titleIdentifier: String
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @ScaledMetric(relativeTo: .title) private var compactSize = 30.0
+    @ScaledMetric(relativeTo: .title) private var wideSize = 40.0
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            PassageByline(item: item)
+            Text(item.title)
+                .font(.system(size: sizeClass == .regular ? wideSize : compactSize, weight: .semibold, design: .serif))
+                .tracking(-0.4).foregroundStyle(Brand.ink).lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier(titleIdentifier)
+            VStack(alignment: .leading, spacing: 12) {
+                PassageSource(item: item)
+                AdaptiveRow {
+                    KindBadge(item: item)
+                    Spacer(minLength: 0)
+                    if item.durationSec > 0 {
+                        Label(item.readableDuration, systemImage: "headphones")
+                            .font(.subheadline).foregroundStyle(Brand.secondary)
+                    }
+                }
+            }
         }
     }
 }

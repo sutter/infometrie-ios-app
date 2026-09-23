@@ -25,13 +25,14 @@ struct TranscriptView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            EditorialRule()
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 10) {
-                    Image(systemName: "text.quote").foregroundStyle(Brand.blue).accessibilityHidden(true)
+                    Image(systemName: "text.quote").foregroundStyle(Brand.citation).accessibilityHidden(true)
                     Text("Le texte")
                         .accessibilityIdentifier("transcript-position")
                         .accessibilityValue(activeWord.map { "Mot \($0 + 1) sur \(timeline.words.count)" } ?? (isCurrent ? "Aucun mot actif" : "En attente de lecture"))
-                }.font(.headline)
+                }.font(.system(.title2, design: .serif, weight: .semibold)).foregroundStyle(Brand.ink)
                 if canSeek {
                     Text("Touchez un mot pour rejoindre ce passage.")
                         .font(.subheadline).foregroundStyle(Brand.secondary)
@@ -40,8 +41,8 @@ struct TranscriptView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         ForEach(timeline.passages) { passage in
-                            Text(attributed(passage)).font(.body).lineSpacing(7)
-                                .tint(.primary)
+                            Text(attributed(passage)).font(.system(.body, design: .serif)).lineSpacing(7)
+                                .foregroundStyle(Brand.ink).tint(Brand.ink)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .id(passage.id)
                                 .accessibilityIdentifier("transcript-passage-\(passage.id)")
@@ -72,7 +73,7 @@ struct TranscriptView: View {
                     onSeek(word)
                     return .handled
                 })
-            }.padding(20)
+            }.padding(.vertical, 20)
 
             VStack(alignment: .leading, spacing: 10) {
                 if canSeek, isCurrent {
@@ -85,7 +86,7 @@ struct TranscriptView: View {
                         .accessibilityValue(followsPlayback ? "Activé" : "Désactivé")
                 }
                 if isCurrent, let notice = model.player.transcriptNotice {
-                    Text(notice).font(.footnote).foregroundStyle(.primary).accessibilityIdentifier("transcript-notice")
+                    Text(notice).font(.footnote).foregroundStyle(Brand.ink).accessibilityIdentifier("transcript-notice")
                 }
                 if timeline.hasPreciseTimings {
                     Label("Synchronisation par mot", systemImage: "checkmark.circle.fill")
@@ -105,14 +106,11 @@ struct TranscriptView: View {
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 20).padding(.vertical, 12)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Brand.blue.opacity(0.04))
+            .overlay(alignment: .top) { EditorialRule() }
         }
-        .background(Brand.card)
-        .clipShape(RoundedRectangle(cornerRadius: 22))
-        .overlay { RoundedRectangle(cornerRadius: 22).strokeBorder(.primary.opacity(0.06)) }
-        .shadow(color: .black.opacity(0.035), radius: 10, x: 0, y: 4)
+
     }
 
     private func follow(_ passage: Int?) {
@@ -132,8 +130,8 @@ struct TranscriptView: View {
                 result[range][AttributeScopes.SwiftUIAttributes.UnderlineStyleAttribute.self] = Text.LineStyle(pattern: .solid, color: .clear)
             }
             if word.id == currentWord {
-                result[range][AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute.self] = Brand.blue
-                result[range][AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute.self] = Brand.blue.opacity(0.16)
+                result[range][AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute.self] = Brand.citation
+                result[range][AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute.self] = Brand.citation.opacity(0.12)
             }
         }
         return result

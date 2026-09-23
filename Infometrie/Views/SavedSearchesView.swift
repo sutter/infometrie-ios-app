@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SavedSearchesView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var archived = false
     @State private var deleting: SavedSearch?
     private var searches: [SavedSearch] {
@@ -10,63 +11,79 @@ struct SavedSearchesView: View {
     }
     var body: some View {
         List {
-            Section {
-                AdaptiveRow {
-                    category("Actifs", archived: false)
-                    category("Archivés", archived: true)
+            Group {
+                VStack(alignment: .leading, spacing: 28) {
+                    EditorialPageHeading(title: "Mes suivis", subtitle: "Vos sujets, au fil de l’actualité.")
+                    Button { model.newSearch() } label: { Label("Créer un suivi", systemImage: "plus") }
+                        .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("new-search")
+                    HStack(spacing: 12) {
+                        category("Actifs", archived: false)
+                        category("Archivés", archived: true)
+                        Spacer(minLength: 0)
+                    }.overlay(alignment: .bottom) { EditorialRule() }
+                }.padding(.top, 24).padding(.bottom, 8)
+                if searches.isEmpty {
+                    EditorialEmptyState(
+                        title: archived ? "Aucun suivi archivé" : "Retrouvez vos sujets de veille",
+                        icon: archived ? "archivebox" : "bookmark",
+                        message: archived ? "Un suivi archivé peut être restauré à tout moment." : "Choisissez des personnalités ou des partis, puis enregistrez vos filtres pour les retrouver ici."
+                    )
                 }
-                Button { model.newSearch() } label: { Label("Créer un suivi", systemImage: "plus") }
-                    .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("new-search")
-            }.listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0)).listRowBackground(Color.clear).listRowSeparator(.hidden)
-            if searches.isEmpty {
-                ContentUnavailableView {
-                    Label(archived ? "Aucun suivi archivé" : "Retrouvez vos sujets de veille", systemImage: archived ? "archivebox" : "bookmark")
-                } description: {
-                    Text(archived ? "Un suivi archivé peut être restauré à tout moment." : "Choisissez des personnalités ou des partis, puis enregistrez vos filtres pour les retrouver ici.")
-                }.listRowBackground(Color.clear)
-            }
-            ForEach(searches) { search in
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(search.name).font(.title3.bold())
-                    Text(search.filters.isEmpty ? "Toutes les personnalités" : search.filters.summary).font(.subheadline).foregroundStyle(Brand.secondary)
-                    Text([search.filters.interventions ? "Interventions" : nil, search.filters.citations ? "Citations" : nil].compactMap { $0 }.joined(separator: " · "))
-                        .font(.subheadline).foregroundStyle(Brand.secondary)
-                    if archived {
-                        Button("Restaurer ce suivi") { model.archive(search) }
-                            .buttonStyle(ActionButtonStyle()).accessibilityIdentifier("restore-search-\(search.name)")
-                    } else {
-                        Button { Task { await model.apply(search.filters) } } label: { Label("Afficher le fil", systemImage: "text.alignleft") }
-                            .buttonStyle(ActionButtonStyle())
-                    }
-                    Menu {
-                        if !archived {
-                            Button("Ajuster les filtres", systemImage: "slider.horizontal.3") { model.openSearch(search.filters) }
+                ForEach(searches) { search in
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text(search.name).font(.system(.title2, design: .serif, weight: .semibold))
+                            .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+                        Text(search.filters.isEmpty ? "Toutes les personnalités" : search.filters.summary)
+                            .font(.subheadline).foregroundStyle(Brand.secondary)
+                        Text([search.filters.interventions ? "Interventions" : nil, search.filters.citations ? "Citations" : nil].compactMap { $0 }.joined(separator: " · "))
+                            .font(.subheadline).foregroundStyle(Brand.secondary)
+                        AdaptiveRow {
+                            if archived {
+                                Button("Restaurer ce suivi") { model.archive(search) }
+                                    .buttonStyle(ActionButtonStyle()).accessibilityIdentifier("restore-search-\(search.name)")
+                            } else {
+                                Button { Task { await model.apply(search.filters) } } label: { Label("Afficher le fil", systemImage: "text.alignleft") }
+                                    .buttonStyle(ActionButtonStyle())
+                            }
+                            Menu {
+                                if !archived {
+                                    Button("Ajuster les filtres", systemImage: "slider.horizontal.3") { model.openSearch(search.filters) }
+                                }
+                                Button(archived ? "Restaurer" : "Archiver", systemImage: archived ? "arrow.uturn.backward" : "archivebox") { model.archive(search) }
+                                Button("Supprimer", systemImage: "trash", role: .destructive) { deleting = search }
+                            } label: {
+                                Label("Options", systemImage: "ellipsis").font(.subheadline.weight(.medium))
+                                    .fixedSize(horizontal: false, vertical: true).padding(.horizontal, 8).frame(minHeight: 52)
+                            }.accessibilityLabel("Options de \(search.name)").accessibilityIdentifier("saved-actions-\(search.name)")
                         }
-                        Button(archived ? "Restaurer" : "Archiver", systemImage: archived ? "arrow.uturn.backward" : "archivebox") { model.archive(search) }
-                        Button("Supprimer", systemImage: "trash", role: .destructive) { deleting = search }
-                    } label: { Label("Options", systemImage: "ellipsis.circle").frame(minHeight: 44) }
-                        .accessibilityLabel("Options de \(search.name)").accessibilityIdentifier("saved-actions-\(search.name)")
-                }.padding(.vertical, 12)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button("Supprimer", role: .destructive) { deleting = search }
-                        Button(archived ? "Restaurer" : "Archiver") { model.archive(search) }.tint(Brand.blue)
-                    }
+                        EditorialRule().padding(.top, 8)
+                    }.padding(.top, 24)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button("Supprimer", role: .destructive) { deleting = search }
+                            Button(archived ? "Restaurer" : "Archiver") { model.archive(search) }.tint(Brand.blue)
+                        }
+                }
+                if !searches.isEmpty {
+                    Text("Vos suivis sont enregistrés sur cet appareil, pour votre compte.")
+                        .font(.footnote).foregroundStyle(Brand.secondary).padding(.vertical, 24)
+                }
             }
-            if !searches.isEmpty {
-                Section { Text("Vos suivis sont enregistrés sur cet appareil, pour votre compte.").font(.footnote).foregroundStyle(Brand.secondary) }.listRowBackground(Color.clear)
-            }
+            .listRowInsets(EdgeInsets(top: 0, leading: sizeClass == .regular ? EditorialLayout.wideMargin : 20, bottom: 0, trailing: sizeClass == .regular ? EditorialLayout.wideMargin : 20))
+            .listRowBackground(Color.clear).listRowSeparator(.hidden)
         }
-        .navigationTitle("Mes suivis")
+        .listStyle(.plain).scrollContentBackground(.hidden)
+        .frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
+        .background(Brand.background)
+        .navigationTitle("").navigationBarTitleDisplayMode(.inline)
+        .toolbar(sizeClass == .regular ? .hidden : .visible, for: .navigationBar)
+        .toolbar { if sizeClass != .regular { ToolbarItem(placement: .principal) { Wordmark(size: 21) } } }
         .alert("Supprimer ce suivi ?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button("Annuler", role: .cancel) { deleting = nil }
             Button("Supprimer", role: .destructive) { if let deleting { model.delete(deleting) }; deleting = nil }
         } message: { Text("« \(deleting?.name ?? "") » disparaîtra de cet appareil. Cette action est définitive.") }
     }
     private func category(_ title: String, archived value: Bool) -> some View {
-        Button { archived = value } label: {
-            HStack { if archived == value { Image(systemName: "checkmark") }; Text(title) }
-        }.buttonStyle(ActionButtonStyle(prominent: archived == value))
-            .accessibilityAddTraits(archived == value ? .isSelected : [])
+        EditorialTabButton(title: title, selected: archived == value, accent: Brand.citation) { archived = value }
             .accessibilityIdentifier(value ? "saved-archived" : "saved-active")
     }
 }

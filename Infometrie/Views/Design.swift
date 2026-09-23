@@ -3,33 +3,38 @@ import SwiftUI
 enum Brand {
     static let blue = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.48, green: 0.59, blue: 1, alpha: 1)
-            : UIColor(red: 0.19, green: 0.28, blue: 0.87, alpha: 1)
+            ? UIColor(red: 0.76, green: 0.83, blue: 0.96, alpha: 1)
+            : UIColor(red: 0.07, green: 0.12, blue: 0.21, alpha: 1)
     })
     static let citation = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 1, green: 0.52, blue: 0.56, alpha: 1)
-            : UIColor(red: 0.72, green: 0.13, blue: 0.19, alpha: 1)
+            ? UIColor(red: 0.98, green: 0.60, blue: 0.65, alpha: 1)
+            : UIColor(red: 0.59, green: 0.10, blue: 0.20, alpha: 1)
     })
     static let secondary = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.76, green: 0.78, blue: 0.83, alpha: 1)
             : UIColor(red: 0.30, green: 0.33, blue: 0.39, alpha: 1)
     })
-    static let action = Color(red: 0.19, green: 0.28, blue: 0.78)
-    static let background = Color(uiColor: .systemGroupedBackground)
-    static let card = Color(uiColor: .secondarySystemGroupedBackground)
+    static let background = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.07, green: 0.08, blue: 0.10, alpha: 1)
+            : UIColor(red: 0.995, green: 0.991, blue: 0.977, alpha: 1)
+    })
+    static let ink = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.94, green: 0.94, blue: 0.91, alpha: 1)
+            : UIColor(red: 0.05, green: 0.09, blue: 0.16, alpha: 1)
+    })
+    static let rule = Brand.secondary.opacity(0.28)
 }
 
 struct Wordmark: View {
     var size: CGFloat = 27
     var body: some View {
-        HStack(spacing: 0) {
-            Text("Info").fontWeight(.bold)
-            Text("Métrie").fontWeight(.regular).foregroundStyle(Brand.blue)
-            Circle().fill(Brand.blue).frame(width: 6, height: 6).padding(.leading, 3).offset(y: -8)
-        }
-        .font(.system(size: size, design: .rounded))
+        Text("InfoMétrie")
+        .font(.system(size: size, weight: .bold, design: .serif))
+        .foregroundStyle(Brand.ink)
         .fixedSize(horizontal: true, vertical: false)
         .accessibilityElement(children: .ignore).accessibilityLabel("InfoMétrie")
     }
@@ -46,10 +51,10 @@ struct ActionButtonStyle: ButtonStyle {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 16).padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 52)
-            .foregroundStyle(prominent ? Color.white : Brand.blue)
-            .background(prominent ? Brand.action : Brand.card, in: RoundedRectangle(cornerRadius: 16))
-            .overlay { if !prominent { RoundedRectangle(cornerRadius: 16).strokeBorder(Brand.blue.opacity(0.35)) } }
-            .contentShape(RoundedRectangle(cornerRadius: 16))
+            .foregroundStyle(prominent ? Brand.background : Brand.ink)
+            .background(prominent ? Brand.ink : .clear, in: Capsule())
+            .overlay { if !prominent { Capsule().strokeBorder(Brand.rule) } }
+            .contentShape(Capsule())
             .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.45)
     }
 }
@@ -79,10 +84,10 @@ struct PersonAvatar: View {
     let item: FeedItem
     var size: CGFloat = 42
     var body: some View {
-        Text(item.initials).font(.system(size: size * 0.32, weight: .semibold, design: .rounded))
-            .foregroundStyle(Brand.blue)
+        Text(item.initials).font(.system(size: size * 0.32, weight: .semibold))
+            .foregroundStyle(Brand.citation)
             .frame(width: size, height: size)
-            .background(Brand.blue.opacity(0.06), in: RoundedRectangle(cornerRadius: size * 0.34))
+            .background(Brand.citation.opacity(0.07), in: Circle())
             .accessibilityHidden(true)
     }
 }
@@ -96,12 +101,129 @@ struct DemoBanner: View {
                     Text("Mode démo").fontWeight(.semibold)
                     Text("Données fictives")
                 }.frame(maxWidth: .infinity, alignment: .leading)
-            } else { Label("Démonstration · données fictives", systemImage: "sparkles") }
+            } else { Text("Démonstration · données fictives") }
         }
-            .font(.footnote.weight(.medium)).foregroundStyle(Brand.blue)
-            .padding(.horizontal, 12).padding(.vertical, 8)
-            .frame(maxWidth: .infinity).background(Brand.blue.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+            .font(.footnote).foregroundStyle(Brand.secondary)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityIdentifier("demo-banner")
+    }
+}
+
+enum EditorialLayout {
+    static let maximumWidth: CGFloat = 1040
+    static let readingWidth: CGFloat = 760
+    static let wideMargin: CGFloat = 36
+}
+
+struct EditorialPageHeading: View {
+    let title: String
+    var subtitle: String?
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @ScaledMetric(relativeTo: .largeTitle) private var compactSize = 40.0
+    @ScaledMetric(relativeTo: .largeTitle) private var wideSize = 56.0
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.system(size: sizeClass == .regular ? wideSize : compactSize, weight: .bold, design: .serif))
+                .tracking(-0.6).foregroundStyle(Brand.ink)
+                .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+            Rectangle().fill(Brand.citation).frame(width: 40, height: 5).accessibilityHidden(true)
+            if let subtitle {
+                Text(subtitle).font(.body).foregroundStyle(Brand.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct EditorialSection<Content: View>: View {
+    let title: String
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            EditorialRule()
+            Text(title).font(.system(.title2, design: .serif, weight: .semibold))
+                .foregroundStyle(Brand.ink).fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+            content()
+        }
+    }
+}
+
+struct EditorialEmptyState: View {
+    let title: String
+    let icon: String
+    let message: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Image(systemName: icon).font(.title2).foregroundStyle(Brand.citation).accessibilityHidden(true)
+            Text(title).font(.system(.title2, design: .serif, weight: .semibold))
+                .foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
+            Text(message).font(.body).foregroundStyle(Brand.secondary)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 28)
+    }
+}
+
+/// Retain native back and dismissal controls, with the same paper and serif as the pages.
+private struct EditorialNavigationTitle: ViewModifier {
+    let title: String
+    func body(content: Content) -> some View {
+        content.navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(title).font(.system(.headline, design: .serif, weight: .semibold))
+                        .foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
+                }
+            }
+            .toolbarBackground(Brand.background, for: .navigationBar)
+    }
+}
+
+extension View {
+    func editorialNavigationTitle(_ title: String) -> some View {
+        modifier(EditorialNavigationTitle(title: title))
+    }
+
+    func editorialInput() -> some View {
+        background(Brand.secondary.opacity(0.035), in: RoundedRectangle(cornerRadius: 6))
+            .overlay(alignment: .bottom) { Rectangle().fill(Brand.secondary.opacity(0.5)).frame(height: 1) }
+    }
+}
+
+struct EditorialRule: View {
+    var body: some View {
+        Rectangle().fill(Brand.rule).frame(height: 0.5).accessibilityHidden(true)
+    }
+}
+
+/// A visible underline and a selected trait make the state independent of color.
+struct EditorialTabButton: View {
+    let title: String
+    let selected: Bool
+    var accent: Color = Brand.ink
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.body.weight(selected ? .semibold : .regular))
+                .foregroundStyle(selected ? Brand.ink : Brand.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12).padding(.vertical, 12)
+                .frame(minHeight: 48)
+                .overlay(alignment: .bottom) {
+                    if selected { Rectangle().fill(accent).frame(height: 3) }
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -111,9 +233,11 @@ struct ErrorNotice: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label(message, systemImage: "exclamationmark.circle").font(.subheadline)
+                .foregroundStyle(Brand.ink).fixedSize(horizontal: false, vertical: true)
             if let retry { Button("Réessayer", action: retry).buttonStyle(ActionButtonStyle()) }
         }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 18))
+            .background(Brand.citation.opacity(0.05))
+            .overlay(alignment: .leading) { Rectangle().fill(Brand.citation).frame(width: 3) }
             .accessibilityElement(children: .contain)
     }
 }

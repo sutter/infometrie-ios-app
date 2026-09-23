@@ -1,5 +1,36 @@
 # Validation du portage
 
+## Alignement de la date du fil — 23 septembre 2026
+
+Présentation précédente restaurée à la demande de l’utilisateur : icônes et tailles d’origine, date/heure complète. La première ligne occupe désormais toute la largeur pour aligner la date à droite, comme la durée sur la deuxième. Compilation réussie, installation sur iPhone et iPad, résultat inspecté sur l’iPhone avec la session habituelle. Pas de nouvelle suite de tests pour cet ajustement de disposition ; `git diff --check` passe. Journal : `/tmp/infometrie-feed-date-alignment-build.log`.
+
+## Proposition compacte des métadonnées — remplacée le 23 septembre 2026
+
+La préférence finale revient à la présentation précédente, avec uniquement la date et l’heure alignées à droite de la première ligne, comme la durée sur la deuxième. Les résultats suivants concernent la proposition compacte intermédiaire. Voir la [présentation retenue](UX/FeedMetadata/README.md).
+
+Média et heure regroupés, type et durée rapprochés sur une ligne secondaire, une seule icône de média et date adaptée à la journée. Composition sur une ligne pour le passage principal iPad lorsque la largeur le permet, avec repli vertical. [Comparaison et captures](UX/FeedMetadata/README.md).
+
+- `build/FeedMetadataPhoneFinal.xcresult` : **2 tests réussis, zéro échec / avertissement** — filtres, annulation et audit du fil exposé ; sombre, texte maximal, ouverture et lecture du passage.
+- Le point de séparation textuel signalé par le premier audit a été remplacé par une forme décorative ; les assertions et exclusions du pilote restent inchangées. Comparaison avant/après, sombre, grandes tailles et colonnes iPad inspectés.
+- Modification limitée à la présentation de `FeedCard`, sans changement métier. Compilation SDK 27, simulateurs iOS/iPadOS 26.4.
+
+## Thème éditorial sur toutes les pages — 23 septembre 2026
+
+Suivis et archives, compte, connexion/erreurs/quota, filtres et sélecteurs, enregistrement, fiches, verbatim et lecteurs harmonisés avec la version « Revue ». Titres serif, papier, filets fins et boutons encre/papier communs. [Planches de contrôle](UX/Editorial/README.md), [détail de validation](../design-qa.md).
+
+- Six parcours iPad et sept parcours iPhone distincts ont été réussis, en comptant les reprises ciblées. Les parcours standards de suivis, connexion/quota et lecture passent dans `EditorialAllPagesTablet.xcresult` et `EditorialAllPagesPhone.xcresult`.
+- Reprises finales : `EditorialAllPagesTabletAccessible.xcresult`, **2/2**, et `EditorialAllPagesPhoneFinal.xcresult`, **3/3**, zéro échec et avertissement. Les premières erreurs étaient dans le pilote (gestes hors feuille, ligne pas encore créée, passage hors écran) ; les assertions fonctionnelles ont été conservées.
+- Comparaison commune de la référence et des pages iPad ; contrôle des vues iPhone, du sombre, des erreurs et des plus grandes tailles. Aucun changement API, stockage ou moteur audio. Version finale relancée sur iPad mini, iPadOS 26.4 / SDK 27.
+
+## Direction éditoriale « Revue » — 23 septembre 2026
+
+Version 2 de la maquette intégrée : palette papier / bleu nuit / bordeaux, typographie serif, premier passage mis en avant puis deux colonnes sur iPad, une colonne sur iPhone et en grandes tailles. Navigation iPad distincte des catégories ; ordre personnalité → passage → provenance conservé. [Captures et comparaison](UX/Editorial/README.md), [rapport QA](../design-qa.md).
+
+- `build/EditorialTabletVerified.xcresult` : 3 tests réussis, zéro échec / avertissement — navigation, retour de fiche, absence de barre en double, filtres synchronisés, podcast limité à la sélection, sombre et texte maximal.
+- `build/EditorialPhoneFinal.xcresult` : 3 tests réussis, zéro échec / avertissement — navigation, lecture au texte maximal, sombre, filtres et audit du fil (contraste, texte tronqué, zones tactiles des passages entièrement visibles).
+- Comparaison de la référence et du rendu final effectuée ensemble, puis inspection des titres et métadonnées. Deux problèmes de navigation iPad détectés pendant les itérations ont été corrigés et revérifiés.
+- Dernière compilation installée et ouverte sur les deux simulateurs ; iPad mini laissé au premier plan. iOS/iPadOS 26.4, SDK iOS 27. Aucun changement de logique API ou audio.
+
 ## En-tête du fil compact — 22 septembre 2026
 
 Titre intégré à la barre de navigation, bouton « Filtrer » persistant avec texte visible, types présentés par libellés et soulignement, « Tout écouter » réuni avec la période et le nombre de passages. La capture standard sur iPhone 17 Pro montre désormais deux cartes complètes, contre une avant. [Comparaison et captures](UX/Feed/README.md#en-tête-compact--présentation-actuelle).

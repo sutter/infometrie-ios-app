@@ -14,19 +14,11 @@ struct SequenceView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 16) {
-                    PassageSource(item: item)
-                    Text(item.title)
-                        .font(.system(.title2, design: .serif, weight: .semibold))
-                        .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
-                        .accessibilityAddTraits(.isHeader)
-                        .accessibilityIdentifier("sequence-title")
-                    PassageByline(item: item)
-                }
+                PassageHeading(item: item, titleIdentifier: "sequence-title")
                 if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
                 if isCurrent, item.video, !model.isDemo {
                     NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 if let error {
                     ErrorNotice(message: error) { self.error = nil; reload += 1 }
@@ -39,7 +31,7 @@ struct SequenceView: View {
                     } else { Text("Le texte n’est pas disponible pour ce passage.").foregroundStyle(Brand.secondary) }
                     if !detail.resume.isEmpty {
                         SequenceDisclosure(title: "Lire le résumé", icon: "text.alignleft") {
-                            Text(detail.resume).font(.body).lineSpacing(6)
+                            Text(detail.resume).font(.system(.body, design: .serif)).lineSpacing(6)
                                 .fixedSize(horizontal: false, vertical: true)
                         }.accessibilityIdentifier("sequence-summary")
                     }
@@ -55,7 +47,7 @@ struct SequenceView: View {
                     }.font(.subheadline).foregroundStyle(Brand.secondary)
                 }.accessibilityIdentifier("sequence-context")
                 if model.isDemo { DemoBanner() }
-            }.padding(20).frame(maxWidth: 720).frame(maxWidth: .infinity)
+            }.padding(20).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if item.hasMedia {
@@ -71,14 +63,14 @@ struct SequenceView: View {
                             }
                         }
                     }.buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("play-sequence")
-                        .padding(16).frame(maxWidth: 720).frame(maxWidth: .infinity).background(Brand.card)
-                        .overlay(alignment: .top) { Divider() }
+                        .padding(16).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.background)
+                        .overlay(alignment: .top) { EditorialRule() }
                 }
             }
         }
         .scrollEdgeEffectHidden(true, for: .bottom)
         .scrollEdgeEffectStyle(.hard, for: .top)
-        .background(Brand.background).navigationTitle("Séquence").navigationBarTitleDisplayMode(.inline)
+        .background(Brand.background).editorialNavigationTitle("Séquence")
         .toolbar(.hidden, for: .tabBar)
         .task(id: reload) {
             do { detail = try await model.sequence(item) }
@@ -101,16 +93,15 @@ private struct SequenceDisclosure<Content: View>: View {
             HStack(spacing: 12) {
                 Image(systemName: icon).font(.system(size: 16, weight: .medium))
                     .frame(width: 32, height: 32)
-                    .background(Brand.blue.opacity(0.07), in: RoundedRectangle(cornerRadius: 9))
+                    .foregroundStyle(Brand.citation)
                     .accessibilityHidden(true)
-                Text(title).font(.body.weight(.semibold))
+                Text(title).font(.system(.title3, design: .serif, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
             }
             .foregroundStyle(Brand.blue).frame(minHeight: 56).padding(.vertical, 4)
         }
-        .tint(Brand.blue).padding(.horizontal, 20)
-        .background(Brand.card, in: RoundedRectangle(cornerRadius: 20))
-        .overlay { RoundedRectangle(cornerRadius: 20).strokeBorder(.primary.opacity(0.06)) }
+        .tint(Brand.citation)
+        .overlay(alignment: .top) { EditorialRule() }
     }
 }
 
@@ -149,8 +140,8 @@ struct PlaybackDock: View {
             }
         }
         .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
-        .frame(maxWidth: 720).frame(maxWidth: .infinity)
-        .background(Brand.card).overlay(alignment: .top) { Divider() }
+        .frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
+        .background(Brand.background).overlay(alignment: .top) { EditorialRule() }
     }
     private var playButton: some View {
         Button { playback.toggle() } label: {
@@ -163,7 +154,7 @@ struct PlaybackDock: View {
         Button { playback.seek(playback.position + (forward ? 10 : -10)) } label: {
             Image(systemName: forward ? "goforward.10" : "gobackward.10")
                 .font(.title2).frame(minWidth: 52, maxWidth: dynamicType.isAccessibilitySize ? .infinity : 60, minHeight: 56)
-                .background(Brand.blue.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+                .overlay { Capsule().strokeBorder(Brand.rule) }
                 .contentShape(Rectangle())
         }.buttonStyle(.plain).foregroundStyle(Brand.blue)
             .disabled(playback.isLoading || playback.error != nil)
@@ -183,8 +174,9 @@ struct PodcastView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Passage \(model.player.index + 1) sur \(model.player.queue.count)").font(.subheadline).foregroundStyle(Brand.secondary)
-                        Text(model.player.current?.person ?? "").font(.headline).foregroundStyle(Brand.blue)
-                        Text(model.player.current?.title ?? "Votre sélection").font(.title2.bold())
+                        if let item = model.player.current {
+                            PassageHeading(item: item, titleIdentifier: "podcast-title")
+                        }
                     }
                     AdaptiveRow {
                         Button { model.player.previous() } label: { Label("Précédent", systemImage: "backward.end.fill") }
@@ -194,37 +186,39 @@ struct PodcastView: View {
                     }.buttonStyle(ActionButtonStyle())
                     if let error = model.player.error { ErrorNotice(message: error) }
                     if model.player.current?.video == true, !model.isDemo {
-                        NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 16))
+                        NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                     if let detail = model.player.detail, !detail.verbatim.isEmpty {
                         TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: true) { word in
                             model.player.seekToWord(word, sequenceID: detail.id)
                         }.id(detail.id)
                     }
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Tous les passages").font(.title2.bold())
+                    EditorialSection(title: "Tous les passages") {
                         Text("Du plus ancien au plus récent").font(.subheadline).foregroundStyle(Brand.secondary)
                         ForEach(Array(model.player.queue.enumerated()), id: \.element.id) { index, item in
                             Button { model.player.select(index) } label: {
                                 HStack(spacing: 14) {
                                     Image(systemName: index == model.player.index ? "speaker.wave.2.fill" : "play.circle")
-                                        .foregroundStyle(Brand.blue).font(.title2).accessibilityHidden(true)
+                                        .foregroundStyle(Brand.citation).font(.title2).accessibilityHidden(true)
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text(item.person).font(.headline).foregroundStyle(.primary)
-                                        Text(item.title).font(.body).foregroundStyle(.primary)
+                                        Text(item.title).font(.system(.title3, design: .serif, weight: .medium)).foregroundStyle(Brand.ink)
                                         Text(item.durationLabel).font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
                                     }
-                                }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(Brand.card, in: RoundedRectangle(cornerRadius: 16))
+                                }.padding(.vertical, 18).padding(.horizontal, 12)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(index == model.player.index ? Brand.citation.opacity(0.05) : .clear)
+                                    .overlay(alignment: .bottom) { EditorialRule() }
+                                    .contentShape(Rectangle())
                             }.buttonStyle(.plain).accessibilityIdentifier("queue-item-\(index)")
                                 .accessibilityAddTraits(index == model.player.index ? .isSelected : [])
                         }
                     }
                     if model.isDemo { DemoBanner() }
-                }.padding(20).frame(maxWidth: 720).frame(maxWidth: .infinity)
+                }.padding(20).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock() }
-            .background(Brand.background).navigationTitle("Tout écouter").navigationBarTitleDisplayMode(.inline)
+            .background(Brand.background).editorialNavigationTitle("Tout écouter")
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fermer") { model.player.stop() }.accessibilityIdentifier("close-podcast") } }
         }.presentationDragIndicator(.visible)
     }
