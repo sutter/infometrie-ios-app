@@ -6,7 +6,7 @@ struct FeedView: View {
     @Environment(\.dynamicTypeSize) private var dynamicType
     @ScaledMetric(relativeTo: .largeTitle) private var wideTitleSize = 112.0
     @ScaledMetric(relativeTo: .largeTitle) private var compactTitleSize = 52.0
-    private var playable: [FeedItem] { model.visibleItems.filter(\.hasMedia).sorted { $0.at < $1.at } }
+    private var playable: [FeedItem] { model.visibleItems.filter(\.canPlay).sorted { $0.at < $1.at } }
     private var hasAudienceFilters: Bool { !model.filters.isEmpty }
     private var usesWideLayout: Bool { horizontalSizeClass == .regular }
 
@@ -211,34 +211,27 @@ struct FeedView: View {
 private struct FeedKindPicker: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private enum Kind: Int, CaseIterable {
-        case all, interventions, citations
+        case all, interventions, citations, tweets
         var title: String {
             switch self {
             case .all: "Tous"
             case .interventions: "Interventions"
             case .citations: "Citations"
+            case .tweets: "X"
             }
         }
-        var accessibilityLabel: String { self == .all ? "Tous les passages" : title }
+        var accessibilityLabel: String { self == .all ? "Tous les contenus" : self == .tweets ? "Publications X" : title }
     }
 
-    private var selection: Binding<Kind> {
-        Binding {
-            if model.filters.interventions && model.filters.citations { return .all }
-            return model.filters.interventions ? .interventions : .citations
-        } set: { kind in
-            var filters = model.filters
-            filters.interventions = kind != .citations
-            filters.citations = kind != .interventions
-            guard filters != model.filters else { return }
-            Task { await model.apply(filters) }
-        }
+    private var selection: Kind? {
+        model.filters.kindSelection.flatMap(Kind.init(rawValue:))
     }
 
     var body: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 8) {
             if dynamicType.isAccessibilitySize { verticalChoices }
             else {
                 ViewThatFits(in: .horizontal) {
@@ -249,6 +242,10 @@ private struct FeedKindPicker: View {
                     }
                     verticalChoices
                 }
+            }
+            if selection == nil {
+                Text(model.filters.kindSummary).font(.subheadline).foregroundStyle(Brand.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -264,8 +261,11 @@ private struct FeedKindPicker: View {
     }
 
     private func choice(_ kind: Kind) -> some View {
-        EditorialTabButton(title: kind.title, selected: selection.wrappedValue == kind) {
-            selection.wrappedValue = kind
+        EditorialTabButton(title: kind.title, selected: selection == kind, compact: sizeClass != .regular) {
+            var filters = model.filters
+            filters.selectKind(kind.rawValue)
+            guard filters != model.filters else { return }
+            Task { await model.apply(filters) }
         }
         .accessibilityLabel(kind.accessibilityLabel)
         .accessibilityIdentifier("feed-kind-\(kind.rawValue)")

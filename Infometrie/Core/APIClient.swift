@@ -49,12 +49,14 @@ final class APIClient: @unchecked Sendable {
     }
     func feedRequest(token: String, filters: SearchFilters, since: Int64) -> URLRequest {
         var query = [URLQueryItem(name: "since_seq", value: String(since)), URLQueryItem(name: "limit", value: "50")]
+        query.append(.init(name: "kinds", value: filters.selectedKinds.joined(separator: ",")))
         if !filters.persons.isEmpty { query.append(.init(name: "persons", value: filters.persons.sorted().joined(separator: ","))) }
         if !filters.parties.isEmpty { query.append(.init(name: "parties", value: filters.parties.sorted().joined(separator: ","))) }
         return request(path: "rest/v1/feed", token: token, query: query)
     }
     func feed(token: String, filters: SearchFilters, since: Int64 = 0) async throws -> FeedResponse {
-        try await send(feedRequest(token: token, filters: filters, since: since))
+        guard filters.hasKinds else { return FeedResponse(items: [], lastSeq: since) }
+        return try await send(feedRequest(token: token, filters: filters, since: since))
     }
     func persons(token: String) async throws -> [Person] { try await send(request(path: "rest/v1/persons", token: token)) }
     func parties(token: String) async throws -> [Party] { try await send(request(path: "rest/v1/parties", token: token)) }

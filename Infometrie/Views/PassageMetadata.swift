@@ -8,7 +8,7 @@ struct PassageSource: View {
     var body: some View {
         AdaptiveRow {
             HStack(spacing: 8) {
-                Image(systemName: item.media.lowercased() == "tv" ? "tv" : "radio")
+                ChannelMark(item: item)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Brand.citation)
                     .frame(width: 30, height: 30)
@@ -69,7 +69,7 @@ struct PassageHeading: View {
                 AdaptiveRow {
                     KindBadge(item: item)
                     Spacer(minLength: 0)
-                    if item.durationSec > 0 {
+                    if item.canPlay && item.durationSec > 0 {
                         Label(item.readableDuration, systemImage: "headphones")
                             .font(.subheadline).foregroundStyle(Brand.secondary)
                     }
@@ -81,6 +81,7 @@ struct PassageHeading: View {
 
 extension FeedItem {
     var kindColor: Color { isCitation ? Brand.citation : Brand.blue }
+    var kindSymbol: String { isTweet ? "text.bubble" : isCitation ? "quote.bubble" : kind == "intervention" ? "waveform" : "doc.text" }
 
     var readableDuration: String {
         let seconds = max(0, durationSec)

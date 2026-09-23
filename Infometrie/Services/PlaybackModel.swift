@@ -56,7 +56,7 @@ final class PlaybackModel {
     }
     func start(items: [FeedItem], app: AppModel, podcast: Bool, atWord: Int? = nil) {
         stop()
-        queue = items.filter(\.hasMedia)
+        queue = items.filter(\.canPlay)
         guard !queue.isEmpty else { return }
         self.app = app; isPodcast = podcast; index = 0
         loadCurrent(atWord: atWord)

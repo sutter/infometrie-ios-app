@@ -2,6 +2,56 @@ import XCTest
 
 final class InfometrieUITests: XCTestCase {
     @MainActor
+    func testPublicationsUseServerKindsResetCursorAndHaveNoAudio() {
+        let app = loginTestApp()
+        app.launchArguments += ["--feed-kinds-fixture"]
+        app.launch()
+        submitLogin(in: app, password: "valide")
+        XCTAssertTrue(app.staticTexts["3 passages"].waitForExistence(timeout: 10))
+        app.buttons["feed-kind-3"].tap()
+        XCTAssertTrue(app.buttons["feed-item-903"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["1 passage"].exists)
+        XCTAssertFalse(app.buttons["start-podcast"].isEnabled)
+        capture("21-fil-publications-x", app: app)
+        app.buttons["feed-item-903"].tap()
+        XCTAssertTrue(app.staticTexts["publication-text"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["open-publication"].exists || app.links["open-publication"].exists)
+        XCTAssertFalse(app.buttons["play-sequence"].exists)
+        XCTAssertFalse(app.buttons["player-toggle"].exists)
+        XCTAssertFalse(app.sliders["player-position"].exists)
+        XCTAssertFalse(app.otherElements["transcript-scroll"].exists)
+        capture("21-publication-x", app: app)
+        app.navigationBars["Publication X"].buttons.element(boundBy: 0).tap()
+        for (selection, id) in [(1, 901), (2, 902), (3, 903)] {
+            app.buttons["feed-kind-\(selection)"].tap()
+            XCTAssertTrue(app.buttons["feed-item-\(id)"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.staticTexts["1 passage"].exists)
+        }
+        app.buttons["edit-filters"].tap()
+        reveal(app.buttons["filter-kind-3"], in: app, down: false)
+        XCTAssertTrue(app.buttons["filter-kind-3"].isSelected)
+        reveal(app.buttons["save-search"], in: app, down: false)
+        app.buttons["save-search"].tap()
+        let name = "Publications X " + UUID().uuidString.prefix(6)
+        app.textFields["search-name"].tap(); app.textFields["search-name"].typeText(String(name))
+        app.buttons["confirm-save-search"].tap()
+        XCTAssertTrue(app.staticTexts[String(name)].waitForExistence(timeout: 5))
+        app.terminate(); app.launch()
+        XCTAssertTrue(app.buttons["feed-kind-0"].waitForExistence(timeout: 10))
+        navigationButton("Mes suivis", in: app).tap()
+        XCTAssertTrue(app.staticTexts[String(name)].waitForExistence(timeout: 5))
+        app.buttons["saved-actions-\(name)"].tap()
+        app.buttons["Ajuster les filtres"].tap()
+        reveal(app.buttons["filter-kind-3"], in: app, down: false)
+        XCTAssertTrue(app.buttons["filter-kind-3"].isSelected)
+        app.buttons["apply-search"].tap()
+        XCTAssertTrue(app.buttons["feed-item-903"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["feed-kind-3"].isSelected)
+        app.buttons["feed-kind-0"].tap()
+        XCTAssertTrue(app.staticTexts["3 passages"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testLoginCallsAPIStoresSessionAndRestoresAfterRelaunch() {
         let app = loginTestApp()
         app.launch()
@@ -77,6 +127,8 @@ final class InfometrieUITests: XCTestCase {
         }
         let field = app.secureTextFields["login-password"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
+        reveal(field, in: app, down: false)
+        field.tap()
         if let oldPassword { field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldPassword.count)) }
         field.typeText(password)
         // Test the visible button, not just the keyboard's submit action.
@@ -453,7 +505,7 @@ final class InfometrieUITests: XCTestCase {
         let citations = app.buttons["feed-kind-2"]
         XCTAssertTrue(all.waitForExistence(timeout: 10))
         XCTAssertTrue(all.isSelected)
-        XCTAssertTrue(app.staticTexts["5 passages"].exists)
+        XCTAssertTrue(app.staticTexts["7 passages"].exists)
         capture("18-fil-tous", app: app)
 
         citations.tap()
@@ -479,9 +531,13 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertFalse(app.buttons["feed-item-2"].exists)
         capture("18-fil-interventions", app: app)
 
+        reveal(all, in: app, down: true)
         all.tap()
-        XCTAssertTrue(app.staticTexts["5 passages"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["7 passages"].waitForExistence(timeout: 5))
         citations.tap()
+        XCTAssertTrue(citations.isSelected)
+        XCTAssertTrue(app.staticTexts["2 passages"].waitForExistence(timeout: 5))
+        reveal(app.buttons["start-podcast"], in: app, down: true)
         app.buttons["start-podcast"].tap()
         XCTAssertTrue(app.staticTexts["Passage 1 sur 2"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Les enjeux de la rentrée"].exists)
@@ -510,7 +566,7 @@ final class InfometrieUITests: XCTestCase {
             citations.tap()
             XCTAssertTrue(citations.isSelected)
             capture("18-fil-citations-\(suffix)", app: app)
-            for index in 0...2 {
+            for index in 0...3 {
                 let choice = app.buttons["feed-kind-\(index)"]
                 XCTAssertGreaterThanOrEqual(choice.frame.height, 48)
                 XCTAssertGreaterThanOrEqual(choice.frame.minX, app.frame.minX + 20)

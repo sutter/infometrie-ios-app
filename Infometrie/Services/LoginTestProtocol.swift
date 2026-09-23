@@ -52,6 +52,10 @@ final class LoginTestProtocol: URLProtocol, @unchecked Sendable {
         guard request.httpMethod == "GET", request.value(forHTTPHeaderField: "Authorization") == "Bearer login-ui-fixture" else {
             respond(401); return
         }
+        if ProcessInfo.processInfo.arguments.contains("--feed-kinds-fixture") {
+            respondToKindsFixture(url)
+            return
+        }
         switch url.path {
         case "/rest/v1/feed":
             respond(200, ["last_seq": 901, "items": [["id": 901, "seq": 901, "at": APIDate.string(Date()),
@@ -60,6 +64,30 @@ final class LoginTestProtocol: URLProtocol, @unchecked Sendable {
         case "/rest/v1/persons", "/rest/v1/parties": respond(200, [])
         default: respond(404)
         }
+    }
+
+    private func respondToKindsFixture(_ url: URL) {
+        let content: [[String: Any]] = [(901, "intervention"), (902, "citation"), (903, "tweet")].map { id, kind in
+            ["id": id, "seq": id, "at": APIDate.string(Date()), "kind": kind,
+             "media": kind == "tweet" ? "x" : "radio", "channel": kind == "tweet" ? "X" : "Canal de test",
+             "channel_key": kind == "tweet" ? "x" : "unknown_test_channel",
+             "person": "Camille Test", "party": "TEST", "title": "Contenu \(kind)",
+             "has_media": true, // Deliberately inconsistent for X: it still must not be played.
+             "url": kind == "tweet" ? "https://x.com/i/status/123456789" : "",
+             "verbatim": "Texte complet de la publication de test."]
+        }
+        if url.path == "/rest/v1/feed" {
+            let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            guard let kinds = query.first(where: { $0.name == "kinds" })?.value, !kinds.isEmpty else { respond(422); return }
+            // Any kind change must start at zero; otherwise older matching records are missed.
+            let head = query.first(where: { $0.name == "since_seq" })?.value == "0"
+            let allowed = Set(kinds.split(separator: ",").map(String.init))
+            respond(200, ["last_seq": 1000, "items": head ? content.filter { allowed.contains($0["kind"] as! String) } : []])
+        } else if url.path == "/rest/v1/sequences/903" {
+            respond(200, content[2])
+        } else if ["/rest/v1/persons", "/rest/v1/parties"].contains(url.path) {
+            respond(200, [])
+        } else { respond(404) }
     }
 
     private func bodyData() -> Data? {

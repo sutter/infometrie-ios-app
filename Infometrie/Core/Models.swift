@@ -16,9 +16,34 @@ struct FeedItem: Codable, Identifiable, Hashable, Sendable {
     var durationSec: Int = 0
     var hasMedia: Bool = false
     var video: Bool = false
+    var channelKey: String = ""
+    var url: String = ""
 
     var isCitation: Bool { kind == "citation" }
-    var kindLabel: String { isCitation ? "Citation" : "Intervention" }
+    var isTweet: Bool { kind == "tweet" }
+    var canPlay: Bool { hasMedia && !isTweet }
+    var kindLabel: String {
+        switch kind {
+        case "intervention": "Intervention"
+        case "citation": "Citation"
+        case "tweet": "Publication X"
+        default: "Publication"
+        }
+    }
+    /// An external post is opened by the system, never by the authenticated API client.
+    var publicationURL: URL? {
+        guard isTweet, let value = URL(string: url), value.scheme?.lowercased() == "https",
+              let host = value.host?.lowercased(),
+              ["x.com", "www.x.com", "twitter.com", "www.twitter.com", "mobile.twitter.com"].contains(host),
+              value.user == nil, value.password == nil, value.port == nil || value.port == 443 else { return nil }
+        return value
+    }
+    var channelLogoAsset: String? {
+        let key = channelKey.lowercased()
+        guard !key.isEmpty, key.count <= 80,
+              key.utf8.allSatisfy({ (97...122).contains($0) || (48...57).contains($0) || $0 == 45 || $0 == 95 }) else { return nil }
+        return "channel-\(key)"
+    }
     var date: Date? { APIDate.parse(at) }
     var initials: String { person.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined() }
     var durationLabel: String { String(format: "%d:%02d", max(0, durationSec) / 60, max(0, durationSec) % 60) }
@@ -26,15 +51,18 @@ struct FeedItem: Codable, Identifiable, Hashable, Sendable {
     enum CodingKeys: String, CodingKey {
         case id, seq, at, kind, media, channel, show, person, role, party, title, video
         case citedBy = "cited_by", durationSec = "duration_sec", hasMedia = "has_media"
+        case channelKey = "channel_key", url
     }
 
     init(id: Int64, seq: Int64 = 0, at: String, kind: String, media: String, channel: String,
          show: String = "", person: String, role: String = "", party: String, title: String,
-         citedBy: String = "", durationSec: Int = 0, hasMedia: Bool = false, video: Bool = false) {
+         citedBy: String = "", durationSec: Int = 0, hasMedia: Bool = false, video: Bool = false,
+         channelKey: String = "", url: String = "") {
         self.id = id; self.seq = seq; self.at = at; self.kind = kind; self.media = media
         self.channel = channel; self.show = show; self.person = person; self.role = role
         self.party = party; self.title = title; self.citedBy = citedBy
         self.durationSec = durationSec; self.hasMedia = hasMedia; self.video = video
+        self.channelKey = channelKey; self.url = url
     }
 
     init(from decoder: Decoder) throws {
@@ -54,6 +82,8 @@ struct FeedItem: Codable, Identifiable, Hashable, Sendable {
         durationSec = try c.decodeIfPresent(Int.self, forKey: .durationSec) ?? 0
         hasMedia = try c.decodeIfPresent(Bool.self, forKey: .hasMedia) ?? false
         video = try c.decodeIfPresent(Bool.self, forKey: .video) ?? false
+        channelKey = try c.decodeIfPresent(String.self, forKey: .channelKey) ?? ""
+        url = try c.decodeIfPresent(String.self, forKey: .url) ?? ""
     }
 }
 

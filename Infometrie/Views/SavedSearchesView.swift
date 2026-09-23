@@ -35,7 +35,7 @@ struct SavedSearchesView: View {
                             .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                         Text(search.filters.isEmpty ? "Toutes les personnalités" : search.filters.summary)
                             .font(.subheadline).foregroundStyle(Brand.secondary)
-                        Text([search.filters.interventions ? "Interventions" : nil, search.filters.citations ? "Citations" : nil].compactMap { $0 }.joined(separator: " · "))
+                        Text(search.filters.kindSummary)
                             .font(.subheadline).foregroundStyle(Brand.secondary)
                         AdaptiveRow {
                             if archived {

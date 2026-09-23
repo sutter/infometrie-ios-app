@@ -5,7 +5,7 @@ struct SearchView: View {
     @State private var showSave = false
     @State private var name = ""
     @State private var saved = false
-    private var kind: Int { model.draft.interventions && model.draft.citations ? 0 : model.draft.interventions ? 1 : 2 }
+    private var kind: Int? { model.draft.kindSelection }
 
     var body: some View {
         @Bindable var model = model
@@ -39,13 +39,17 @@ struct SearchView: View {
                     }.buttonStyle(.plain).overlay(alignment: .bottom) { EditorialRule() }
                 }
 
-                EditorialSection(title: "Quels passages ?") {
+                EditorialSection(title: "Quels contenus ?") {
                     VStack(spacing: 0) {
+                        if kind == nil {
+                            FilterChoiceRow(title: model.draft.kindSummary, subtitle: "Types conservés dans ce suivi", selected: true, multiple: false)
+                                .accessibilityAddTraits(.isSelected)
+                            Divider().padding(.horizontal, 20)
+                        }
                         ForEach(Array(passageKinds.enumerated()), id: \.offset) { index, option in
                             if index > 0 { Divider().padding(.horizontal, 20) }
                             Button {
-                                model.draft.interventions = index != 2
-                                model.draft.citations = index != 1
+                                model.draft.selectKind(index)
                             } label: {
                                 FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false, accent: Brand.citation)
                             }
@@ -105,7 +109,7 @@ struct SearchView: View {
                                 Divider()
                                 recap("Partis politiques", value: model.draft.parties.isEmpty ? "Tous" : partyNames(model.draft.parties, in: model.parties))
                                 Divider()
-                                recap("Passages", value: passageKinds[kind].title)
+                                recap("Contenus", value: model.draft.kindSummary)
                             }.frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }.padding(20).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
@@ -208,9 +212,10 @@ struct ChoicePicker: View {
 }
 
 private let passageKinds = [
-    (title: "Tous les passages", subtitle: "Interventions et citations"),
+    (title: "Tous les contenus", subtitle: "Interventions, citations et publications X"),
     (title: "Interventions", subtitle: "Les prises de parole"),
-    (title: "Citations", subtitle: "Les personnes citées à l’antenne")
+    (title: "Citations", subtitle: "Les personnes citées à l’antenne"),
+    (title: "Publications X", subtitle: "Les publications sur X")
 ]
 
 private func partyNames(_ codes: Set<String>, in parties: [Party]) -> String {

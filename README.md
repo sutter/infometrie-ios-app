@@ -16,7 +16,7 @@ Le SDK utilisé est iOS 27 ; le minimum de déploiement est iOS 26. Les composan
 ## Fonctions reprises
 
 - Connexion, restauration sécurisée de session, limite d’appareils avec remplacement confirmé, déconnexion et révocation.
-- Fil des dernières 24 heures, rafraîchissement manuel et périodique, interventions et citations.
+- Fil des dernières 24 heures, rafraîchissement manuel et périodique, interventions, citations et publications X. Types filtrés côté serveur ; publications X consultables avec lien vers l’original lorsqu’il est fourni.
 - Recherche par personnalités et partis, filtres cumulés, sélecteurs avec recherche textuelle.
 - Mes suivis : filtres enregistrés par compte sur l’appareil, archivage, restauration et suppression.
 - Séquences : texte cliquable en premier, résumé dépliable, lecture audio/vidéo HLS et commandes fixes (pause, curseur, sauts de 10 secondes).
@@ -27,7 +27,7 @@ Les contenus sont proposés en consultation seule. Les alertes et le résumé qu
 
 ## API et médias
 
-Le serveur configuré est **`https://hls-test.yacast.fr`**. Le client utilise les routes mobiles du [Swagger officiel](https://hls-test.yacast.fr/swagger/), version `0.5.0-20260921185015`. Voir le [contrat API et les choix d’intégration](Docs/API/README.md), ainsi que l’[analyse initiale de l’APK](Docs/APK-ANALYSIS.md).
+Le serveur configuré est **`https://hls-test.yacast.fr`**. Le client utilise les routes mobiles du [Swagger officiel](https://hls-test.yacast.fr/swagger/), version `0.6.0-20260923140711`. Voir le [contrat API et les choix d’intégration](Docs/API/README.md), ainsi que l’[analyse initiale de l’APK](Docs/APK-ANALYSIS.md).
 
 Le jeton reste dans Keychain. Les mots de passe ne sont pas persistés. Les recherches sont séparées par compte. Le lecteur HLS passe par un relais lié à `127.0.0.1` : il authentifie les playlists et segments avec URLSession et les sert à AVPlayer. Il ne stocke aucun média sur disque et refuse les ressources et redirections hors de l’origine du serveur. AirPlay est désactivé pour ce lecteur local ; la lecture s’arrête en arrière-plan, comme dans l’APK.
 

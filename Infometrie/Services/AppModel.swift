@@ -92,7 +92,7 @@ final class AppModel {
         items = DemoContent.feed(); persons = DemoContent.persons; parties = DemoContent.parties
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--uitesting"), ProcessInfo.processInfo.arguments.contains("--precise-word-timings") {
-            for item in items { wordTimings[item.id] = DemoContent.wordTimingFixture(item); wordTimingStates[item.id] = .available }
+            for item in items where item.canPlay { wordTimings[item.id] = DemoContent.wordTimingFixture(item); wordTimingStates[item.id] = .available }
         }
         #endif
         if ProcessInfo.processInfo.arguments.contains("--uitesting") && ProcessInfo.processInfo.arguments.contains("--reset-demo") {
@@ -150,7 +150,7 @@ final class AppModel {
         }
     }
     func apply(_ value: SearchFilters) async {
-        let changed = value.persons != filters.persons || value.parties != filters.parties
+        let changed = value != filters
         filters = value; draft = value; tab = .feed; isSearchPresented = false
         for index in savedSearches.indices where savedSearches[index].filters == value && !savedSearches[index].isArchived {
             savedSearches[index].lastUsedAt = Date()
@@ -164,7 +164,7 @@ final class AppModel {
     }
     func openSearch(_ value: SearchFilters) {
         draft = value
-        if !draft.hasKinds { draft.interventions = true; draft.citations = true }
+        if !draft.hasKinds { draft.selectKind(0) }
         isSearchPresented = true
     }
     func newSearch() { openSearch(SearchFilters()) }
@@ -194,7 +194,7 @@ final class AppModel {
         do {
             let value = try await api.sequence(id: item.id, token: token)
             guard session?.token == token, !Task.isCancelled else { throw CancellationError() }
-            if value.item.hasMedia, !value.verbatim.isEmpty { loadWordTimings(for: value.id) }
+            if value.item.canPlay, !value.verbatim.isEmpty { loadWordTimings(for: value.id) }
             return value
         } catch {
             if session?.token == token { handleSessionError(error) }

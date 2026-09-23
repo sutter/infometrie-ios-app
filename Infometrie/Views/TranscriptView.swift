@@ -21,7 +21,7 @@ struct TranscriptView: View {
     }
 
     private var activeWord: Int? { timeline.wordIndex(at: isCurrent ? model.player.instant : nil) }
-    private var canSeek: Bool { detail.item.hasMedia && timeline.canSynchronize }
+    private var canSeek: Bool { detail.item.canPlay && timeline.canSynchronize }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -99,7 +99,7 @@ struct TranscriptView: View {
                          ? "Calage estimé : le texte peut être décalé."
                          : "Les repères temporels nécessaires à la synchronisation ne sont pas disponibles.")
                         .font(.footnote).foregroundStyle(Brand.secondary).accessibilityIdentifier("transcript-estimated")
-                    if !model.isDemo, detail.item.hasMedia {
+                    if !model.isDemo, detail.item.canPlay {
                         Button("Réessayer la synchronisation") { model.loadWordTimings(for: detail.id, retry: true) }
                             .buttonStyle(ActionButtonStyle()).accessibilityIdentifier("retry-transcript-timing")
                     }

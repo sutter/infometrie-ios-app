@@ -36,6 +36,7 @@ struct CoreTests {
         var citation = item; citation.kind = "citation"
         #expect(filters.accepts(citation))
         filters.citations = false
+        filters.tweets = false
         #expect(!filters.hasKinds)
         #expect(!filters.accepts(citation))
     }

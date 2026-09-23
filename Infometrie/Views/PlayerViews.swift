@@ -10,26 +10,39 @@ struct SequenceView: View {
     @State private var reload = 0
     private var isCurrent: Bool { model.player.current?.id == item.id && !model.player.isPodcast }
     private var displayDetail: SequenceDetail? { isCurrent ? model.player.detail ?? detail : detail }
+    private var displayItem: FeedItem { displayDetail?.item ?? item }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                PassageHeading(item: item, titleIdentifier: "sequence-title")
+                PassageHeading(item: displayItem, titleIdentifier: "sequence-title")
                 if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
-                if isCurrent, item.video, !model.isDemo {
+                if isCurrent, displayItem.canPlay, displayItem.video, !model.isDemo {
                     NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 if let error {
                     ErrorNotice(message: error) { self.error = nil; reload += 1 }
                 } else if let detail = displayDetail {
-                    if !detail.verbatim.isEmpty {
+                    if displayItem.isTweet {
+                        if !detail.verbatim.isEmpty && detail.verbatim != displayItem.title {
+                            EditorialSection(title: "La publication") {
+                                Text(detail.verbatim).font(.system(.body, design: .serif)).lineSpacing(7)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .accessibilityIdentifier("publication-text")
+                            }
+                        }
+                        if displayItem.publicationURL == nil {
+                            Text(model.isDemo ? "Publication fictive de démonstration." : "Le lien vers cette publication n’est pas disponible.")
+                                .font(.subheadline).foregroundStyle(Brand.secondary)
+                        }
+                    } else if !detail.verbatim.isEmpty {
                         TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: isCurrent) { word in
                             if isCurrent { model.player.seekToWord(word, sequenceID: detail.id) }
                             else { model.player.start(items: [item], app: model, podcast: false, atWord: word) }
                         }.id(detail.id)
                     } else { Text("Le texte n’est pas disponible pour ce passage.").foregroundStyle(Brand.secondary) }
-                    if !detail.resume.isEmpty {
+                    if !displayItem.isTweet && !detail.resume.isEmpty {
                         SequenceDisclosure(title: "Lire le résumé", icon: "text.alignleft") {
                             Text(detail.resume).font(.system(.body, design: .serif)).lineSpacing(6)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -50,7 +63,14 @@ struct SequenceView: View {
             }.padding(20).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if item.hasMedia {
+            if displayItem.isTweet, let url = displayItem.publicationURL {
+                Link(destination: url) { Label("Voir la publication sur X", systemImage: "arrow.up.right") }
+                    .buttonStyle(ActionButtonStyle(prominent: true))
+                    .accessibilityIdentifier("open-publication")
+                    .accessibilityHint("Ouvre la publication dans X ou votre navigateur")
+                    .padding(16).frame(maxWidth: EditorialLayout.readingWidth).frame(maxWidth: .infinity)
+                    .background(Brand.background).overlay(alignment: .top) { EditorialRule() }
+            } else if displayItem.canPlay {
                 if isCurrent { PlaybackDock() }
                 else {
                     Button { model.player.start(items: [item], app: model, podcast: false) } label: {
@@ -70,7 +90,7 @@ struct SequenceView: View {
         }
         .scrollEdgeEffectHidden(true, for: .bottom)
         .scrollEdgeEffectStyle(.hard, for: .top)
-        .background(Brand.background).editorialNavigationTitle("Séquence")
+        .background(Brand.background).editorialNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
         .toolbar(.hidden, for: .tabBar)
         .task(id: reload) {
             do { detail = try await model.sequence(item) }

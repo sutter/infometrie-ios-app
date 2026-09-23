@@ -37,7 +37,7 @@ struct FeedCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityHint(item.hasMedia ? "Ouvre le texte et le lecteur de ce passage" : "Ouvre le texte de ce passage")
+        .accessibilityHint(item.canPlay ? "Ouvre le texte et le lecteur de ce passage" : "Ouvre le texte de cette publication")
     }
 
     private var provenance: some View {
@@ -77,8 +77,7 @@ struct FeedCard: View {
         Label {
             Text(item.channel).foregroundStyle(Brand.ink)
         } icon: {
-            Image(systemName: item.media.lowercased() == "tv" ? "tv" : "radio")
-                .foregroundStyle(Brand.citation)
+            ChannelMark(item: item)
         }
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -93,13 +92,13 @@ struct FeedCard: View {
     }
 
     private var kind: some View {
-        Label(item.kindLabel, systemImage: item.isCitation ? "quote.bubble" : "waveform")
+        Label(item.kindLabel, systemImage: item.kindSymbol)
             .foregroundStyle(Brand.citation)
             .fixedSize(horizontal: false, vertical: true)
     }
 
     @ViewBuilder private var duration: some View {
-        if item.hasMedia && item.durationSec > 0 {
+        if item.canPlay && item.durationSec > 0 {
             Label(item.readableDuration, systemImage: "headphones")
                 .monospacedDigit().foregroundStyle(Brand.secondary)
                 .fixedSize(horizontal: false, vertical: true)

@@ -74,9 +74,26 @@ struct AdaptiveRow<Content: View>: View {
 struct KindBadge: View {
     let item: FeedItem
     var body: some View {
-        Label(item.kindLabel, systemImage: item.isCitation ? "quote.bubble" : "waveform")
+        Label(item.kindLabel, systemImage: item.kindSymbol)
             .font(.subheadline.weight(.medium))
             .foregroundStyle(item.kindColor)
+    }
+}
+
+/// The API names embedded logos; unknown keys retain a readable media identity.
+struct ChannelMark: View {
+    let item: FeedItem
+    var body: some View {
+        Group {
+            if let name = item.channelLogoAsset, let logo = UIImage(named: name) {
+                Image(uiImage: logo).resizable().scaledToFit()
+            } else if item.isTweet || item.media.lowercased() == "x" || item.channelKey.lowercased() == "x" {
+                Text("𝕏").font(.system(size: 20, weight: .semibold, design: .monospaced))
+            } else {
+                Image(systemName: item.media.lowercased() == "tv" ? "tv" : item.media.lowercased() == "radio" ? "radio" : "newspaper")
+                    .font(.system(size: 18, weight: .medium))
+            }
+        }.frame(width: 24, height: 24).foregroundStyle(Brand.citation).accessibilityHidden(true)
     }
 }
 
@@ -207,16 +224,17 @@ struct EditorialTabButton: View {
     let title: String
     let selected: Bool
     var accent: Color = Brand.ink
+    var compact = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.body.weight(selected ? .semibold : .regular))
+                .font((compact ? Font.subheadline : .body).weight(selected ? .semibold : .regular))
                 .foregroundStyle(selected ? Brand.ink : Brand.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 12).padding(.vertical, 12)
-                .frame(minHeight: 48)
+                .padding(.horizontal, compact ? 8 : 12).padding(.vertical, 12)
+                .frame(minWidth: 44, minHeight: 48)
                 .overlay(alignment: .bottom) {
                     if selected { Rectangle().fill(accent).frame(height: 3) }
                 }

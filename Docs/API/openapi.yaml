@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: IActus
   description: "Backend IActus (Boussole) : API mobile (journal politique temps réel), portail client web et administration."
-  version: "0.5.0-20260921185015"
+  version: "0.6.0-20260923140711"
 
 servers:
   - url: "/"
@@ -117,6 +117,11 @@ paths:
           in: query
           schema: { type: string }
           description: "Comma-separated party codes"
+        - name: kinds
+          in: query
+          required: false
+          schema: { type: string }
+          description: "Comma-separated kinds to keep: intervention, citation, tweet. Every kind when absent."
         - name: limit
           in: query
           schema: { type: integer, default: 50, maximum: 200 }
@@ -146,7 +151,7 @@ paths:
 
   /rest/v1/sequences/{id}:
     get:
-      summary: "Sequence detail: title, summary, verbatim, playlist path, and where the passage (play_from, duration_sec) and the verbatim's speech (speech_start, speech_duration_sec) sit in the media"
+      summary: "Sequence detail: title, summary, verbatim, playlist path, and where the passage (play_from, duration_sec) and the verbatim's speech (speech_start, speech_duration_sec) sit in the media. kind is intervention, citation or tweet (a post on X: media x, channel_key x, url of the post, no media file); channel_key names the embedded channel logo"
       operationId: "routeMobileSequence"
       tags: [mobile]
       security: [{ bearerAuth: [] }]
