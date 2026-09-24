@@ -242,22 +242,29 @@ struct AppRule: View {
 struct AppTabButton: View {
     let title: String
     let selected: Bool
+    var icon: String? = nil
     var accent: Color = Brand.tint
     var compact = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font((compact ? Font.subheadline : .body).weight(selected ? .semibold : .regular))
-                .foregroundStyle(selected ? Brand.ink : Brand.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, compact ? 8 : 12).padding(.vertical, 12)
-                .frame(minWidth: 44, minHeight: 48)
-                .overlay(alignment: .bottom) {
-                    if selected { Capsule().fill(accent).frame(height: 3) }
+            HStack(spacing: icon == nil ? 0 : 6) {
+                if let icon {
+                    Image(systemName: icon)
+                        .accessibilityHidden(true)
                 }
-                .contentShape(Rectangle())
+                Text(title)
+            }
+            .font((compact ? Font.subheadline : .body).weight(selected ? .semibold : .regular))
+            .foregroundStyle(selected ? Brand.ink : Brand.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, compact ? 8 : 12).padding(.vertical, 12)
+            .frame(minWidth: 44, minHeight: 48)
+            .overlay(alignment: .bottom) {
+                if selected { Capsule().fill(accent).frame(height: 3) }
+            }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])

@@ -151,6 +151,14 @@ private struct FeedKindPicker: View {
             case .tweets: "X"
             }
         }
+        var symbol: String {
+            switch self {
+            case .all: "square.grid.2x2"
+            case .interventions: "waveform"
+            case .citations: "quote.bubble"
+            case .tweets: "text.bubble"
+            }
+        }
         var accessibilityLabel: String { self == .all ? "Tous les contenus" : self == .tweets ? "Publications X" : title }
     }
 
@@ -190,7 +198,7 @@ private struct FeedKindPicker: View {
     }
 
     private func choice(_ kind: Kind) -> some View {
-        AppTabButton(title: kind.title, selected: selection == kind, compact: true) {
+        AppTabButton(title: kind.title, selected: selection == kind, icon: kind.symbol, compact: true) {
             var filters = model.filters
             filters.selectKind(kind.rawValue)
             guard filters != model.filters else { return }

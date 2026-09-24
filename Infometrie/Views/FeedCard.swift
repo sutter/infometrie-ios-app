@@ -83,6 +83,11 @@ struct FeedCard: View {
                         Spacer(minLength: 4)
                         timeAndDuration
                     }
+                    HStack(spacing: 6) {
+                        compactSourceAndKind
+                        Spacer(minLength: 2)
+                        compactTimeAndDuration
+                    }
                     VStack(alignment: .leading, spacing: 6) {
                         sourceAndKind
                         HStack(spacing: 8) {
@@ -98,15 +103,47 @@ struct FeedCard: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
+    private var compactSourceAndKind: some View {
+        HStack(spacing: 6) {
+            ChannelMark(item: item, size: 16)
+            if !ChannelMark.hasLogo(for: item) {
+                Text(item.channel)
+                    .foregroundStyle(Brand.secondary)
+                    .lineLimit(1)
+            }
+            kindMark
+        }
+        .font(.caption)
+        .fixedSize(horizontal: true, vertical: false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(item.channel), \(item.kindLabel)")
+    }
+
+    private var compactTimeAndDuration: some View {
+        HStack(spacing: 6) {
+            compactDate
+            if item.canPlay && item.durationSec > 0 {
+                duration
+            }
+        }
+        .font(.caption)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
     private var sourceAndKind: some View {
         HStack(spacing: 8) {
             source
-            Text(item.kindLabel)
-                .font(.footnote)
-                .foregroundStyle(Brand.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            kindMark
         }
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var kindMark: some View {
+        Label(item.kindLabel, systemImage: item.kindSymbol)
+            .labelStyle(.iconOnly)
+            .foregroundStyle(Brand.secondary)
+            .frame(width: 24, height: 24)
+            .accessibilityLabel(item.kindLabel)
     }
 
     private var timeAndDuration: some View {
@@ -150,6 +187,16 @@ struct FeedCard: View {
             Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) · \(date, style: .time)")
                 .foregroundStyle(Brand.secondary).monospacedDigit()
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
+        }
+    }
+
+    @ViewBuilder private var compactDate: some View {
+        if let date = item.date {
+            Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) \(date, style: .time)")
+                .foregroundStyle(Brand.secondary)
+                .monospacedDigit()
+                .fixedSize(horizontal: true, vertical: false)
                 .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
         }
     }
