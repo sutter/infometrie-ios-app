@@ -30,7 +30,7 @@ La spécification 0.5.0 avait été relue le 22 septembre sans changement. La co
 - Les publications X sont exclues des commandes de lecture, des durées audio, des demandes de timings et de la file du podcast, même si `has_media` est incohérent. Deux publications fictives sans lien externe complètent le mode démonstration.
 - Le sélecteur « Tous / Interventions / Citations / X » et le panneau de filtres transmettent explicitement les types choisis dans `kinds`. Le changement d’un type, d’une personnalité ou d’un parti repart de `since_seq=0`. Le filtrage local demeure une vérification complémentaire, et les réponses d’une ancienne requête ne remplacent pas la nouvelle sélection.
 - Les nouveaux suivis peuvent inclure X. Les suivis précédents, dont le champ `tweets` est absent, conservent exactement leur périmètre interventions/citations. Leur combinaison est indiquée dans le fil et dans le panneau, sans l’afficher à tort comme « Tous ».
-- `channel_key` permet de chercher une image embarquée nommée `channel-<clé en minuscules>` dans le catalogue d’assets. La clé est limitée aux lettres ASCII, chiffres, tirets et traits de soulignement. Aucun catalogue officiel ni URL d’images n’est fourni dans le Swagger : les médias inconnus gardent leur nom et un pictogramme TV, radio ou publication. Aucun logo de chaîne n’est inventé.
+- `channel_key` permet de chercher une image vectorielle embarquée nommée `channel-<clé en minuscules>` dans le catalogue d’assets. Les 27 logos fournis avec le projet client sont intégrés et affichés dans les items du fil ; les clés avec `_` et les alias `lcp-public-senat` et `backup-cnews` sont normalisés vers leurs images canoniques. Les clés inconnues gardent le nom du média et le pictogramme TV, radio ou publication. Le Swagger ne publie pas lui-même le catalogue ni les images.
 
 ### Validation du 23 septembre 2026
 
@@ -38,7 +38,7 @@ La spécification 0.5.0 avait été relue le 22 septembre sans changement. La co
 - Trois parcours UI validés sur iPhone 17 Pro et iPad mini 5 sous iOS 26.4, avec le SDK iOS 27 : filtres et podcast, publications X et restauration des suivis, mode sombre et taille de texte d’accessibilité maximale. La fixture HTTP vérifie le redémarrage du curseur après chaque changement de type et l’absence de commandes audio pour X.
 - Le premier passage a rencontré deux erreurs de pilotage sur iPhone (focus clavier et élément partiellement masqué). Le test expose désormais les contrôles avant les taps et donne explicitement le focus au mot de passe. Les deux parcours relancés sur iPhone passent sans échec. Rapports locaux : `build/APIPublications06.xcresult` (iPad 3/3, iPhone 1/3), puis `build/APIPublications06PhoneVerified.xcresult` (iPhone 2/2).
 - Contrôle manuel avec la session réelle déjà connectée : chargement du fil, sélection de X, affichage de publications réelles et de leur texte, ouverture de la publication d’origine sur `x.com` dans Safari, puis retour dans InfoMétrie. Aucun nouvel identifiant n’a été saisi et aucun appareil n’a été remplacé.
-- Les images officielles des médias restent à fournir. Les captures des tests confirment l’affichage de secours ; le catalogue de logos lui-même n’a pas pu être validé.
+- Les 27 assets vectoriels apparaissent dans `Assets.car`, notamment les logos X, CNews, BFMTV et LCP-Sénat. Les alias de chaînes sont couverts par les tests du modèle ; les clés inconnues conservent le rendu de secours.
 
 ## Horodatages du verbatim
 

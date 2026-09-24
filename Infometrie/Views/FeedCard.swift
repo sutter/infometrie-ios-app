@@ -6,24 +6,13 @@ struct FeedCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        Group {
-            if dynamicType.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(alignment: .top, spacing: 12) {
-                        PersonAvatar(item: item, size: 44)
-                        byline
-                    }
-                    content
-                }
-            } else {
-                HStack(alignment: .top, spacing: 12) {
-                    PersonAvatar(item: item, size: 44)
-                    VStack(alignment: .leading, spacing: 6) {
-                        byline
-                        content
-                    }
-                }
-            }
+        VStack(alignment: .leading, spacing: 9) {
+            byline
+            Text(displayTitle)
+                .font(.body).foregroundStyle(Brand.ink)
+                .lineLimit(dynamicType.isAccessibilitySize ? nil : 4)
+                .fixedSize(horizontal: false, vertical: true)
+            metadata
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
@@ -32,48 +21,76 @@ struct FeedCard: View {
     }
 
     private var byline: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(item.person).font(.headline).foregroundStyle(Brand.ink)
-            let details = [item.role, item.party == item.role ? "" : item.party]
-                .filter { !$0.isEmpty }.joined(separator: " · ")
+        HStack(spacing: 9) {
+            initialsAvatar
+            speaker
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var initialsAvatar: some View {
+        Text(item.initials)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(Brand.tint)
+            .frame(width: 36, height: 36)
+            .background(Brand.surface, in: Circle())
+            .accessibilityHidden(true)
+    }
+
+    private var speaker: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(item.person)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Brand.ink)
+                .lineLimit(1)
+            let role = item.role.trimmingCharacters(in: .whitespacesAndNewlines)
+            let party = item.party.trimmingCharacters(in: .whitespacesAndNewlines)
+            let overlaps = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
+                || party.range(of: role, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
+            let details = role.isEmpty ? party : party.isEmpty || overlaps ? role : "\(role) · \(party)"
             if !details.isEmpty {
-                Text(details).font(.subheadline).foregroundStyle(Brand.secondary)
-                    .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
+                Text(details)
+                    .font(.footnote)
+                    .foregroundStyle(Brand.secondary)
+                    .lineLimit(1)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var content: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(item.title)
-                .font(.body).foregroundStyle(Brand.ink)
-                .lineLimit(dynamicType.isAccessibilitySize ? nil : 5)
-                .fixedSize(horizontal: false, vertical: true)
-            provenance
+    private var displayTitle: String {
+        let prefix = "(\(item.person))"
+        let trimmedTitle = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedTitle.range(of: prefix, options: [.anchored, .caseInsensitive]) != nil else {
+            return item.title
         }
+        return String(trimmedTitle.dropFirst(prefix.count))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var provenance: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) {
-                    source.fixedSize(horizontal: true, vertical: false)
-                    Spacer(minLength: 0)
-                    date.fixedSize(horizontal: true, vertical: false)
+    private var metadata: some View {
+        Group {
+            if dynamicType.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 6) {
+                    sourceAndKind
+                    date
+                    duration
                 }
-                VStack(alignment: .leading, spacing: 4) { source; date }
-            }
-            AdaptiveRow {
-                Label(item.kindLabel, systemImage: item.kindSymbol)
-                    .foregroundStyle(item.kindColor)
-                    .fixedSize(horizontal: false, vertical: true)
-                if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
-                if item.canPlay && item.durationSec > 0 {
-                    Label(item.readableDuration, systemImage: "headphones")
-                        .monospacedDigit().foregroundStyle(Brand.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityLabel("Durée d’écoute : \(item.readableDuration)")
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) {
+                        sourceAndKind
+                        Spacer(minLength: 4)
+                        timeAndDuration
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        sourceAndKind
+                        HStack(spacing: 8) {
+                            date
+                            Spacer(minLength: 4)
+                            duration
+                        }
+                    }
                 }
             }
         }
@@ -81,12 +98,51 @@ struct FeedCard: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var source: some View {
-        HStack(spacing: 4) {
-            ChannelMark(item: item, size: 16)
-            Text(item.channel).foregroundStyle(Brand.secondary)
+    private var sourceAndKind: some View {
+        HStack(spacing: 8) {
+            source
+            Text(item.kindLabel)
+                .font(.footnote)
+                .foregroundStyle(Brand.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var timeAndDuration: some View {
+        HStack(spacing: 8) {
+            date
+            if item.canPlay && item.durationSec > 0 {
+                Rectangle()
+                    .fill(Brand.rule)
+                    .frame(width: 1, height: 14)
+                    .accessibilityHidden(true)
+                duration
+            }
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    @ViewBuilder private var duration: some View {
+        if item.canPlay && item.durationSec > 0 {
+            Label(item.readableDuration, systemImage: "headphones")
+                .monospacedDigit()
+                .foregroundStyle(Brand.secondary)
+                .fixedSize()
+                .accessibilityLabel("Durée d’écoute : \(item.readableDuration)")
+        }
+    }
+
+    private var source: some View {
+        HStack(spacing: 7) {
+            ChannelMark(item: item, size: 20)
+            if !ChannelMark.hasLogo(for: item) {
+                Text(item.channel).foregroundStyle(Brand.secondary)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(item.channel)
     }
 
     @ViewBuilder private var date: some View {

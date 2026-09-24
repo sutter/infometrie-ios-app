@@ -38,11 +38,19 @@ struct FeedItem: Codable, Identifiable, Hashable, Sendable {
               value.user == nil, value.password == nil, value.port == nil || value.port == 443 else { return nil }
         return value
     }
+    private static let channelLogoAliases = [
+        "lcp-public-senat": "lcp-senat",
+        "backup-cnews": "cnews",
+        "bfm_business": "bfm-business",
+        "france_culture": "france-culture",
+        "radio_j": "radio-j",
+        "rmc_decouverte": "rmc-decouverte",
+    ]
     var channelLogoAsset: String? {
         let key = channelKey.lowercased()
         guard !key.isEmpty, key.count <= 80,
               key.utf8.allSatisfy({ (97...122).contains($0) || (48...57).contains($0) || $0 == 45 || $0 == 95 }) else { return nil }
-        return "channel-\(key)"
+        return "channel-\(Self.channelLogoAliases[key] ?? key)"
     }
     var date: Date? { APIDate.parse(at) }
     var initials: String { person.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined() }

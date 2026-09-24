@@ -78,5 +78,16 @@ struct PublicationsTests {
         }
         item.channelKey = "France_Info"
         #expect(item.channelLogoAsset == "channel-france_info")
+        for (key, expectedAsset) in [
+            ("lcp-public-senat", "channel-lcp-senat"),
+            ("backup-cnews", "channel-cnews"),
+            ("bfm_business", "channel-bfm-business"),
+            ("france_culture", "channel-france-culture"),
+            ("radio_j", "channel-radio-j"),
+            ("rmc_decouverte", "channel-rmc-decouverte"),
+        ] {
+            item.channelKey = key
+            #expect(item.channelLogoAsset == expectedAsset)
+        }
     }
 }

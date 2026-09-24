@@ -94,17 +94,30 @@ struct KindBadge: View {
 struct ChannelMark: View {
     let item: FeedItem
     var size: CGFloat = 20
+    private var logo: UIImage? { item.channelLogoAsset.flatMap { UIImage(named: $0) } }
+    static func hasLogo(for item: FeedItem) -> Bool {
+        item.channelLogoAsset.flatMap { UIImage(named: $0) } != nil
+    }
+
     var body: some View {
         Group {
-            if let name = item.channelLogoAsset, let logo = UIImage(named: name) {
+            if let logo {
                 Image(uiImage: logo).resizable().scaledToFit()
+                    .frame(width: logoWidth(for: logo), height: size)
             } else if item.isTweet || item.media.lowercased() == "x" || item.channelKey.lowercased() == "x" {
                 Text("𝕏").font(.system(size: size * 0.75, weight: .semibold, design: .monospaced))
+                    .frame(width: size, height: size)
             } else {
                 Image(systemName: item.media.lowercased() == "tv" ? "tv" : item.media.lowercased() == "radio" ? "radio" : "newspaper")
                     .font(.system(size: size * 0.8, weight: .medium))
+                    .frame(width: size, height: size)
             }
-        }.frame(width: size, height: size).foregroundStyle(Brand.tint).accessibilityHidden(true)
+        }.fixedSize(horizontal: true, vertical: true).foregroundStyle(Brand.tint).accessibilityHidden(true)
+    }
+
+    private func logoWidth(for image: UIImage) -> CGFloat {
+        let aspectRatio = image.size.height > 0 ? image.size.width / image.size.height : 1
+        return size * min(max(aspectRatio, 1), 3.2)
     }
 }
 

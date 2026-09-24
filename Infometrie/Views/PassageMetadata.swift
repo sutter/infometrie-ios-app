@@ -8,16 +8,16 @@ struct PassageSource: View {
     var body: some View {
         AdaptiveRow {
             HStack(spacing: 8) {
-                ChannelMark(item: item)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Brand.tint)
-                    .frame(width: 30, height: 30)
-                    .accessibilityHidden(true)
-                Text(item.channel)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Brand.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+                ChannelMark(item: item, size: 24)
+                if !ChannelMark.hasLogo(for: item) {
+                    Text(item.channel)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Brand.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(item.channel)
             if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
             if let date = item.date {
                 Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) · \(date, style: .time)")
