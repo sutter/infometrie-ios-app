@@ -14,7 +14,9 @@ struct FeedCard: View {
                 .fixedSize(horizontal: false, vertical: true)
             metadata
         }
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Brand.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityHint(item.canPlay ? "Ouvre le texte et le lecteur de ce passage" : "Ouvre le texte de cette publication")
@@ -31,7 +33,7 @@ struct FeedCard: View {
     private var initialsAvatar: some View {
         Text(item.initials)
             .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(Brand.tint)
+            .foregroundStyle(Brand.secondary)
             .frame(width: 36, height: 36)
             .background(Brand.surface, in: Circle())
             .accessibilityHidden(true)

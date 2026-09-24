@@ -56,8 +56,10 @@ struct SavedSearchesView: View {
                                     .fixedSize(horizontal: false, vertical: true).padding(.horizontal, 8).frame(minHeight: 52)
                             }.accessibilityLabel("Options de \(search.name)").accessibilityIdentifier("saved-actions-\(search.name)")
                         }
-                        AppRule().padding(.top, 8)
-                    }.padding(.top, 16)
+                    }
+                    .padding(16)
+                    .background(Brand.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .padding(.top, 12)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button("Supprimer", role: .destructive) { deleting = search }
                             Button(archived ? "Restaurer" : "Archiver") { model.archive(search) }.tint(Brand.primary)

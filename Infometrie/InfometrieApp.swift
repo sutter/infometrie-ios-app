@@ -71,7 +71,6 @@ struct RootView: View {
                         }
                     }
                     .tint(Brand.tint)
-                    .toolbarBackground(Brand.background, for: .tabBar)
                 }
                 .background(Brand.background)
                 .sheet(isPresented: $binding.isSearchPresented) {

@@ -30,11 +30,10 @@ struct FeedView: View {
                     } else {
                         ForEach(model.visibleItems) { item in
                             NavigationLink { SequenceView(item: item) } label: {
-                                FeedCard(item: item).padding(.vertical, 14)
+                                FeedCard(item: item).padding(.vertical, 5)
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
-                            AppRule()
                         }
                     }
                     if let date = model.lastRefresh {
@@ -44,7 +43,9 @@ struct FeedView: View {
                     }
                 } header: { filterControls }
             }
-            .padding(.horizontal, 20).padding(.bottom, 24)
+            // The iPhone tab bar floats above the scroll view. Leave enough
+            // scrollable tail space to bring the final card clear of the bar.
+            .padding(.horizontal, 20).padding(.bottom, usesWideLayout ? 24 : 112)
             .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .refreshable { await model.refresh(reset: true) }

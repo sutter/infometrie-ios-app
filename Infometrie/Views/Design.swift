@@ -1,24 +1,23 @@
 import SwiftUI
 
-/// shadcn/ui preset b37ZhrNVw: Nova, Neutral, Indigo (OKLCH → sRGB).
-/// Original tokens: Docs/UX/SocialFeed/shadcn-indigo.json.
+/// Shared neutral palette and rounded surfaces adapted from the Stoic reference.
 enum Brand {
-    static let background = color(light: 0xFFFFFF, dark: 0x0A0A0A)
-    static let card = color(light: 0xFFFFFF, dark: 0x171717)
-    static let ink = color(light: 0x0A0A0A, dark: 0xFAFAFA)
-    static let primary = color(light: 0x432DD7, dark: 0x372AAC)
-    static let primaryForeground = color(light: 0xEEF2FF, dark: 0xEEF2FF)
-    // Filled buttons retain the preset's primary. Inline actions use its lighter
-    // chart-1 indigo in dark mode to stay readable on neutral surfaces.
-    static let tint = color(light: 0x432DD7, dark: 0xA3B3FF)
-    static let secondary = color(light: 0x737373, dark: 0xA1A1A1)
-    static let surface = color(light: 0xF5F5F5, dark: 0x262626)
-    static let inputBorder = color(light: 0xE5E5E5, dark: 0xFFFFFF, darkAlpha: 0.15)
-    static let selection = color(light: 0xF5F5F5, dark: 0x262626)
-    static let selectionForeground = color(light: 0x171717, dark: 0xFAFAFA)
-    static let rule = color(light: 0xE5E5E5, dark: 0xFFFFFF, darkAlpha: 0.10)
-    static let sidebar = color(light: 0xFAFAFA, dark: 0x171717)
-    static let sidebarRule = color(light: 0xE5E5E5, dark: 0xFFFFFF, darkAlpha: 0.10)
+    // Neutral, low-contrast surfaces inspired by Stoic. Color remains reserved
+    // for actual media branding and destructive system feedback.
+    static let background = color(light: 0xF1F2F3, dark: 0x08090A)
+    static let card = color(light: 0xFFFFFF, dark: 0x151719)
+    static let ink = color(light: 0x111214, dark: 0xF5F5F4)
+    static let primary = color(light: 0x151618, dark: 0xF1F1EF)
+    static let primaryForeground = color(light: 0xFFFFFF, dark: 0x111214)
+    static let tint = color(light: 0x292B2E, dark: 0xE6E6E4)
+    static let secondary = color(light: 0x696B70, dark: 0xA0A2A6)
+    static let surface = color(light: 0xE7E8EA, dark: 0x1D1F22)
+    static let inputBorder = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
+    static let selection = color(light: 0xE7E8EA, dark: 0x292B2E)
+    static let selectionForeground = color(light: 0x151618, dark: 0xF5F5F4)
+    static let rule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.09)
+    static let sidebar = color(light: 0xF1F2F3, dark: 0x0D0E10)
+    static let sidebarRule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
@@ -62,7 +61,7 @@ struct ActionButtonStyle: ButtonStyle {
             .padding(.horizontal, 16).padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 52)
             .foregroundStyle(prominent ? Brand.primaryForeground : Brand.ink)
-            .background(prominent ? Brand.primary : .clear, in: Capsule())
+            .background(prominent ? Brand.primary : Brand.card, in: Capsule())
             .overlay { if !prominent { Capsule().strokeBorder(Brand.rule) } }
             .contentShape(Capsule())
             .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.45)
@@ -180,12 +179,14 @@ struct AppSection<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            AppRule()
             Text(title).font(.headline)
                 .foregroundStyle(Brand.ink).fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             content()
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Brand.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 
@@ -280,8 +281,7 @@ struct ErrorNotice: View {
                 .foregroundStyle(Brand.ink).fixedSize(horizontal: false, vertical: true)
             if let retry { Button("Réessayer", action: retry).buttonStyle(ActionButtonStyle()) }
         }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Brand.surface)
-            .overlay(alignment: .leading) { Rectangle().fill(Brand.destructive).frame(width: 3) }
+            .background(Brand.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .accessibilityElement(children: .contain)
     }
 }
