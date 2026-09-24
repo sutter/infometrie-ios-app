@@ -249,17 +249,17 @@ struct AppTabButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: icon == nil ? 0 : 6) {
+            HStack(spacing: icon == nil ? 0 : 4) {
                 if let icon {
                     Image(systemName: icon)
                         .accessibilityHidden(true)
                 }
                 Text(title)
             }
-            .font((compact ? Font.subheadline : .body).weight(selected ? .semibold : .regular))
+            .font((compact ? Font.footnote : .body).weight(selected ? .semibold : .regular))
             .foregroundStyle(selected ? Brand.ink : Brand.secondary)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, compact ? 8 : 12).padding(.vertical, 12)
+            .padding(.horizontal, compact ? 4 : 12).padding(.vertical, 12)
             .frame(minWidth: 44, minHeight: 48)
             .overlay(alignment: .bottom) {
                 if selected { Capsule().fill(accent).frame(height: 3) }

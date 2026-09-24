@@ -177,7 +177,7 @@ private struct FeedKindPicker: View {
                                 .frame(maxWidth: .infinity)
                         }
                     }
-                    verticalChoices
+                    scrollableChoices
                 }
             }
             if selection == nil {
@@ -195,6 +195,15 @@ private struct FeedKindPicker: View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(Kind.allCases, id: \.self) { choice($0) }
         }
+    }
+
+    private var scrollableChoices: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 0) {
+                ForEach(Kind.allCases, id: \.self) { choice($0) }
+            }
+        }
+        .scrollIndicators(.hidden)
     }
 
     private func choice(_ kind: Kind) -> some View {
