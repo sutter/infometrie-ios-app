@@ -35,6 +35,7 @@ final class PlaybackModel {
     @ObservationIgnored private var wordAwaitingHLSClock: (instant: Date, position: Double)?
     @ObservationIgnored private var wordAwaitingTimings: PendingWordSeek?
     @ObservationIgnored private var hasUserSought = false
+    @ObservationIgnored private var autoplayOnLoad = true
     @ObservationIgnored private var resumeAfterScrubbing = false
     @ObservationIgnored private weak var app: AppModel?
 
@@ -61,13 +62,20 @@ final class PlaybackModel {
         self.app = app; isPodcast = podcast; index = 0
         loadCurrent(atWord: atWord)
     }
+    func prepare(item: FeedItem, detail: SequenceDetail, app: AppModel) {
+        guard item.canPlay else { return }
+        stop()
+        queue = [item]
+        self.app = app; isPodcast = false; index = 0
+        loadCurrent(autoplay: false, preparedDetail: detail)
+    }
     func select(_ index: Int) {
         guard queue.indices.contains(index) else { return }
         self.index = index; loadCurrent()
     }
     func next() { if hasNext { select(index + 1) } }
     func previous() { if hasPrevious { select(index - 1) } else { seek(0) } }
-    func retry() { loadCurrent() }
+    func retry() { loadCurrent(autoplay: autoplayOnLoad) }
     func pause() { player.pause(); isPlaying = false; resumeAfterScrubbing = false }
     func toggle() {
         guard !isLoading, error == nil, player.currentItem != nil else { return }
@@ -169,18 +177,24 @@ final class PlaybackModel {
         isLoading = false; error = nil; ended = false; isScrubbing = false
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
-    private func loadCurrent(atWord: Int? = nil) {
+    private func loadCurrent(atWord: Int? = nil, autoplay: Bool = true, preparedDetail: SequenceDetail? = nil) {
         guard let current, let app else { return }
         loadTask?.cancel(); pause(); player.replaceCurrentItem(with: nil)
         relay?.stop(); relay = nil; statusObserver = nil
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }; endObserver = nil
         let id = UUID(); generation = id
+        autoplayOnLoad = autoplay
         isLoading = true; error = nil; ended = false; position = 0; duration = 0; detail = nil; didCorrectStart = false; isScrubbing = false
         instant = nil; mediaClock = nil; seekRequest = nil; pendingWord = atWord; wordAwaitingHLSClock = nil; wordAwaitingTimings = nil; hasUserSought = atWord != nil; transcriptNotice = nil
         loadTask = Task { [weak self, app] in
             guard let self else { return }
             do {
-                let detail = try await app.sequence(current)
+                let detail: SequenceDetail
+                if let preparedDetail {
+                    detail = preparedDetail
+                } else {
+                    detail = try await app.sequence(current)
+                }
                 guard self.generation == id, !Task.isCancelled else { return }
                 self.detail = detail
                 self.mediaClock = MediaClock(playFrom: detail.playFrom, margin: self.isPodcast || app.isDemo ? 0 : 10)
@@ -228,7 +242,9 @@ final class PlaybackModel {
                                 let offset = APIDate.parse(detail.playFrom).flatMap { self.mediaClock?.position(at: $0) } ?? 10
                                 self.seek(offset, userInitiated: false)
                             }
-                            self.player.play(); self.isPlaying = true
+                            if autoplay {
+                                self.player.play(); self.isPlaying = true
+                            }
                         }
                     }
                 }

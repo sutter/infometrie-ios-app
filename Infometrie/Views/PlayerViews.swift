@@ -116,7 +116,16 @@ struct SequenceView: View {
         .background(Brand.background).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
         .toolbar(.hidden, for: .tabBar)
         .task(id: reload) {
-            do { detail = try await model.sequence(item) }
+            do {
+                let value = try await model.sequence(item)
+                guard !Task.isCancelled else { return }
+                detail = value
+                // Prepare the detail player without autoplay so the passage opens
+                // with its video frame and an explicit play control.
+                if value.item.canPlay, !model.isDemo, model.player.current == nil {
+                    model.player.prepare(item: value.item, detail: value, app: model)
+                }
+            }
             catch { if !Task.isCancelled { self.error = model.message(for: error) } }
         }
     }
