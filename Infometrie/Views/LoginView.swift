@@ -34,7 +34,7 @@ struct LoginView: View {
                                     else { SecureField("Mot de passe", text: $password, prompt: Text("Votre mot de passe").foregroundStyle(Brand.secondaryOnSurface)) }
                                 }.textContentType(.password).textInputAutocapitalization(.never).autocorrectionDisabled().focused($focused, equals: .password)
                                     .submitLabel(.go).onSubmit { signIn() }.accessibilityIdentifier("login-password")
-                                Button { showPassword.toggle() } label: { Image(systemName: showPassword ? "eye.slash" : "eye").foregroundStyle(Brand.primary).frame(width: 52, height: 52).contentShape(Rectangle()) }
+                                Button { showPassword.toggle() } label: { Image(systemName: showPassword ? "eye.slash" : "eye").foregroundStyle(Brand.tint).frame(width: 52, height: 52).contentShape(Rectangle()) }
                                     .accessibilityLabel(showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe")
                             }.padding(.leading, 15).padding(.trailing, 4).appInput()
                         }

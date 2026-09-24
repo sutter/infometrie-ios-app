@@ -51,7 +51,7 @@ struct SearchView: View {
                             Button {
                                 model.draft.selectKind(index)
                             } label: {
-                                FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false, accent: Brand.primary)
+                                FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false, accent: Brand.tint)
                             }
                             .buttonStyle(.plain)
                             .accessibilityAddTraits(kind == index ? .isSelected : [])
@@ -70,7 +70,7 @@ struct SearchView: View {
                     Label("Réinitialiser les filtres", systemImage: "arrow.counterclockwise")
                         .font(.body.weight(.medium)).frame(maxWidth: .infinity, minHeight: 52)
                         .fixedSize(horizontal: false, vertical: true).contentShape(Rectangle())
-                }.buttonStyle(.plain).foregroundStyle(Brand.primary).accessibilityIdentifier("reset-search")
+                }.buttonStyle(.plain).foregroundStyle(Brand.tint).accessibilityIdentifier("reset-search")
             }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .background(Brand.background)
@@ -230,7 +230,7 @@ private struct FilterSelectionRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon).font(.system(size: 17, weight: .medium))
-                .foregroundStyle(Brand.primary).frame(width: 34, height: 34)
+                .foregroundStyle(Brand.tint).frame(width: 34, height: 34)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
                 Text(title).font(.body.weight(.semibold)).foregroundStyle(Brand.ink)
@@ -250,7 +250,7 @@ private struct FilterChoiceRow: View {
     let subtitle: String
     let selected: Bool
     let multiple: Bool
-    var accent: Color = Brand.primary
+    var accent: Color = Brand.tint
     var body: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {

@@ -1,6 +1,10 @@
 # Refonte UX — lire le fil, puis écouter un passage
 
-La direction actuelle est le [fil dense inspiré des interfaces sociales](SocialFeed/README.md), appliqué le 23 septembre 2026. Les présentations éditoriales ci-dessous sont conservées comme historique.
+La direction actuelle est le [fil dense inspiré des interfaces sociales](SocialFeed/README.md), avec le preset shadcn Nova / Indigo, appliqué le 23 septembre 2026. Les présentations éditoriales ci-dessous sont conservées comme historique.
+
+Le compte regroupe le thème et les tailles S / M / L dans une [carte Apparence](ReadingPreferences/README.md), avec mémorisation du choix et priorité aux grandes tailles système.
+
+Les fiches de séquence proposent aussi un [texte en plein écran avec lecteur synchronisé](FullscreenTranscript/README.md), accessible depuis le bouton d’agrandissement à droite de « Le texte ».
 
 Public : 45 à 80 ans. Objectif confirmé : parcourir le fil, choisir un passage, lire son texte puis écouter l’extrait souhaité. La refonte conserve l’application native, le branchement API et le moteur de synchronisation.
 

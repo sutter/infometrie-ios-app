@@ -4,14 +4,19 @@ import SwiftUI
 struct InfometrieApp: App {
     @State private var model = makeAppModel()
     @AppStorage("appearance") private var appearance = "system"
-    @AppStorage("comfortableReading") private var comfortableReading = true
+    @AppStorage("readingSize") private var readingSize = ReadingSize.medium
+
+    init() {
+        ReadingSize.migrateLegacyPreference()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(model)
                 .environment(\.locale, Locale(identifier: "fr_FR"))
-                .tint(Brand.primary)
-                .dynamicTypeSize((comfortableReading ? DynamicTypeSize.xLarge : .xSmall)...)
+                .tint(Brand.tint)
+                .modifier(ReadingSizeModifier(selection: readingSize))
                 .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
         }
     }
@@ -50,22 +55,22 @@ struct RootView: View {
                             NavigationStack {
                                 FeedView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
-                            .tint(Brand.primary)
+                            .tint(Brand.tint)
                         }
                         Tab("Mes suivis", systemImage: "bookmark", value: .saved) {
                             NavigationStack {
                                 SavedSearchesView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
-                            .tint(Brand.primary)
+                            .tint(Brand.tint)
                         }
                         Tab("Compte", systemImage: "person.crop.circle", value: .account) {
                             NavigationStack {
                                 AccountView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
-                            .tint(Brand.primary)
+                            .tint(Brand.tint)
                         }
                     }
-                    .tint(Brand.primary)
+                    .tint(Brand.tint)
                     .toolbarBackground(Brand.background, for: .tabBar)
                 }
                 .background(Brand.background)
@@ -151,9 +156,9 @@ private struct MainNavigation: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 12).padding(.vertical, 12)
                 .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                .foregroundStyle(selected ? Brand.selectionForeground : Brand.ink)
-                .background(selected ? Brand.selection : .clear, in: RoundedRectangle(cornerRadius: 16))
-                .contentShape(RoundedRectangle(cornerRadius: 16))
+                .foregroundStyle(selected ? Brand.tint : Brand.ink)
+                .background(selected ? Brand.selection : .clear, in: RoundedRectangle(cornerRadius: AppLayout.controlRadius))
+                .contentShape(RoundedRectangle(cornerRadius: AppLayout.controlRadius))
         }
         .buttonStyle(.plain)
         .id(tab)

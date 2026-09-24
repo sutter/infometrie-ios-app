@@ -4,7 +4,7 @@ struct AccountView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.horizontalSizeClass) private var sizeClass
     @AppStorage("appearance") private var appearance = "system"
-    @AppStorage("comfortableReading") private var comfortableReading = true
+    @AppStorage("readingSize") private var readingSize = ReadingSize.medium
     @State private var showLogout = false
 
     var body: some View {
@@ -13,7 +13,7 @@ struct AccountView: View {
                 PageHeading(title: "Compte")
                 HStack(alignment: .top, spacing: 16) {
                     Image(systemName: model.isDemo ? "sparkles" : "person")
-                        .font(.title2).foregroundStyle(Brand.primary)
+                        .font(.title2).foregroundStyle(Brand.tint)
                         .frame(width: 56, height: 56).background(Brand.surface, in: Circle())
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 6) {
@@ -26,21 +26,7 @@ struct AccountView: View {
                         }
                     }.fixedSize(horizontal: false, vertical: true)
                 }
-                AppSection(title: "Confort de lecture") {
-                    Toggle("Texte plus grand", isOn: $comfortableReading)
-                        .tint(Brand.primary).frame(minHeight: 52)
-                        .accessibilityIdentifier("comfortable-reading")
-                    Text("Agrandit le texte dans l’application. Les tailles plus grandes choisies dans les réglages de votre appareil sont toujours respectées.")
-                        .font(.subheadline).foregroundStyle(Brand.secondary)
-                }
-                AppSection(title: "Apparence") {
-                    Picker("Thème", selection: $appearance) {
-                        Text("Automatique").tag("system")
-                        Text("Clair").tag("light")
-                        Text("Sombre").tag("dark")
-                    }.pickerStyle(.menu).frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                        .accessibilityIdentifier("appearance-picker")
-                }
+                appearanceSection
                 AppSection(title: "Votre abonnement") {
                     Label("Abonnement InfoMétrie", systemImage: "checkmark.seal")
                     Text("L’abonnement, les appareils autorisés et la facturation se gèrent sur le portail web InfoMétrie.")
@@ -83,5 +69,55 @@ struct AccountView: View {
         .confirmationDialog("Se déconnecter ?", isPresented: $showLogout, titleVisibility: .visible) {
             Button("Se déconnecter", role: .destructive) { model.logout() }
         } message: { Text("Vos suivis seront conservés sur cet appareil.") }
+    }
+
+    private var appearanceSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Apparence").font(.headline).accessibilityAddTraits(.isHeader)
+            VStack(spacing: 12) {
+                AdaptiveRow {
+                    Text("Thème").font(.body)
+                    Spacer(minLength: 0)
+                    Picker("Thème", selection: $appearance) {
+                        Text("Système").tag("system")
+                        Text("Clair").tag("light")
+                        Text("Sombre").tag("dark")
+                    }
+                    .pickerStyle(.menu).labelsHidden().tint(Brand.secondary)
+                    .frame(minHeight: 44)
+                    .accessibilityLabel("Thème")
+                    .accessibilityIdentifier("appearance-picker")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                AppRule()
+                HStack(spacing: 4) {
+                    ForEach(ReadingSize.allCases, id: \.self) { size in
+                        Button { readingSize = size } label: {
+                            Text(size.rawValue)
+                                .font(.body.weight(readingSize == size ? .semibold : .regular))
+                                .foregroundStyle(Brand.ink)
+                                .padding(.vertical, 8)
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .background(readingSize == size ? Brand.card : .clear, in: Capsule())
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Taille du texte : \(size.title.lowercased())")
+                        .accessibilityAddTraits(readingSize == size ? .isSelected : [])
+                        .accessibilityIdentifier("reading-size-\(size.rawValue)")
+                    }
+                }
+                .padding(4).background(Brand.surface, in: Capsule())
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Taille du texte")
+            }
+            .padding(16)
+            .background(Brand.card, in: RoundedRectangle(cornerRadius: 24))
+            .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(Brand.rule, lineWidth: 0.5) }
+            .accessibilityIdentifier("appearance-card")
+            Text("Taille du texte · \(readingSize.title)")
+                .font(.footnote).foregroundStyle(Brand.secondary)
+                .accessibilityIdentifier("reading-size-description")
+        }
     }
 }

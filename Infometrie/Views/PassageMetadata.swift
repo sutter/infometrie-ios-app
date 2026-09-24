@@ -10,7 +10,7 @@ struct PassageSource: View {
             HStack(spacing: 8) {
                 ChannelMark(item: item)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Brand.primary)
+                    .foregroundStyle(Brand.tint)
                     .frame(width: 30, height: 30)
                     .accessibilityHidden(true)
                 Text(item.channel)
@@ -77,7 +77,7 @@ struct PassageHeading: View {
 }
 
 extension FeedItem {
-    var kindColor: Color { Brand.primary }
+    var kindColor: Color { Brand.ink }
     var kindSymbol: String { isTweet ? "text.bubble" : isCitation ? "quote.bubble" : kind == "intervention" ? "waveform" : "doc.text" }
 
     var readableDuration: String {

@@ -9,14 +9,14 @@ final class InfometrieUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(navigationButton("Compte", in: app).waitForExistence(timeout: 10))
         navigationButton("Compte", in: app).tap()
-        let toggle = app.switches["comfortable-reading"]
-        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
-        let original = toggle.value as? String
-        func setComfort(_ enabled: Bool) {
-            reveal(toggle, in: app, down: false)
-            if toggle.value as? String != (enabled ? "1" : "0") { toggle.tap() }
-            wait(toggle, key: "value", equals: enabled ? "1" : "0")
+        let original = ["S", "M", "L"].first { app.buttons["reading-size-\($0)"].isSelected } ?? "M"
+        func setSize(_ value: String) {
+            let button = app.buttons["reading-size-\(value)"]
+            reveal(button, in: app, down: false)
+            button.tap()
+            wait(button, key: "selected", equals: true)
         }
+        defer { setSize(original) }
         func passageTitleHeight() -> CGFloat {
             navigationButton("Le fil", in: app).tap()
             let first = app.buttons["feed-item-1"]
@@ -30,25 +30,65 @@ final class InfometrieUITests: XCTestCase {
             navigationButton("Compte", in: app).tap()
             return height
         }
-        setComfort(false)
-        let standardHeading = app.staticTexts["Confort de lecture"].frame.height
-        let standardPassage = passageTitleHeight()
-        capture("22-lecture-standard", app: app)
-        setComfort(true)
-        let enlargedHeading = app.staticTexts["Confort de lecture"].frame.height
-        let enlargedPassage = passageTitleHeight()
-        capture("22-lecture-confort", app: app)
-        XCTAssertGreaterThan(enlargedHeading, standardHeading, "Le compte doit réagir immédiatement au réglage")
-        XCTAssertGreaterThan(enlargedPassage, standardPassage, "Le réglage doit aussi agrandir les fiches")
+        var headingHeights: [CGFloat] = []
+        var passageHeights: [CGFloat] = []
+        for size in ["S", "M", "L"] {
+            setSize(size)
+            headingHeights.append(app.staticTexts["Apparence"].frame.height)
+            passageHeights.append(passageTitleHeight())
+            for choice in ["S", "M", "L"] {
+                let button = app.buttons["reading-size-\(choice)"]
+                XCTAssertEqual(button.isSelected, choice == size)
+                XCTAssertGreaterThanOrEqual(button.frame.height, 44)
+            }
+            capture("22-compte-taille-\(size)", app: app)
+        }
+        XCTAssertGreaterThan(headingHeights[1], headingHeights[0])
+        XCTAssertGreaterThan(headingHeights[2], headingHeights[1])
+        XCTAssertGreaterThan(passageHeights[1], passageHeights[0], "Le réglage doit aussi agrandir les fiches")
+        XCTAssertGreaterThan(passageHeights[2], passageHeights[1])
         app.terminate(); app.launch()
         XCTAssertTrue(navigationButton("Compte", in: app).waitForExistence(timeout: 10))
         navigationButton("Compte", in: app).tap()
-        XCTAssertEqual(toggle.value as? String, "1", "Le choix doit être conservé après relance")
-        XCTAssertEqual(app.staticTexts["Confort de lecture"].frame.height, enlargedHeading, accuracy: 1)
-        setComfort(false)
-        XCTAssertEqual(app.staticTexts["Confort de lecture"].frame.height, standardHeading, accuracy: 1,
-                       "Désactiver le confort doit rétablir la taille de l’appareil")
-        if original == "1" { setComfort(true) }
+        XCTAssertTrue(app.buttons["reading-size-L"].isSelected, "Le choix doit être conservé après relance")
+        XCTAssertEqual(app.staticTexts["Apparence"].frame.height, headingHeights[2], accuracy: 1)
+        setSize("M")
+        XCTAssertEqual(app.staticTexts["Apparence"].frame.height, headingHeights[1], accuracy: 1)
+    }
+
+    @MainActor
+    func testReadingSizesRespectSystemAccessibilityAndDarkAppearance() {
+        let app = XCUIApplication()
+        for accessible in [false, true] {
+            app.launchArguments = ["--uitesting", "--demo", "-appearance", accessible ? "light" : "dark",
+                                   "-UIPreferredContentSizeCategoryName", accessible ? "UICTContentSizeCategoryAccessibilityXXXL" : "UICTContentSizeCategoryL"]
+            app.launch()
+            XCTAssertTrue(navigationButton("Compte", in: app).waitForExistence(timeout: 10))
+            navigationButton("Compte", in: app).tap()
+            let original = ["S", "M", "L"].first { app.buttons["reading-size-\($0)"].isSelected } ?? "M"
+            var heights: [CGFloat] = []
+            for size in ["S", "M", "L"] {
+                let button = app.buttons["reading-size-\(size)"]
+                reveal(button, in: app, down: false)
+                XCTAssertTrue(button.isHittable)
+                button.tap()
+                wait(button, key: "selected", equals: true)
+                heights.append(app.staticTexts["Apparence"].frame.height)
+                XCTAssertGreaterThanOrEqual(button.frame.height, 44)
+                XCTAssertGreaterThanOrEqual(button.frame.minX, app.frame.minX)
+                XCTAssertLessThanOrEqual(button.frame.maxX, app.frame.maxX)
+                if size == "M" { capture(accessible ? "23-compte-accessibilite" : "23-compte-sombre", app: app) }
+            }
+            if accessible {
+                XCTAssertEqual(heights[0], heights[1], accuracy: 1)
+                XCTAssertEqual(heights[1], heights[2], accuracy: 1,
+                               "S et M ne doivent pas réduire la taille d’accessibilité système")
+            }
+            let previous = app.buttons["reading-size-\(original)"]
+            reveal(previous, in: app, down: false)
+            previous.tap()
+            app.terminate()
+        }
     }
 
     @MainActor
@@ -472,6 +512,7 @@ final class InfometrieUITests: XCTestCase {
             app.launch()
             XCTAssertTrue(app.buttons["edit-filters"].waitForExistence(timeout: 10))
             let suffix = largeText ? "grand-texte" : "sombre"
+            capture("20-fil-\(suffix)", app: app)
             navigationButton("Mes suivis", in: app).tap()
             capture("20-suivis-\(suffix)", app: app)
             navigationButton("Compte", in: app).tap()
@@ -525,6 +566,7 @@ final class InfometrieUITests: XCTestCase {
         app.launch()
         let citations = app.buttons["feed-kind-2"]
         XCTAssertTrue(citations.waitForExistence(timeout: 10))
+        capture("19-fil-initial", app: app)
         if app.buttons["navigation-feed"].exists {
             XCTAssertFalse(app.tabBars.firstMatch.exists, "L’iPad ne doit afficher qu’une navigation principale")
         }
@@ -537,7 +579,7 @@ final class InfometrieUITests: XCTestCase {
         capture("20-suivis-vides", app: app)
         let account = navigationButton("Compte", in: app)
         account.tap()
-        XCTAssertTrue(app.switches["comfortable-reading"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["reading-size-M"].waitForExistence(timeout: 5))
         capture("20-compte", app: app)
         let feed = navigationButton("Le fil", in: app)
         feed.tap()
@@ -644,6 +686,128 @@ final class InfometrieUITests: XCTestCase {
     }
 
     @MainActor
+    func testFullscreenTranscriptKeepsPreciseSeekingAndPlayback() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--demo", "--precise-word-timings", "-appearance", "dark",
+                               "-readingSize", "M", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+        app.launch()
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
+        app.buttons["feed-item-1"].tap()
+        app.buttons["play-sequence"].tap()
+        let toggle = app.buttons["player-toggle"]
+        wait(toggle, key: "label", equals: "Pause")
+        toggle.tap()
+        reveal(app.links["retrouverez"], in: app, down: false)
+        app.links["retrouverez"].tap()
+        wait(app.staticTexts["transcript-position"], key: "value", equals: "Mot 19 sur 41")
+        let expand = app.buttons["expand-transcript"]
+        reveal(expand, in: app, down: true)
+        expand.tap()
+        let fullscreen = app.descendants(matching: .any).matching(identifier: "fullscreen-transcript").firstMatch
+        let close = fullscreen.buttons["collapse-transcript"]
+        let fullToggle = fullscreen.buttons["player-toggle"]
+        let fullElapsed = fullscreen.staticTexts["player-elapsed"]
+        let fullStatus = fullscreen.staticTexts["transcript-position"]
+        XCTAssertTrue(close.waitForExistence(timeout: 5))
+        wait(fullToggle, key: "label", equals: "Écouter")
+        XCTAssertTrue(fullToggle.isHittable)
+        XCTAssertEqual(fullElapsed.label, "0:12", "Agrandir ne doit pas recréer le lecteur")
+        wait(fullStatus, key: "value", equals: "Mot 19 sur 41")
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
+        XCTAssertFalse(app.buttons["navigation-feed"].isHittable, "Le plein écran doit aussi masquer la navigation iPad")
+        let scroll = fullscreen.scrollViews["transcript-scroll"]
+        XCTAssertGreaterThan(scroll.frame.height, 300, "Le texte utilise la hauteur disponible")
+        fullscreen.buttons["Reculer de 10 secondes"].tap()
+        wait(fullStatus, key: "value", equals: "Aucun mot actif")
+        fullscreen.buttons["Avancer de 10 secondes"].tap()
+        wait(fullStatus, key: "value", equals: "Mot 19 sur 41")
+        fullscreen.links["retrouverez"].tap()
+        XCTAssertEqual(fullElapsed.label, "0:12")
+        capture("24-texte-plein-ecran-sombre", app: app)
+
+        let slider = fullscreen.sliders["player-position"]
+        slider.adjust(toNormalizedSliderPosition: 0.25)
+        XCTAssertNotEqual(fullElapsed.label, "0:12")
+        XCTAssertNotEqual(fullStatus.value as? String, "Mot 19 sur 41", "Le curseur met aussi à jour le texte")
+        XCTAssertEqual(fullToggle.label, "Écouter", "Déplacer le curseur conserve la pause")
+        let pausedPosition = fullElapsed.label
+        let follow = fullscreen.buttons["transcript-follow"]
+        if follow.value as? String == "Activé" { follow.tap() }
+        close.tap()
+        XCTAssertTrue(expand.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["player-elapsed"].label, pausedPosition)
+        XCTAssertEqual(toggle.label, "Écouter")
+        XCTAssertEqual(app.buttons["transcript-follow"].value as? String, "Désactivé", "Le choix de suivi est partagé entre les deux vues")
+        expand.tap()
+        XCTAssertTrue(close.waitForExistence(timeout: 5))
+        XCTAssertEqual(follow.value as? String, "Désactivé")
+        follow.tap()
+        for _ in 0..<4 {
+            if fullscreen.links["Cette"].isHittable { break }
+            scroll.swipeDown()
+        }
+        fullscreen.links["Cette"].tap()
+        wait(fullStatus, key: "value", equals: "Mot 1 sur 41")
+        XCTAssertEqual(fullElapsed.label, "0:01")
+        close.tap()
+        XCTAssertTrue(expand.waitForExistence(timeout: 5))
+        toggle.tap()
+        wait(toggle, key: "label", equals: "Pause")
+        expand.tap()
+        XCTAssertTrue(close.waitForExistence(timeout: 5))
+        XCTAssertEqual(fullToggle.label, "Pause", "L’écoute continue à l’ouverture")
+        close.tap()
+        XCTAssertTrue(expand.waitForExistence(timeout: 5))
+        XCTAssertEqual(toggle.label, "Pause", "L’écoute continue à la fermeture")
+        toggle.tap()
+        app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testFullscreenTranscriptStartsFromTextAtMaximumSize() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--demo", "-appearance", "light", "-readingSize", "M",
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
+        app.buttons["feed-item-1"].tap()
+        let expand = app.buttons["expand-transcript"]
+        reveal(expand, in: app, down: false)
+        expand.tap()
+        let fullscreen = app.descendants(matching: .any).matching(identifier: "fullscreen-transcript").firstMatch
+        let close = fullscreen.buttons["collapse-transcript"]
+        XCTAssertTrue(close.waitForExistence(timeout: 5))
+        XCTAssertTrue(fullscreen.buttons["play-sequence"].exists, "Agrandir ne démarre pas l’écoute")
+        XCTAssertTrue(fullscreen.links["Cette"].isHittable)
+        fullscreen.links["Cette"].tap()
+        let toggle = fullscreen.buttons["player-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
+        wait(toggle, key: "label", equals: "Pause")
+        toggle.tap()
+        XCTAssertEqual(toggle.label, "Écouter")
+        let scroll = fullscreen.scrollViews["transcript-scroll"]
+        XCTAssertGreaterThan(scroll.frame.height, 100)
+        for control in [close, toggle, fullscreen.sliders["player-position"], fullscreen.buttons["Avancer de 10 secondes"], fullscreen.buttons["Reculer de 10 secondes"]] {
+            XCTAssertTrue(control.isHittable)
+            // Native sliders expose their track frame, independently of their extended hit area.
+            if control.elementType != .slider { XCTAssertGreaterThanOrEqual(control.frame.height, 44) }
+            XCTAssertLessThanOrEqual(control.frame.maxY, app.frame.maxY)
+            XCTAssertLessThanOrEqual(control.frame.maxX, app.frame.maxX)
+        }
+        scroll.swipeUp()
+        let follow = fullscreen.buttons["transcript-follow"]
+        wait(follow, key: "value", equals: "Désactivé")
+        follow.tap()
+        wait(follow, key: "value", equals: "Activé")
+        capture("25-texte-plein-ecran-accessibilite", app: app)
+        close.tap()
+        XCTAssertTrue(expand.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["player-toggle"].exists)
+        XCTAssertEqual(app.buttons["player-toggle"].label, "Écouter")
+    }
+
+    @MainActor
     func testTranscriptSeeksPlayerAndFollowsScrubbingWhilePaused() {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--demo", "--reset-demo"]
@@ -729,6 +893,11 @@ final class InfometrieUITests: XCTestCase {
 
     @MainActor private func wait(_ element: XCUIElement, key: String, equals value: String) {
         let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "%K == %@", key, value), object: element)
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 8), .completed)
+    }
+
+    @MainActor private func wait(_ element: XCUIElement, key: String, equals value: Bool) {
+        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "%K == %@", key, NSNumber(value: value)), object: element)
         XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 8), .completed)
     }
 

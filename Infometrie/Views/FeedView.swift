@@ -99,7 +99,7 @@ struct FeedView: View {
                 Label("Tout afficher", systemImage: "arrow.counterclockwise")
                     .font(.subheadline.weight(.semibold)).frame(minHeight: 48)
             }
-            .buttonStyle(.plain).foregroundStyle(Brand.primary)
+            .buttonStyle(.plain).foregroundStyle(Brand.tint)
             .accessibilityIdentifier("clear-filters")
             AppRule()
         }
@@ -114,7 +114,7 @@ struct FeedView: View {
                 .padding(.horizontal, 8).frame(minHeight: 48)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain).foregroundStyle(Brand.primary)
+        .buttonStyle(.plain).foregroundStyle(Brand.tint)
         .accessibilityIdentifier("edit-filters")
         .accessibilityValue(hasAudienceFilters ? "Filtres actifs" : "")
     }

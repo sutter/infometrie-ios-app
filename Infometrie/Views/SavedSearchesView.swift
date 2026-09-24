@@ -89,7 +89,7 @@ struct SavedSearchesView: View {
         } message: { Text("« \(deleting?.name ?? "") » disparaîtra de cet appareil. Cette action est définitive.") }
     }
     private func category(_ title: String, archived value: Bool) -> some View {
-        AppTabButton(title: title, selected: archived == value, accent: Brand.primary) { archived = value }
+        AppTabButton(title: title, selected: archived == value, accent: Brand.tint) { archived = value }
             .accessibilityIdentifier(value ? "saved-archived" : "saved-active")
     }
 }

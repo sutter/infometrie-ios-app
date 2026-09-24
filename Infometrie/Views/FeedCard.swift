@@ -66,7 +66,7 @@ struct FeedCard: View {
             }
             AdaptiveRow {
                 Label(item.kindLabel, systemImage: item.kindSymbol)
-                    .foregroundStyle(Brand.primary)
+                    .foregroundStyle(item.kindColor)
                     .fixedSize(horizontal: false, vertical: true)
                 if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
                 if item.canPlay && item.durationSec > 0 {

@@ -1,34 +1,38 @@
 import SwiftUI
 
-/// Minimal Neutral by Luis Llanes (tweakcn), converted from OKLCH to sRGB.
-/// Source tokens: Docs/UX/SocialFeed/minimal-neutral.json.
+/// shadcn/ui preset b37ZhrNVw: Nova, Neutral, Indigo (OKLCH → sRGB).
+/// Original tokens: Docs/UX/SocialFeed/shadcn-indigo.json.
 enum Brand {
-    static let background = color(light: 0xFFFFFF, dark: 0x171717)
+    static let background = color(light: 0xFFFFFF, dark: 0x0A0A0A)
+    static let card = color(light: 0xFFFFFF, dark: 0x171717)
     static let ink = color(light: 0x0A0A0A, dark: 0xFAFAFA)
-    static let primary = color(light: 0x171717, dark: 0xE5E5E5)
-    static let primaryForeground = color(light: 0xFAFAFA, dark: 0x171717)
+    static let primary = color(light: 0x432DD7, dark: 0x372AAC)
+    static let primaryForeground = color(light: 0xEEF2FF, dark: 0xEEF2FF)
+    // Filled buttons retain the preset's primary. Inline actions use its lighter
+    // chart-1 indigo in dark mode to stay readable on neutral surfaces.
+    static let tint = color(light: 0x432DD7, dark: 0xA3B3FF)
     static let secondary = color(light: 0x737373, dark: 0xA1A1A1)
-    static let surface = color(light: 0xEEEEEE, dark: 0x262626)
-    static let input = color(light: 0xF5F5F5, dark: 0x262626)
-    static let selection = color(light: 0xEEEEEE, dark: 0x404040)
+    static let surface = color(light: 0xF5F5F5, dark: 0x262626)
+    static let inputBorder = color(light: 0xE5E5E5, dark: 0xFFFFFF, darkAlpha: 0.15)
+    static let selection = color(light: 0xF5F5F5, dark: 0x262626)
     static let selectionForeground = color(light: 0x171717, dark: 0xFAFAFA)
-    static let rule = color(light: 0xEEEEEE, dark: 0x262626)
-    static let sidebar = color(light: 0xFAFAFA, dark: 0x262626)
-    static let sidebarRule = color(light: 0xE5E5E5, dark: 0x282828)
+    static let rule = color(light: 0xE5E5E5, dark: 0xFFFFFF, darkAlpha: 0.10)
+    static let sidebar = color(light: 0xFAFAFA, dark: 0x171717)
+    static let sidebarRule = color(light: 0xE5E5E5, dark: 0xFFFFFF, darkAlpha: 0.10)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
 
-    // The original muted foreground is intended for the page background.
-    // A slightly stronger neutral keeps small labels at 4.5:1 on tinted surfaces.
+    // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
     static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
 
-    private static func color(light: UInt32, dark: UInt32) -> Color {
+    private static func color(light: UInt32, dark: UInt32, darkAlpha: CGFloat = 1) -> Color {
         Color(uiColor: UIColor { traits in
-            let value = traits.userInterfaceStyle == .dark ? dark : light
+            let isDark = traits.userInterfaceStyle == .dark
+            let value = isDark ? dark : light
             return UIColor(
                 red: CGFloat((value >> 16) & 0xFF) / 255,
                 green: CGFloat((value >> 8) & 0xFF) / 255,
                 blue: CGFloat(value & 0xFF) / 255,
-                alpha: 1
+                alpha: isDark ? darkAlpha : 1
             )
         })
     }
@@ -100,7 +104,7 @@ struct ChannelMark: View {
                 Image(systemName: item.media.lowercased() == "tv" ? "tv" : item.media.lowercased() == "radio" ? "radio" : "newspaper")
                     .font(.system(size: size * 0.8, weight: .medium))
             }
-        }.frame(width: size, height: size).foregroundStyle(Brand.primary).accessibilityHidden(true)
+        }.frame(width: size, height: size).foregroundStyle(Brand.tint).accessibilityHidden(true)
     }
 }
 
@@ -109,7 +113,7 @@ struct PersonAvatar: View {
     var size: CGFloat = 42
     var body: some View {
         Text(item.initials).font(.system(size: size * 0.32, weight: .semibold))
-            .foregroundStyle(Brand.primary)
+            .foregroundStyle(Brand.tint)
             .frame(width: size, height: size)
             .background(Brand.surface, in: Circle())
             .accessibilityHidden(true)
@@ -138,6 +142,7 @@ enum AppLayout {
     static let maximumWidth: CGFloat = 1100
     static let readingWidth: CGFloat = 760
     static let wideMargin: CGFloat = 24
+    static let controlRadius: CGFloat = 14
 }
 
 struct PageHeading: View {
@@ -178,7 +183,7 @@ struct AppEmptyState: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Image(systemName: icon).font(.title2).foregroundStyle(Brand.primary).accessibilityHidden(true)
+            Image(systemName: icon).font(.title2).foregroundStyle(Brand.tint).accessibilityHidden(true)
             Text(title).font(.title3.bold())
                 .foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
             Text(message).font(.body).foregroundStyle(Brand.secondary)
@@ -209,8 +214,8 @@ extension View {
     }
 
     func appInput() -> some View {
-        background(Brand.input, in: RoundedRectangle(cornerRadius: 12))
-            .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(Brand.rule) }
+        background(Brand.surface, in: RoundedRectangle(cornerRadius: AppLayout.controlRadius))
+            .overlay { RoundedRectangle(cornerRadius: AppLayout.controlRadius).strokeBorder(Brand.inputBorder) }
     }
 }
 
@@ -224,7 +229,7 @@ struct AppRule: View {
 struct AppTabButton: View {
     let title: String
     let selected: Bool
-    var accent: Color = Brand.primary
+    var accent: Color = Brand.tint
     var compact = false
     let action: () -> Void
 
