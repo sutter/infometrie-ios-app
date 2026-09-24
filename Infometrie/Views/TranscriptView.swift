@@ -40,8 +40,6 @@ struct TranscriptView: View {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         positionLabel
-                        Text(timeline.hasPreciseTimings ? "Synchronisé" : canSeek ? "Calage estimé" : "Texte uniquement")
-                            .font(.footnote).foregroundStyle(Brand.secondary)
                     }
                     Spacer(minLength: 0)
                     if canSeek, isCurrent { followButton.labelStyle(.iconOnly) }
@@ -56,9 +54,8 @@ struct TranscriptView: View {
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 AppRule()
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 12) {
-                        positionLabel
                         Spacer(minLength: 0)
                         if let onExpand {
                             Button(action: onExpand) {
@@ -71,13 +68,8 @@ struct TranscriptView: View {
                             .accessibilityIdentifier("expand-transcript")
                         }
                     }
-                    if canSeek {
-                        Text("Touchez un mot pour rejoindre ce passage.")
-                            .font(.subheadline).foregroundStyle(Brand.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
                     textScroll.frame(height: min(textHeight, 380))
-                }.padding(.vertical, 20)
+                }.padding(.top, 4).padding(.bottom, 8)
                 VStack(alignment: .leading, spacing: 10) {
                     if canSeek, isCurrent { followButton }
                     synchronizationStatus
@@ -158,18 +150,33 @@ struct TranscriptView: View {
             if !expanded, isCurrent, let notice = model.player.transcriptNotice {
                 Text(notice).font(.footnote).foregroundStyle(Brand.ink).accessibilityIdentifier("transcript-notice")
             }
-            if timeline.hasPreciseTimings {
-                Label("Synchronisation par mot", systemImage: "checkmark.circle.fill")
-                    .font(.footnote).foregroundStyle(Brand.tint).accessibilityIdentifier("transcript-precise")
-            } else if model.wordTimingStates[detail.id] == .loading {
-                HStack(spacing: 8) { ProgressView(); Text("Chargement des repères précis…") }
-                    .font(.footnote).foregroundStyle(Brand.secondary)
-            } else {
-                Text(canSeek ? "Calage estimé : le texte peut être décalé." : "Les repères temporels nécessaires à la synchronisation ne sont pas disponibles.")
-                    .font(.footnote).foregroundStyle(Brand.secondary).accessibilityIdentifier("transcript-estimated")
-                if !model.isDemo, detail.item.canPlay {
-                    Button("Réessayer la synchronisation") { model.loadWordTimings(for: detail.id, retry: true) }
-                        .buttonStyle(ActionButtonStyle()).accessibilityIdentifier("retry-transcript-timing")
+            if !timeline.hasPreciseTimings {
+                let explanation = canSeek
+                    ? "Le suivi des mots est approximatif."
+                    : "Le texte ne peut pas être synchronisé avec l’audio."
+                switch model.wordTimingStates[detail.id] {
+                case .failed:
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(explanation)
+                            .font(.footnote).foregroundStyle(Brand.secondary)
+                            .accessibilityIdentifier("transcript-estimated")
+                        Button {
+                            model.loadWordTimings(for: detail.id, retry: true)
+                        } label: {
+                            Label("Réessayer", systemImage: "arrow.clockwise")
+                                .font(.footnote.weight(.medium))
+                                .frame(minHeight: 44, alignment: .leading)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).foregroundStyle(Brand.tint)
+                        .accessibilityIdentifier("retry-transcript-timing")
+                    }
+                case .unavailable, .available:
+                    Text(explanation)
+                        .font(.footnote).foregroundStyle(Brand.secondary)
+                        .accessibilityIdentifier("transcript-estimated")
+                case .loading, .none:
+                    EmptyView()
                 }
             }
         }.fixedSize(horizontal: false, vertical: true)
@@ -192,8 +199,8 @@ struct TranscriptView: View {
                 result[range][AttributeScopes.SwiftUIAttributes.UnderlineStyleAttribute.self] = Text.LineStyle(pattern: .solid, color: .clear)
             }
             if word.id == currentWord {
-                result[range][AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute.self] = expanded ? Brand.primaryForeground : Brand.selectionForeground
-                result[range][AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute.self] = expanded ? Brand.primary : Brand.selection
+                result[range][AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute.self] = Brand.primaryForeground
+                result[range][AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute.self] = Brand.primary
             }
         }
         return result

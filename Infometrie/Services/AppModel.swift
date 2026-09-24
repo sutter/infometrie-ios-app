@@ -24,7 +24,7 @@ final class AppModel {
     var choicesError: String?
     var lastRefresh: Date?
     var notice: String?
-    enum WordTimingState { case loading, available, unavailable }
+    enum WordTimingState { case loading, available, unavailable, failed }
     private(set) var wordTimings: [Int64: SequenceWordTimings] = [:]
     private(set) var wordTimingStates: [Int64: WordTimingState] = [:]
     var isAuthenticated: Bool { isDemo || session != nil }
@@ -220,7 +220,7 @@ final class AppModel {
                 self.wordTimingStates[sequenceID] = timings == nil ? .unavailable : .available
                 if timings != nil { self.player.wordTimingsDidLoad(sequenceID: sequenceID) }
             case .failure(let error):
-                self.wordTimingStates[sequenceID] = .unavailable
+                self.wordTimingStates[sequenceID] = .failed
                 self.handleSessionError(error)
             }
         }
