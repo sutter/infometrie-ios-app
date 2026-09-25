@@ -9,7 +9,7 @@ Portage natif en **Swift 6 / SwiftUI**, reconstitué depuis `infometrie-0.4.0-hl
 3. Lancer avec **⌘R**.
 4. Choisir **Essayer la démonstration** pour la démonstration, ou saisir les identifiants du serveur de test InfoMétrie.
 
-Le SDK utilisé est iOS 27 ; le minimum de déploiement est iOS 26. Les composants natifs adoptent le rendu du système d’exécution. Sur iPhone physique, sélectionner son équipe Apple dans **Signing & Capabilities** et, si nécessaire, un bundle identifier appartenant à cette équipe. Aucune signature de distribution ni publication n’a été effectuée.
+Le SDK utilisé est iOS 27 ; le minimum de déploiement est iOS 26. Les composants natifs adoptent le rendu du système d’exécution. Sur iPhone physique, sélectionner son équipe Apple dans **Signing & Capabilities** et, si nécessaire, un bundle identifier appartenant à cette équipe. La version 0.4.0 a été envoyée sur TestFlight le 25 septembre 2026, avec le serveur de test ; elle n’est pas publiée sur l’App Store.
 
 [Voir la refonte UX et les captures avant/après](Docs/UX/README.md).
 
