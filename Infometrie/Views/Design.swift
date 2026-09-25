@@ -268,12 +268,13 @@ struct AppTabButton: View {
                     Group {
                         if iconTile {
                             // Custom symbols ship a medium scale only: size them by font, never by imageScale.
-                            image.font(.caption2)
+                            image.font(.footnote)
                                 .foregroundStyle(Brand.primaryForeground)
                                 .padding(tilePadding)
                                 .background(Brand.primary, in: RoundedRectangle(cornerRadius: tileRadius, style: .continuous))
                         } else {
-                            image
+                            // One step above the label, with a heavier stroke, so the icons read at a glance.
+                            image.font((compact ? Font.subheadline : .title3).weight(.semibold))
                         }
                     }
                     .accessibilityLabel(title)

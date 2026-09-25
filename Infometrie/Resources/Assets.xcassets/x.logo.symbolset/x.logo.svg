@@ -14,11 +14,11 @@
   <line id="Baseline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1556" y2="1556"/>
   <line id="Capline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1485.54" y2="1485.54"/>
   <line id="left-margin-Regular-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="1400" x2="1400" y1="1030.79" y2="1150.12"/>
-  <line id="right-margin-Regular-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="1499.663" x2="1499.663" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Regular-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="1501.362" x2="1501.362" y1="1030.79" y2="1150.12"/>
  </g>
  <g id="Symbols">
   <g id="Regular-M" transform="matrix(1 0 0 1 1400 1126)">
-   <path d="M60.267 -41.745L93.374 -80.23L81.426 -80.229L54.96 -49.465L33.822 -80.23L4.473 -80.229L38.644 -30.498L4 9.77L15.948 9.77L43.949 -22.778L66.314 9.77L95.663 9.77ZM21.118 -71.211L28.465 -71.211L78.954 1.008L71.607 1.008Z"/>
+   <path d="M62.088 -41.568L95.348 -80.23L81.426 -80.229L55.905 -50.564L35.521 -80.229L4.696 -80.229L38.769 -30.642L4 9.77L17.922 9.77L44.95 -21.647L66.538 9.77L97.362 9.77ZM24.211 -69.714L29.392 -69.714L77.785 -0.493L72.603 -0.493Z"/>
   </g>
  </g>
 </svg>

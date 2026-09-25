@@ -14,7 +14,7 @@ output = root / 'Infometrie/Resources/Assets.xcassets/x.logo.symbolset/x.logo.sv
 LOGO = ('M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866'
         'L515.491 750.218L842.672 1226.37H1200L714.163 519.284ZM569.165 687.828L521.697 619.934L144.011 79.6944'
         'H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.828Z')
-BOLDEN = 24.0   # logo units added to each side of every stroke; 0 keeps the official weight
+BOLDEN = 36.0   # logo units added to each side of every stroke; 0 keeps the official weight
 CAP = 70.459    # template cap height at 100 pt
 HEIGHT = 90.0   # glyph height, the size of square.grid.2x2 next to it in the feed tabs
 BEARING = 4.0   # side bearing on each side
