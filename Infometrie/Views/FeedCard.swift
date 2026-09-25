@@ -33,7 +33,8 @@ struct FeedCard: View {
     private var initialsAvatar: some View {
         Text(item.initials)
             .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(Brand.secondary)
+            // Small text on the shaded circle needs the reinforced secondary to reach 4.5:1.
+            .foregroundStyle(Brand.secondaryOnSurface)
             .frame(width: 36, height: 36)
             .background(Brand.surface, in: Circle())
             .accessibilityHidden(true)
@@ -41,10 +42,11 @@ struct FeedCard: View {
 
     private var speaker: some View {
         VStack(alignment: .leading, spacing: 1) {
+            // Two lines at most: a long name or role wraps at large sizes instead of being cut.
             Text(item.person)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Brand.ink)
-                .lineLimit(1)
+                .lineLimit(2)
             let role = item.role.trimmingCharacters(in: .whitespacesAndNewlines)
             let party = item.party.trimmingCharacters(in: .whitespacesAndNewlines)
             let overlaps = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
@@ -54,7 +56,7 @@ struct FeedCard: View {
                 Text(details)
                     .font(.footnote)
                     .foregroundStyle(Brand.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
