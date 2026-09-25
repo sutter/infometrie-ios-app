@@ -174,17 +174,19 @@ struct PlaybackDock: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
     var compact = false
-    /// "Tout écouter": previous and next passages replace the 10-second skips beside the play button.
+    /// "Tout écouter": previous and next lead, as prominent buttons around a round play button,
+    /// and replace the 10-second skips.
     var queue = false
+    @ScaledMetric(relativeTo: .title2) private var playCircleSize = 56.0
     private var playback: PlaybackModel { model.player }
     var body: some View {
         VStack(spacing: 10) {
             if playback.error != nil {
                 Text("Écoute indisponible").font(.headline)
                 let retry = Button("Réessayer l’écoute") { playback.retry() }.buttonStyle(ActionButtonStyle(prominent: true))
+                retry
                 // A passage that fails must not block the queue.
-                if queue { HStack(spacing: 12) { sideButton(forward: false); retry; sideButton(forward: true) } }
-                else { retry }
+                if queue { HStack(spacing: 12) { queueButton(forward: false); queueButton(forward: true) } }
             } else {
                 VStack(spacing: 0) {
                     Slider(value: Binding(get: { min(playback.position, max(1, playback.duration)) }, set: { playback.scrub(to: $0) }), in: 0...max(1, playback.duration), onEditingChanged: { editing in
@@ -202,17 +204,26 @@ struct PlaybackDock: View {
                     }.font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
                         .skeleton(playback.isLoading)
                 }
-                if compact {
+                if queue {
+                    // Past XL, "Précédent" no longer fits beside the play button: stack rather than split the word.
+                    if dynamicType > .xLarge {
+                        queueButton(forward: false)
+                        queueButton(forward: true)
+                        playCircle
+                    } else {
+                        HStack(spacing: 8) { queueButton(forward: false); playCircle; queueButton(forward: true) }
+                    }
+                } else if compact {
                     HStack(spacing: 12) {
-                        sideButton(forward: false)
+                        skipButton(forward: false)
                         playButton.labelStyle(.iconOnly)
-                        sideButton(forward: true)
+                        skipButton(forward: true)
                     }
                 } else if dynamicType.isAccessibilitySize {
                     playButton
-                    HStack(spacing: 16) { sideButton(forward: false); sideButton(forward: true) }
+                    HStack(spacing: 16) { skipButton(forward: false); skipButton(forward: true) }
                 } else {
-                    HStack(spacing: 12) { sideButton(forward: false); playButton; sideButton(forward: true) }
+                    HStack(spacing: 12) { skipButton(forward: false); playButton; skipButton(forward: true) }
                 }
             }
         }
@@ -222,25 +233,46 @@ struct PlaybackDock: View {
     }
     private var playButton: some View {
         Button { playback.toggle() } label: {
-            Label(playback.isPlaying ? "Pause" : playback.ended ? "Réécouter" : "Écouter", systemImage: playback.isPlaying ? "pause.fill" : playback.ended ? "arrow.counterclockwise" : "play.fill")
+            Label(playLabel, systemImage: playSymbol)
         }.buttonStyle(ActionButtonStyle(prominent: true))
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityIdentifier("player-toggle")
     }
-    /// Beside the play button: 10-second skips for one passage, previous and next passages in the queue.
-    private func sideButton(forward: Bool) -> some View {
-        Button {
-            if queue { forward ? playback.next() : playback.previous() }
-            else { playback.seek(playback.position + (forward ? 10 : -10)) }
-        } label: {
-            Image(systemName: queue ? (forward ? "forward.end.fill" : "backward.end.fill") : (forward ? "goforward.10" : "gobackward.10"))
+    private var playSymbol: String { playback.isPlaying ? "pause.fill" : playback.ended ? "arrow.counterclockwise" : "play.fill" }
+    private var playLabel: String { playback.isPlaying ? "Pause" : playback.ended ? "Réécouter" : "Écouter" }
+    /// The queue's play control stays discreet: previous and next are the main actions there.
+    private var playCircle: some View {
+        Button { playback.toggle() } label: {
+            Image(systemName: playSymbol).font(.title2)
+                .frame(width: playCircleSize, height: playCircleSize)
+                .overlay { Circle().strokeBorder(Brand.rule) }
+                .contentShape(Circle())
+        }.buttonStyle(.plain).foregroundStyle(Brand.tint)
+            .disabled(playback.isLoading || playback.error != nil)
+            .accessibilityLabel(playLabel)
+            .accessibilityIdentifier("player-toggle")
+    }
+    private func queueButton(forward: Bool) -> some View {
+        Button { forward ? playback.next() : playback.previous() } label: {
+            HStack(spacing: 4) {
+                if !forward { Image(systemName: "backward.end.fill") }
+                Text(forward ? "Suivant" : "Précédent").lineLimit(1).minimumScaleFactor(0.85)
+                if forward { Image(systemName: "forward.end.fill") }
+            }
+        }.buttonStyle(ActionButtonStyle(prominent: true, horizontalPadding: 10))
+            .disabled(forward ? !playback.hasNext : !playback.hasPrevious)
+            .accessibilityLabel(forward ? "Séquence suivante" : "Séquence précédente")
+            .accessibilityIdentifier(forward ? "player-next" : "player-previous")
+    }
+    private func skipButton(forward: Bool) -> some View {
+        Button { playback.seek(playback.position + (forward ? 10 : -10)) } label: {
+            Image(systemName: forward ? "goforward.10" : "gobackward.10")
                 .font(.title2).frame(minWidth: 52, maxWidth: dynamicType.isAccessibilitySize ? .infinity : 60, minHeight: 56)
                 .overlay { Capsule().strokeBorder(Brand.rule) }
                 .contentShape(Rectangle())
         }.buttonStyle(.plain).foregroundStyle(Brand.tint)
-            .disabled(queue ? !(forward ? playback.hasNext : playback.hasPrevious) : playback.isLoading || playback.error != nil)
-            .accessibilityLabel(queue ? (forward ? "Séquence suivante" : "Séquence précédente") : (forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes"))
-            .accessibilityIdentifier(queue ? (forward ? "player-next" : "player-previous") : (forward ? "player-forward" : "player-back"))
+            .disabled(playback.isLoading || playback.error != nil)
+            .accessibilityLabel(forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes")
     }
     private func clock(_ seconds: Double) -> String {
         let value = seconds.isFinite ? max(0, Int(seconds)) : 0

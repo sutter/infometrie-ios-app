@@ -52,13 +52,14 @@ struct Wordmark: View {
 /// Shared controls grow with Dynamic Type and retain a generous hit area.
 struct ActionButtonStyle: ButtonStyle {
     var prominent = false
+    var horizontalPadding: CGFloat = 16
     @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.semibold))
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 16).padding(.vertical, 12)
+            .padding(.horizontal, horizontalPadding).padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 52)
             .foregroundStyle(prominent ? Brand.primaryForeground : Brand.ink)
             .background(prominent ? Brand.primary : Brand.card, in: Capsule())
