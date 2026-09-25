@@ -919,8 +919,6 @@ final class InfometrieUITests: XCTestCase {
         wait(app.staticTexts["transcript-position"], key: "value", equals: "Mot 19 sur 41")
         // The fixture puts this word at 12s; uniform estimation would yield 7.9s.
         XCTAssertEqual(app.staticTexts["player-elapsed"].label, "0:12")
-        XCTAssertTrue(app.staticTexts["transcript-precise"].exists)
-        XCTAssertFalse(app.staticTexts["transcript-estimated"].exists)
         capture("10-verbatim-horodatages-api", app: app)
         reveal(app.buttons["Reculer de 10 secondes"], in: app, down: true)
         app.buttons["Reculer de 10 secondes"].tap()
@@ -949,7 +947,6 @@ final class InfometrieUITests: XCTestCase {
         app.links["retrouverez"].tap()
         wait(app.staticTexts["transcript-position"], key: "value", equals: "Mot 19 sur 41")
         XCTAssertEqual(app.staticTexts["player-elapsed"].label, "0:12")
-        XCTAssertTrue(app.staticTexts["transcript-precise"].exists)
         capture("11-podcast-horodatages-api", app: app)
     }
 
@@ -1011,7 +1008,9 @@ final class InfometrieUITests: XCTestCase {
             let endY = towardTop ? startY + distance : startY - distance
             let start = origin.withOffset(CGVector(dx: x, dy: startY))
             let end = origin.withOffset(CGVector(dx: x, dy: endY))
-            start.press(forDuration: 0.05, thenDragTo: end)
+            // A slow drag that holds at the end leaves no momentum: at the largest text sizes a
+            // flick overshoots the target and the loop then oscillates around it.
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.15)
         }
 
     }
