@@ -174,12 +174,17 @@ struct PlaybackDock: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
     var compact = false
+    /// "Tout écouter": previous and next passages replace the 10-second skips beside the play button.
+    var queue = false
     private var playback: PlaybackModel { model.player }
     var body: some View {
         VStack(spacing: 10) {
             if playback.error != nil {
                 Text("Écoute indisponible").font(.headline)
-                Button("Réessayer l’écoute") { playback.retry() }.buttonStyle(ActionButtonStyle(prominent: true))
+                let retry = Button("Réessayer l’écoute") { playback.retry() }.buttonStyle(ActionButtonStyle(prominent: true))
+                // A passage that fails must not block the queue.
+                if queue { HStack(spacing: 12) { sideButton(forward: false); retry; sideButton(forward: true) } }
+                else { retry }
             } else {
                 VStack(spacing: 0) {
                     Slider(value: Binding(get: { min(playback.position, max(1, playback.duration)) }, set: { playback.scrub(to: $0) }), in: 0...max(1, playback.duration), onEditingChanged: { editing in
@@ -199,15 +204,15 @@ struct PlaybackDock: View {
                 }
                 if compact {
                     HStack(spacing: 12) {
-                        skipButton(forward: false)
+                        sideButton(forward: false)
                         playButton.labelStyle(.iconOnly)
-                        skipButton(forward: true)
+                        sideButton(forward: true)
                     }
                 } else if dynamicType.isAccessibilitySize {
                     playButton
-                    HStack(spacing: 16) { skipButton(forward: false); skipButton(forward: true) }
+                    HStack(spacing: 16) { sideButton(forward: false); sideButton(forward: true) }
                 } else {
-                    HStack(spacing: 12) { skipButton(forward: false); playButton; skipButton(forward: true) }
+                    HStack(spacing: 12) { sideButton(forward: false); playButton; sideButton(forward: true) }
                 }
             }
         }
@@ -222,15 +227,20 @@ struct PlaybackDock: View {
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityIdentifier("player-toggle")
     }
-    private func skipButton(forward: Bool) -> some View {
-        Button { playback.seek(playback.position + (forward ? 10 : -10)) } label: {
-            Image(systemName: forward ? "goforward.10" : "gobackward.10")
+    /// Beside the play button: 10-second skips for one passage, previous and next passages in the queue.
+    private func sideButton(forward: Bool) -> some View {
+        Button {
+            if queue { forward ? playback.next() : playback.previous() }
+            else { playback.seek(playback.position + (forward ? 10 : -10)) }
+        } label: {
+            Image(systemName: queue ? (forward ? "forward.end.fill" : "backward.end.fill") : (forward ? "goforward.10" : "gobackward.10"))
                 .font(.title2).frame(minWidth: 52, maxWidth: dynamicType.isAccessibilitySize ? .infinity : 60, minHeight: 56)
                 .overlay { Capsule().strokeBorder(Brand.rule) }
                 .contentShape(Rectangle())
         }.buttonStyle(.plain).foregroundStyle(Brand.tint)
-            .disabled(playback.isLoading || playback.error != nil)
-            .accessibilityLabel(forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes")
+            .disabled(queue ? !(forward ? playback.hasNext : playback.hasPrevious) : playback.isLoading || playback.error != nil)
+            .accessibilityLabel(queue ? (forward ? "Séquence suivante" : "Séquence précédente") : (forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes"))
+            .accessibilityIdentifier(queue ? (forward ? "player-next" : "player-previous") : (forward ? "player-forward" : "player-back"))
     }
     private func clock(_ seconds: Double) -> String {
         let value = seconds.isFinite ? max(0, Int(seconds)) : 0
@@ -250,12 +260,6 @@ struct PodcastView: View {
                             PassageHeading(item: item, titleIdentifier: "podcast-title")
                         }
                     }
-                    AdaptiveRow {
-                        Button { model.player.previous() } label: { Label("Précédent", systemImage: "backward.end.fill") }
-                            .disabled(!model.player.hasPrevious).accessibilityLabel("Séquence précédente")
-                        Button { model.player.next() } label: { Label("Suivant", systemImage: "forward.end.fill") }
-                            .disabled(!model.player.hasNext).accessibilityLabel("Séquence suivante").accessibilityIdentifier("player-next")
-                    }.buttonStyle(ActionButtonStyle())
                     if let error = model.player.error { ErrorNotice(message: error) }
                     if model.player.current?.video == true, !model.isDemo {
                         NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 6))
@@ -289,7 +293,7 @@ struct PodcastView: View {
                     if model.isDemo { DemoBanner() }
                 }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock() }
+            .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock(queue: true) }
             .background(Brand.background).appNavigationTitle("Tout écouter")
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fermer") { model.player.stop() }.accessibilityIdentifier("close-podcast") } }
         }.presentationDragIndicator(.visible)
