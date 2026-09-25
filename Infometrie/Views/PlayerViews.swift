@@ -286,11 +286,8 @@ struct PodcastView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Passage \(model.player.index + 1) sur \(model.player.queue.count)").font(.subheadline).foregroundStyle(Brand.secondary)
-                        if let item = model.player.current {
-                            PassageHeading(item: item, titleIdentifier: "podcast-title")
-                        }
+                    if let item = model.player.current {
+                        PassageHeading(item: item, titleIdentifier: "podcast-title")
                     }
                     if let error = model.player.error { ErrorNotice(message: error) }
                     if model.player.current?.video == true, !model.isDemo {
@@ -306,7 +303,16 @@ struct PodcastView: View {
             }
             .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock(queue: true) }
             .background(Brand.background).appNavigationTitle("Tout écouter")
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fermer") { model.player.stop() }.accessibilityIdentifier("close-podcast") } }
+            .toolbar {
+                // The position shares the title line to leave the height to the passage.
+                ToolbarItem(placement: .topBarLeading) {
+                    Text("Passage \(model.player.index + 1) sur \(model.player.queue.count)")
+                        .font(.footnote).foregroundStyle(Brand.secondary).monospacedDigit()
+                        .lineLimit(1).fixedSize()
+                }
+                .sharedBackgroundVisibility(.hidden)
+                ToolbarItem(placement: .confirmationAction) { Button("Fermer") { model.player.stop() }.accessibilityIdentifier("close-podcast") }
+            }
         }.presentationDragIndicator(.visible)
     }
 }
