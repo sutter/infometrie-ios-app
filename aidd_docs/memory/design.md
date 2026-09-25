@@ -31,7 +31,7 @@ The visual language: the design system, tokens, and UI conventions. What it look
 
 ## Accessibility
 
-- Semantic Dynamic Type everywhere, never capped. The S / M / L reading size (default M) sits on top of it, and the system accessibility sizes take priority.
+- Semantic Dynamic Type everywhere, never capped. The S / M / L reading size (default M) is relative to the system size: one step below, at, one step above (`ReadingSizeModifier`), so it works on devices already set to larger text. Accessibility sizes are never reduced, and a standard size never tips into them.
 - Touch targets of at least 44 pt. Main buttons are 52 pt high, the ±10 s skip buttons 56 pt.
 - Secondary text at a contrast of at least 4.5:1 (`Brand.secondaryOnSurface` on shaded surfaces).
 - Rows switch to a vertical layout at accessibility sizes. Interactive elements carry an `accessibilityIdentifier`, which the UI tests rely on.

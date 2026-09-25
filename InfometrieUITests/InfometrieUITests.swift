@@ -4,8 +4,9 @@ final class InfometrieUITests: XCTestCase {
     @MainActor
     func testReadingComfortUpdatesTextImmediatelyAndPersists() {
         let app = XCUIApplication()
+        // A system already set to XL is common among the app's readers: S, M and L must still differ.
         app.launchArguments = ["--uitesting", "--demo", "-appearance", "light",
-                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryXL"]
         app.launch()
         XCTAssertTrue(navigationButton("Compte", in: app).waitForExistence(timeout: 10))
         navigationButton("Compte", in: app).tap()
@@ -83,6 +84,9 @@ final class InfometrieUITests: XCTestCase {
                 XCTAssertEqual(heights[0], heights[1], accuracy: 1)
                 XCTAssertEqual(heights[1], heights[2], accuracy: 1,
                                "S et M ne doivent pas réduire la taille d’accessibilité système")
+            } else {
+                XCTAssertLessThan(heights[0], heights[1], "S est plus petit que M à la taille système par défaut")
+                XCTAssertLessThan(heights[1], heights[2], "L est plus grand que M à la taille système par défaut")
             }
             let previous = app.buttons["reading-size-\(original)"]
             reveal(previous, in: app, down: false)

@@ -5,7 +5,8 @@ La [référence fournie](reference.png) réunit le thème et un sélecteur S / M
 - Le menu Thème propose Système, Clair et Sombre.
 - Les trois segments de même largeur proposent Compact, Standard et Grand. Leur surface tactile mesure au moins 44 points ; VoiceOver annonce leur sens complet et la sélection.
 - Le réglage s’applique immédiatement au compte, au fil, aux fiches et aux autres écrans. Il est conservé après fermeture de l’application.
-- Les tailles utilisent l’échelle native Apple : `.medium`, `.large` et `.xLarge` (corps de texte de 16, 17 et 19 points aux réglages système courants). M est le choix initial.
+- Les tailles suivent l’échelle native Apple, relativement à la taille de texte du système : S un cran en dessous, M la taille système, L un cran au-dessus. À la taille système par défaut, cela donne `.medium`, `.large` et `.xLarge` (corps de texte de 16, 17 et 19 points). M est le choix initial.
+- Correction du 25 septembre 2026 : les tailles étaient absolues et la taille système l’emportait dès qu’elle dépassait la taille par défaut. Sur un iPhone réglé en XL, S, M et L donnaient alors le même résultat. Une taille d’accessibilité système n’est toujours jamais réduite, et une taille standard ne bascule jamais dans les tailles d’accessibilité.
 - Un réglage système supérieur à la taille standard reste prioritaire, y compris toutes les tailles d’accessibilité. Dans ce cas, S ou M ne réduit pas le texte.
 - L’ancien choix explicite « Texte plus grand » est migré vers L ; le choix désactivé vers M. La migration ne remplace jamais un choix S / M / L déjà enregistré.
 
