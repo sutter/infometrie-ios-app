@@ -1,6 +1,6 @@
 # Apparence et taille de lecture
 
-La [référence fournie](reference.png) réunit le thème et un sélecteur S / M / L dans une seule carte. Le compte reprend cette organisation, avec les couleurs Nova / Indigo de l’application.
+La [référence fournie](reference.png) réunit le thème et un sélecteur S / M / L dans une seule carte. Le compte reprend cette organisation, avec la [palette Stoic](../Stoic/README.md) de l’application.
 
 - Le menu Thème propose Système, Clair et Sombre.
 - Les trois segments de même largeur proposent Compact, Standard et Grand. Leur surface tactile mesure au moins 44 points ; VoiceOver annonce leur sens complet et la sélection.

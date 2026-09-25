@@ -1,6 +1,6 @@
 # Refonte UX — lire le fil, puis écouter un passage
 
-La direction actuelle est le [fil dense inspiré des interfaces sociales](SocialFeed/README.md), avec le preset shadcn Nova / Indigo, appliqué le 23 septembre 2026. Les présentations éditoriales ci-dessous sont conservées comme historique.
+La direction actuelle, et la source de vérité du design, est la [direction Stoic](Stoic/README.md) : surfaces neutres et arrondies, appliquée le 24 septembre 2026. Elle conserve la structure du [fil dense inspiré des interfaces sociales](SocialFeed/README.md) et remplace sa palette Nova / Indigo. Les présentations précédentes, dont les présentations éditoriales ci-dessous, sont conservées comme historique.
 
 Le compte regroupe le thème et les tailles S / M / L dans une [carte Apparence](ReadingPreferences/README.md), avec mémorisation du choix et priorité aux grandes tailles système.
 

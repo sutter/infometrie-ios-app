@@ -1,5 +1,7 @@
 # Fil dense, inspiré des interfaces sociales
 
+> Historique : depuis le 24 septembre 2026, la palette de cette page est remplacée par la [direction Stoic](../Stoic/README.md). La structure du fil décrite ici reste en place.
+
 Direction du 23 septembre 2026, à la demande de remplacer la présentation éditoriale par une interface plus dense et moderne, proche de X.
 
 - Une seule colonne de publications sur iPhone et iPad : avatar de 44 points, personne, fonction, texte, puis média/date et type/durée. La date reste alignée à droite.
@@ -15,7 +17,7 @@ Référence typographique : [Apple Human Interface Guidelines](https://developer
 
 ## Palette shadcn Indigo
 
-Source actuelle choisie par l’utilisateur : [preset shadcn/ui `b37ZhrNVw`](https://ui.shadcn.com/create?preset=b37ZhrNVw), style **Nova**, base **Neutral**, thème **Indigo**, rayon **Large**. Les variables sont relevées dans **Get Code → Theme** et archivées dans [shadcn-indigo.json](shadcn-indigo.json). La palette remplace Minimal Neutral, dont les [tokens d’origine](minimal-neutral.json) restent conservés comme historique.
+Source choisie par l’utilisateur le 23 septembre 2026 : [preset shadcn/ui `b37ZhrNVw`](https://ui.shadcn.com/create?preset=b37ZhrNVw), style **Nova**, base **Neutral**, thème **Indigo**, rayon **Large**. Les variables sont relevées dans **Get Code → Theme** et archivées dans [shadcn-indigo.json](shadcn-indigo.json). La palette remplace Minimal Neutral, dont les [tokens d’origine](minimal-neutral.json) restent conservés comme historique.
 
 L’adaptation native garde les polices système, SF Symbols, Dynamic Type et la structure dense. Les champs et la sélection de navigation partagent un rayon de 14 points, correspondant au rayon `0.875rem` du preset. Les commandes principales conservent leur forme de capsule et leurs surfaces tactiles.
 

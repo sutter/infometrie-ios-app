@@ -2,7 +2,7 @@
 
 Le bouton d’agrandissement, à droite de « Le texte », ouvre une présentation de lecture qui occupe tout l’écran sur iPhone et iPad. La personne et le média restent identifiables en haut ; le lecteur reste accessible en bas. Le chevron permet de revenir à la fiche.
 
-Le texte utilise une police système plus grande, des paragraphes espacés et une mise en évidence indigo du mot courant. Il conserve les tailles Dynamic Type et le réglage S / M / L. Le lecteur utilise des commandes iconographiques avec des libellés accessibles pour conserver de la place pour le texte, y compris aux grandes tailles.
+Le texte utilise une police système plus grande, des paragraphes espacés et une mise en évidence du mot courant en encre inversée. Il conserve les tailles Dynamic Type et le réglage S / M / L. Le lecteur utilise des commandes iconographiques avec des libellés accessibles pour conserver de la place pour le texte, y compris aux grandes tailles.
 
 ## Comportement
 
