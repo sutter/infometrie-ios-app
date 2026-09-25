@@ -49,7 +49,7 @@ struct FeedView: View {
             .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .refreshable { await model.refresh(reset: true) }
-        .clipped() // Keep scrolling content below the iPad status bar.
+        .modifier(FeedScrollOverflow(overTabBar: !usesWideLayout))
         .scrollEdgeEffectHidden(true, for: .bottom)
         .scrollEdgeEffectStyle(.hard, for: .top)
         .background(Brand.background)
@@ -134,6 +134,21 @@ struct FeedView: View {
         .buttonStyle(.plain)
         .disabled(playable.isEmpty).opacity(playable.isEmpty ? 0.45 : 1)
         .accessibilityIdentifier("start-podcast")
+    }
+}
+
+/// On iPhone, extend the scroll viewport behind the floating system tab bar.
+/// On iPad, keep the feed clipped to its column so it stays below the status bar.
+private struct FeedScrollOverflow: ViewModifier {
+    let overTabBar: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if overTabBar {
+            content.ignoresSafeArea(.container, edges: .bottom)
+        } else {
+            content.clipped()
+        }
     }
 }
 
