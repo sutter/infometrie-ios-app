@@ -312,7 +312,8 @@ struct PodcastView: View {
                         .accessibilityLabel("Passage \(model.player.index + 1) sur \(model.player.queue.count)")
                 }
                 .sharedBackgroundVisibility(.hidden)
-                ToolbarItem(placement: .confirmationAction) { Button("Fermer") { model.player.stop() }.accessibilityIdentifier("close-podcast") }
+                // The system close role draws the standard cross and keeps "Fermer" for VoiceOver.
+                ToolbarItem(placement: .confirmationAction) { Button(role: .close) { model.player.stop() }.accessibilityIdentifier("close-podcast") }
             }
         }.presentationDragIndicator(.visible)
     }
