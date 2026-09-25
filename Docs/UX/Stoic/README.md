@@ -32,8 +32,6 @@ Référence : [l’application Stoic sur Mobbin](https://mobbin.com/apps/stoic-i
 | Bordure de champ | `#DCDDDF` | blanc à 8 % | `inputBorder` |
 | Action destructive | `#E7000B` | `#FF6467` | `destructive` |
 
+`AccentColor`, dans le catalogue d’assets, reprend les valeurs de `tint` pour que les éléments système suivent la même encre.
+
 Mesures communes (`AppLayout`) : rayon des contrôles de 14 points, largeur maximale de 1 100 points, largeur de lecture de 760 points, marge large de 24 points.
-
-## Écart connu
-
-`AccentColor` dans le catalogue d’assets garde l’indigo du preset précédent (`#432DD7` / `#A3B3FF`). L’application applique `Brand.tint` à la racine, ce qui le remplace dans les vues SwiftUI.

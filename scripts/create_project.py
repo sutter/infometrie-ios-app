@@ -73,7 +73,7 @@ icon=assets/'AppIcon.appiconset';icon.mkdir(exist_ok=True)
 (icon/'Contents.json').write_text(json.dumps({'images':[{'filename':'AppIcon.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'xcode','version':1}}))
 accent=assets/'AccentColor.colorset';accent.mkdir(exist_ok=True)
 def srgb(red,green,blue):return {'color-space':'srgb','components':{'red':red,'green':green,'blue':blue,'alpha':'1.0'}}
-(accent/'Contents.json').write_text(json.dumps({'colors':[{'idiom':'universal','color':srgb('0x43','0x2D','0xD7')},{'idiom':'universal','color':srgb('0xA3','0xB3','0xFF'),'appearances':[{'appearance':'luminosity','value':'dark'}]}],'info':{'author':'xcode','version':1}},indent=2)+'\n')
+(accent/'Contents.json').write_text(json.dumps({'colors':[{'idiom':'universal','color':srgb('0x29','0x2B','0x2E')},{'idiom':'universal','color':srgb('0xE6','0xE6','0xE4'),'appearances':[{'appearance':'luminosity','value':'dark'}]}],'info':{'author':'xcode','version':1}},indent=2)+'\n')
 with wave.open(str(root/'Infometrie/Resources/demo.wav'),'wb') as w:
  w.setnchannels(1);w.setsampwidth(2);w.setframerate(22050)
  notes=[261.63,329.63,392,523.25,392,329.63]
