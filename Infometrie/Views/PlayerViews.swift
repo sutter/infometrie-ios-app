@@ -312,18 +312,12 @@ struct PodcastView: View {
                         .accessibilityLabel("Passage \(model.player.index + 1) sur \(model.player.queue.count)")
                 }
                 .sharedBackgroundVisibility(.hidden)
-                // A ghost cross, like "Filtrer" in the feed: no capsule, no prominent tint.
+                // A regular glass circle, like the system back button; never the prominent confirmation style.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { model.player.stop() } label: {
-                        Image(systemName: "xmark")
-                            .font(.body.weight(.semibold))
-                            .frame(width: 44, height: 44).contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain).foregroundStyle(Brand.tint)
-                    .accessibilityLabel("Fermer")
-                    .accessibilityIdentifier("close-podcast")
+                    Button { model.player.stop() } label: { Image(systemName: "xmark") }
+                        .accessibilityLabel("Fermer")
+                        .accessibilityIdentifier("close-podcast")
                 }
-                .sharedBackgroundVisibility(.hidden)
             }
         }.presentationDragIndicator(.visible)
     }
