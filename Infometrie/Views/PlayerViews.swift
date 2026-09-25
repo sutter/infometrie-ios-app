@@ -75,7 +75,7 @@ struct SequenceView: View {
                                        reading: transcriptReading, onExpand: { isTranscriptExpanded = true }) { word in
                             if isCurrent { model.player.seekToWord(word, sequenceID: detail.id) }
                             else { model.player.start(items: [item], app: model, podcast: false, atWord: word) }
-                        }.id(detail.id)
+                        }.id(detail.id).transition(.opacity)
                     } else { Text("Le texte n’est pas disponible pour ce passage.").foregroundStyle(Brand.secondary) }
                     if !displayItem.isTweet && !detail.resume.isEmpty {
                         SequenceDisclosure(title: "Lire le résumé", icon: "text.alignleft") {
@@ -204,6 +204,8 @@ struct PlaybackDock: View {
                         Spacer()
                         Text(clock(playback.duration)).accessibilityLabel("Durée totale, \(clock(playback.duration))")
                     }.font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
+                        .contentTransition(.numericText())
+                        .motion(Motion.quick, value: clock(playback.position) + clock(playback.duration))
                         .skeleton(playback.isLoading)
                 }
                 if queue {
@@ -236,7 +238,9 @@ struct PlaybackDock: View {
     private var playButton: some View {
         Button { playback.toggle() } label: {
             Label(playLabel, systemImage: playSymbol)
+                .contentTransition(.symbolEffect(.replace))
         }.buttonStyle(ActionButtonStyle(prominent: true))
+            .motion(Motion.quick, value: playSymbol)
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityIdentifier("player-toggle")
     }
@@ -246,6 +250,7 @@ struct PlaybackDock: View {
     private var playCircle: some View {
         Button { playback.toggle() } label: {
             Image(systemName: playSymbol).font(.title2)
+                .contentTransition(.symbolEffect(.replace))
                 .frame(width: playCircleSize, height: playCircleSize)
                 .overlay { Circle().strokeBorder(Brand.rule) }
                 .contentShape(Circle())
@@ -253,6 +258,7 @@ struct PlaybackDock: View {
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityLabel(playLabel)
             .accessibilityIdentifier("player-toggle")
+            .motion(Motion.quick, value: playSymbol)
     }
     private func queueButton(forward: Bool) -> some View {
         Button { forward ? playback.next() : playback.previous() } label: {
@@ -290,6 +296,7 @@ struct PodcastView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     if let item = model.player.current {
                         PassageHeading(item: item, titleIdentifier: "podcast-title")
+                            .id(item.id).transition(.opacity)
                     }
                     if let error = model.player.error { ErrorNotice(message: error) }
                     if model.player.current?.video == true, !model.isDemo {
@@ -298,10 +305,12 @@ struct PodcastView: View {
                     if let detail = model.player.detail, !detail.verbatim.isEmpty {
                         TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: true) { word in
                             model.player.seekToWord(word, sequenceID: detail.id)
-                        }.id(detail.id)
+                        }.id(detail.id).transition(.opacity)
                     }
                     if model.isDemo { DemoBanner() }
                 }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+                    .motion(value: model.player.current?.id)
+                    .motion(value: model.player.detail?.id)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock(queue: true) }
             .background(Brand.background).appNavigationTitle("Tout écouter")
@@ -311,6 +320,8 @@ struct PodcastView: View {
                     Text("\(model.player.index + 1) / \(model.player.queue.count)")
                         .font(.footnote).foregroundStyle(Brand.secondary).monospacedDigit()
                         .lineLimit(1).fixedSize()
+                        .contentTransition(.numericText())
+                        .motion(value: model.player.index)
                         .accessibilityLabel("Passage \(model.player.index + 1) sur \(model.player.queue.count)")
                 }
                 .sharedBackgroundVisibility(.hidden)

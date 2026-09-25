@@ -39,6 +39,13 @@ struct TranscriptView: View {
     private var notice: String? { isCurrent ? model.player.transcriptNotice : nil }
 
     var body: some View {
+        content
+            // "Reprendre le suivi" and tapped-word feedback slide in rather than pop.
+            .motion(value: showsResume)
+            .motion(value: notice)
+    }
+
+    @ViewBuilder private var content: some View {
         if expanded {
             // No header: the text starts right away, and resuming sits below it as on the page.
             VStack(alignment: .leading, spacing: 12) {
@@ -49,7 +56,7 @@ struct TranscriptView: View {
                 }
                 textScroll.frame(maxHeight: .infinity)
                     .overlay(alignment: .topLeading) { positionStatus }
-                if showsResume { followButton }
+                if showsResume { followButton.transition(.opacity.combined(with: .move(edge: .bottom))) }
             }
         } else {
             VStack(alignment: .leading, spacing: 0) {
@@ -83,6 +90,7 @@ struct TranscriptView: View {
                     .padding(.vertical, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .overlay(alignment: .top) { AppRule() }
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
         }
