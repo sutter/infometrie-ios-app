@@ -1,5 +1,13 @@
 # Validation du portage
 
+## Logo X dans les types du fil — 25 septembre 2026
+
+L’onglet X n’affiche plus que le logo officiel de X, sans texte. Le logo est un symbole personnalisé (`x.logo.symbolset`) : il suit la taille du texte et les couleurs des onglets (gris, puis encre une fois sélectionné). VoiceOver annonce toujours « Publications X ».
+
+- Compilation SDK iOS 27 sans avertissement ; le symbole est compilé en glyphe dans `Assets.car`. `swift test` : 41 tests réussis.
+- Sur iPhone 17 Pro, iOS 26.4, trois parcours existants réussis : `testFeedKindsDarkAppearanceAndMaximumText`, `testFeedKindSelectionSyncNavigationAndPodcast`, `testPublicationsUseServerKindsResetCursorAndHaveNoAudio`.
+- Un contrôle temporaire, non conservé dans le dépôt, a capturé les onglets en clair, en sombre et à la taille d’accessibilité maximale, avant et après la sélection de X. Il vérifie aussi le libellé VoiceOver et la cible tactile de 44 points minimum. Mesure sur capture : logo de 40 × 41 pixels, comme l’icône de « Tous ».
+
 ## Alignement de la date du fil — 23 septembre 2026
 
 Présentation précédente restaurée à la demande de l’utilisateur : icônes et tailles d’origine, date/heure complète. La première ligne occupe désormais toute la largeur pour aligner la date à droite, comme la durée sur la deuxième. Compilation réussie, installation sur iPhone et iPad, résultat inspecté sur l’iPhone avec la session habituelle. Pas de nouvelle suite de tests pour cet ajustement de disposition ; `git diff --check` passe. Journal : `/tmp/infometrie-feed-date-alignment-build.log`.

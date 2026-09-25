@@ -19,6 +19,7 @@ The visual language: the design system, tokens, and UI conventions. What it look
 
 - Shared in `Design.swift`: `ActionButtonStyle` (capsule, prominent or outlined), `AppSection`, `AppEmptyState`, `ErrorNotice`, `KindBadge`, `ChannelMark`, `PersonAvatar`, `PageHeading`, `AdaptiveRow` (turns into a column at accessibility sizes), `DemoBanner`.
 - Passage metadata (source, byline, heading) in `PassageMetadata.swift`, shared by the sequence and podcast screens.
+- Brand marks shown as tab icons are custom SF Symbol templates in the asset catalog (`x.logo.symbolset`, the official X path), passed to `AppTabButton(assetIcon:iconOnly:)`. `channel-x` is the broadcaster tile, not an icon.
 
 ## Accessibility
 

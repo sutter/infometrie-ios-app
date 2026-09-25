@@ -244,18 +244,28 @@ struct AppTabButton: View {
     let title: String
     let selected: Bool
     var icon: String? = nil
+    /// A symbol from the asset catalog, used instead of `icon` for brand marks.
+    var assetIcon: String? = nil
+    /// Shows the icon alone; `title` still names the button for VoiceOver.
+    var iconOnly = false
     var accent: Color = Brand.tint
     var compact = false
     let action: () -> Void
 
+    private var image: Image? {
+        if let assetIcon { return Image(assetIcon) }
+        return icon.map { Image(systemName: $0) }
+    }
+
     var body: some View {
         Button(action: action) {
-            HStack(spacing: icon == nil ? 0 : 4) {
-                if let icon {
-                    Image(systemName: icon)
-                        .accessibilityHidden(true)
+            HStack(spacing: image == nil || iconOnly ? 0 : 4) {
+                if let image {
+                    image
+                        .accessibilityLabel(title)
+                        .accessibilityHidden(!iconOnly)
                 }
-                Text(title)
+                if !iconOnly || image == nil { Text(title) }
             }
             .font((compact ? Font.footnote : .body).weight(selected ? .semibold : .regular))
             .foregroundStyle(selected ? Brand.ink : Brand.secondary)
