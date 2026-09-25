@@ -16,6 +16,7 @@ The version-control conventions this project follows: branches, commits, and the
 - Convention: Conventional Commits
 - Format: `type(scope): description`
 - Rules: English, lowercase, imperative mood, one intent per commit
+- No AI attribution in commits or pull requests: no `Co-Authored-By`, no session link, no "Generated with" line
 - Scopes in use: `ui`, `feed`, `player`, `transcript`, `api`, `ios`
 
 ## Commit Strategy
