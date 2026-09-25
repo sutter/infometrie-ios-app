@@ -854,15 +854,9 @@ final class InfometrieUITests: XCTestCase {
         let changed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value != %@", before), object: status)
         XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 4), .completed)
         toggle.tap()
-        let follow = app.buttons["transcript-follow"]
-        XCTAssertFalse(follow.exists, "Le suivi actif n’affiche aucune commande")
-        let text = app.scrollViews["transcript-scroll"]
-        reveal(text, in: app, down: false)
-        text.swipeUp()
-        wait(follow, key: "value", equals: "Désactivé")
-        reveal(follow, in: app, down: false)
-        follow.tap()
-        XCTAssertTrue(follow.waitForNonExistence(timeout: 3), "Reprendre le suivi disparaît une fois le suivi repris")
+        // The demo text fits its frame, so it cannot be scrolled to suspend following here;
+        // the fullscreen journeys cover suspending and resuming.
+        XCTAssertFalse(app.buttons["transcript-follow"].exists, "Le suivi actif n’affiche aucune commande")
         capture("08-verbatim-suivi-lecteur", app: app)
     }
 
@@ -983,9 +977,12 @@ final class InfometrieUITests: XCTestCase {
             // Its top, rather than the confirmation button, bounds the scrolling list.
             let filterBottom = choiceCount.exists && choiceCount.isHittable
                 ? choiceCount.frame.minY - 28 : filterFooter.map { $0.frame.minY - 28 }
-            let bottom = slider.exists ? slider.frame.minY - 12 : filterBottom ?? bounds.maxY - 150
+            // Before playback the dock holds only the listen button, which grows with the text size.
+            let listen = app.buttons["play-sequence"]
+            let dockBottom = listen.exists && listen.isHittable ? listen.frame.minY - 12 : nil
+            let bottom = slider.exists ? slider.frame.minY - 12 : filterBottom ?? dockBottom ?? bounds.maxY - 150
             if element.exists && element.isHittable {
-                let contentControl = ["sequence-summary", "sequence-context", "transcript-follow"].contains(identifier)
+                let contentControl = ["sequence-summary", "sequence-context", "transcript-follow", "expand-transcript", "transcript-scroll"].contains(identifier)
                     || ["save-search", "reset-search", "clear-choices", "start-podcast"].contains(identifier)
                     || ["filter-kind-", "feed-kind-", "feed-item-", "choice-", "pick-"].contains { identifier.hasPrefix($0) }
                 if element.elementType != .link && !contentControl { return }

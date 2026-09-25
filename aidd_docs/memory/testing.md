@@ -59,4 +59,6 @@ xcrun simctl launch --terminate-running-process booted fr.yacast.infometrie.ios 
 - Keep `CODE_SIGN_IDENTITY=-`. `CODE_SIGNING_ALLOWED=NO` blocks Keychain writes, so login fails.
 - Three simulators are named `iPhone 17 Pro`, on iOS 17.0, 26.3 and 26.4. The iOS 17 one cannot launch the app (deployment target iOS 26), and validation runs on 26.4. Always target `OS=26.4` or the udid of the 26.4 device, never the name alone.
 - A run can stall before `Testing started` on a simulator that was just booted. Stop it after two minutes without progress, then rerun.
+- `testFullscreenTranscriptStartsFromTextAtMaximumSize` fails at the largest text size: swiping the fullscreen text does not suspend listening-follow, so "Reprendre le suivi" never appears. The same swipe works at the standard size (`testFullscreenTranscriptKeepsPreciseSeekingAndPlayback`). The cause has not been found.
+- After the tests finish, `xcodebuild` can hang while finalizing the result bundle. The `Executed N tests` lines in the log are the result; stop the process instead of waiting.
 - Every UI test run logs the SwiftUI warning `Adding '_UIReparentingView' as a subview of UIHostingController.view is not supported`. It predates the current changes, so it is not a regression from the change under test. Its cause has not been investigated.
