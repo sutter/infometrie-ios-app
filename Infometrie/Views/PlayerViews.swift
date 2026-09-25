@@ -306,9 +306,10 @@ struct PodcastView: View {
             .toolbar {
                 // The position shares the title line to leave the height to the passage.
                 ToolbarItem(placement: .topBarLeading) {
-                    Text("Passage \(model.player.index + 1) sur \(model.player.queue.count)")
+                    Text("\(model.player.index + 1) / \(model.player.queue.count)")
                         .font(.footnote).foregroundStyle(Brand.secondary).monospacedDigit()
                         .lineLimit(1).fixedSize()
+                        .accessibilityLabel("Passage \(model.player.index + 1) sur \(model.player.queue.count)")
                 }
                 .sharedBackgroundVisibility(.hidden)
                 ToolbarItem(placement: .confirmationAction) { Button("Fermer") { model.player.stop() }.accessibilityIdentifier("close-podcast") }
