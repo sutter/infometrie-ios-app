@@ -175,7 +175,7 @@ private struct FeedKindPicker: View {
             case .tweets: nil
             }
         }
-        /// X is shown by its official logo alone, drawn as a custom symbol so it follows the tab colors.
+        /// X is shown by its official logo alone, on an ink tile so it stands out like in the feed cards.
         var assetSymbol: String? { self == .tweets ? "x.logo" : nil }
         var accessibilityLabel: String { self == .all ? "Tous les contenus" : self == .tweets ? "Publications X" : title }
     }
@@ -226,7 +226,8 @@ private struct FeedKindPicker: View {
 
     private func choice(_ kind: Kind) -> some View {
         AppTabButton(title: kind.title, selected: selection == kind, icon: kind.symbol,
-                     assetIcon: kind.assetSymbol, iconOnly: kind.assetSymbol != nil, compact: true) {
+                     assetIcon: kind.assetSymbol, iconOnly: kind.assetSymbol != nil,
+                     iconTile: kind.assetSymbol != nil, compact: true) {
             var filters = model.filters
             filters.selectKind(kind.rawValue)
             guard filters != model.filters else { return }

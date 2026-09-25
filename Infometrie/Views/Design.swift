@@ -248,9 +248,13 @@ struct AppTabButton: View {
     var assetIcon: String? = nil
     /// Shows the icon alone; `title` still names the button for VoiceOver.
     var iconOnly = false
+    /// Sets the icon on an inverted-ink tile, like the broadcaster logos in the feed cards.
+    var iconTile = false
     var accent: Color = Brand.tint
     var compact = false
     let action: () -> Void
+    @ScaledMetric(relativeTo: .footnote) private var tilePadding = 4.0
+    @ScaledMetric(relativeTo: .footnote) private var tileRadius = 5.0
 
     private var image: Image? {
         if let assetIcon { return Image(assetIcon) }
@@ -261,9 +265,19 @@ struct AppTabButton: View {
         Button(action: action) {
             HStack(spacing: image == nil || iconOnly ? 0 : 4) {
                 if let image {
-                    image
-                        .accessibilityLabel(title)
-                        .accessibilityHidden(!iconOnly)
+                    Group {
+                        if iconTile {
+                            // Custom symbols ship a medium scale only: size them by font, never by imageScale.
+                            image.font(.caption2)
+                                .foregroundStyle(Brand.primaryForeground)
+                                .padding(tilePadding)
+                                .background(Brand.primary, in: RoundedRectangle(cornerRadius: tileRadius, style: .continuous))
+                        } else {
+                            image
+                        }
+                    }
+                    .accessibilityLabel(title)
+                    .accessibilityHidden(!iconOnly)
                 }
                 if !iconOnly || image == nil { Text(title) }
             }
