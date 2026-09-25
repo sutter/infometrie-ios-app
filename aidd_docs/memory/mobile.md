@@ -24,4 +24,6 @@ The mobile app: platform, navigation, native access, and release.
 
 - Bundle id `fr.yacast.infometrie.ios`, automatic signing. Pick your own team and, if needed, a bundle id for a physical device.
 - Simulator builds use `CODE_SIGN_IDENTITY=-` (see `testing.md`).
-- Nothing has been distributed yet: no TestFlight, no App Store.
+- Team `Q37972BSB3` is Laurent Sutterlity's own developer account; `fr.yacast.infometrie.ios` is registered there. No build has reached TestFlight or the App Store yet.
+- TestFlight release: `xcodebuild -project Infometrie.xcodeproj -scheme Infometrie -configuration Release -destination 'generic/platform=iOS' -archivePath ~/Library/Developer/Xcode/Archives/<date>/<name>.xcarchive archive`, then Organizer > Distribute App > TestFlight. Xcode signs for distribution at that step. The App Store Connect record must exist first, and each upload needs a higher build number (`APP_BUILD` in `scripts/create_project.py`, or let the Organizer manage it).
+- `Infometrie/Resources/PrivacyInfo.xcprivacy` declares UserDefaults (CA92.1), no tracking, and the email and device ID sent to the server. Update it when a new required-reason API or collected data type appears, or App Store Connect rejects the upload.
