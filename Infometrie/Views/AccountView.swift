@@ -6,6 +6,7 @@ struct AccountView: View {
     @AppStorage("appearance") private var appearance = "system"
     @AppStorage("readingSize") private var readingSize = ReadingSize.medium
     @State private var showLogout = false
+    @Namespace private var sizeSelection
 
     var body: some View {
         ScrollView {
@@ -98,7 +99,12 @@ struct AccountView: View {
                                 .foregroundStyle(Brand.ink)
                                 .padding(.vertical, 8)
                                 .frame(maxWidth: .infinity, minHeight: 44)
-                                .background(readingSize == size ? Brand.card : .clear, in: Capsule())
+                                .background {
+                                    // The selection pill slides to the chosen size.
+                                    if readingSize == size {
+                                        Capsule().fill(Brand.card).matchedGeometryEffect(id: "size", in: sizeSelection)
+                                    }
+                                }
                                 .contentShape(Capsule())
                         }
                         .buttonStyle(.plain)
@@ -108,6 +114,8 @@ struct AccountView: View {
                     }
                 }
                 .padding(4).background(Brand.surface, in: Capsule())
+                .motion(value: readingSize)
+                .sensoryFeedback(.selection, trigger: readingSize)
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Taille du texte")
             }

@@ -17,6 +17,8 @@ struct InfometrieApp: App {
                 .environment(\.locale, Locale(identifier: "fr_FR"))
                 .tint(Brand.tint)
                 .modifier(ReadingSizeModifier(selection: readingSize))
+                // Text grows or shrinks smoothly when a reading size is chosen.
+                .motion(value: readingSize)
                 .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
         }
     }

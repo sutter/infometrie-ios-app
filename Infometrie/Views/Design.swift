@@ -90,6 +90,29 @@ struct KindBadge: View {
     }
 }
 
+/// App motion: short, soft springs that make changes feel continuous without drawing attention.
+enum Motion {
+    static let standard: Animation = .smooth(duration: 0.32)
+    static let quick: Animation = .snappy(duration: 0.22)
+}
+
+/// `.animation(_:value:)` that stays still when Reduce Motion is on.
+private struct MotionModifier<Value: Equatable>: ViewModifier {
+    let animation: Animation
+    let value: Value
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content.animation(reduceMotion ? nil : animation, value: value)
+    }
+}
+
+extension View {
+    func motion<Value: Equatable>(_ animation: Animation = Motion.standard, value: Value) -> some View {
+        modifier(MotionModifier(animation: animation, value: value))
+    }
+}
+
 /// Loading placeholder instead of a spinner: the real layout, drawn as soft shapes that pulse.
 /// The pulse stops with Reduce Motion. `shapes: false` only pulses, for a control that stays readable.
 struct Skeleton: ViewModifier {
@@ -295,6 +318,8 @@ struct AppTabButton: View {
     var iconTile = false
     var accent: Color = Brand.tint
     var compact = false
+    /// Tabs sharing a namespace slide one underline between them instead of redrawing it.
+    var underline: Namespace.ID? = nil
     let action: () -> Void
     @ScaledMetric(relativeTo: .footnote) private var tileSize = 20.0
 
@@ -326,7 +351,10 @@ struct AppTabButton: View {
             .padding(.horizontal, compact ? 4 : 12).padding(.vertical, 12)
             .frame(minWidth: 44, minHeight: 48)
             .overlay(alignment: .bottom) {
-                if selected { Capsule().fill(accent).frame(height: 3) }
+                if selected {
+                    let bar = Capsule().fill(accent).frame(height: 3)
+                    if let underline { bar.matchedGeometryEffect(id: "underline", in: underline) } else { bar }
+                }
             }
             .contentShape(Rectangle())
         }
