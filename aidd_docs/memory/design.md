@@ -20,6 +20,7 @@ The visual language: the design system, tokens, and UI conventions. What it look
 - Shared in `Design.swift`: `ActionButtonStyle` (capsule, prominent or outlined), `AppSection`, `AppEmptyState`, `ErrorNotice`, `KindBadge`, `ChannelMark`, `PersonAvatar`, `PageHeading`, `AdaptiveRow` (turns into a column at accessibility sizes), `DemoBanner`.
 - Passage metadata (source, byline, heading) in `PassageMetadata.swift`, shared by the sequence and podcast screens.
 - Brand marks shown as tab icons are custom SF Symbol templates in the asset catalog (`x.logo.symbolset`, the official X path), passed to `AppTabButton(assetIcon:iconOnly:)`. `channel-x` is the broadcaster tile, not an icon.
+- `x.logo.svg` is an SF Symbols template (v3) with a single Regular-M variant. The mark is 90 units tall, the size of `square.grid.2x2` next to it, and centered on the cap height. Keep these metrics when editing it (for example in the SF Symbols app); at 78 units it looked smaller than the neighboring icons.
 
 ## Accessibility
 

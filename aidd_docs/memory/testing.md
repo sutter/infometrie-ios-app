@@ -57,3 +57,6 @@ xcrun simctl launch --terminate-running-process booted fr.yacast.infometrie.ios 
 - Core: `swift test`.
 - UI: `xcodebuild -project Infometrie.xcodeproj -scheme Infometrie -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' -derivedDataPath build CODE_SIGN_IDENTITY=- test`, with `-only-testing:InfometrieUITests/InfometrieUITests/<test>` to target one journey.
 - Keep `CODE_SIGN_IDENTITY=-`. `CODE_SIGNING_ALLOWED=NO` blocks Keychain writes, so login fails.
+- Three simulators are named `iPhone 17 Pro`, on iOS 17.0, 26.3 and 26.4. The iOS 17 one cannot launch the app (deployment target iOS 26), and validation runs on 26.4. Always target `OS=26.4` or the udid of the 26.4 device, never the name alone.
+- A run can stall before `Testing started` on a simulator that was just booted. Stop it after two minutes without progress, then rerun.
+- Every UI test run logs the SwiftUI warning `Adding '_UIReparentingView' as a subview of UIHostingController.view is not supported`. It predates the current changes, so it is not a regression from the change under test. Its cause has not been investigated.
