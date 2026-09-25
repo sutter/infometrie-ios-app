@@ -60,6 +60,7 @@ struct TranscriptView: View {
                 AppRule()
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 12) {
+                        positionStatus
                         Spacer(minLength: 0)
                         if let onExpand {
                             Button(action: onExpand) {
@@ -91,12 +92,26 @@ struct TranscriptView: View {
         }
     }
 
+    private var positionValue: String {
+        activeWord.map { "Mot \($0 + 1) sur \(timeline.words.count)" } ?? (isCurrent ? "Aucun mot actif" : "En attente de lecture")
+    }
+
+    /// The page shows no position label; VoiceOver still reads where listening stands in the text.
+    private var positionStatus: some View {
+        Color.clear.frame(width: 1, height: 1)
+            .accessibilityElement()
+            .accessibilityLabel("Le texte")
+            .accessibilityValue(positionValue)
+            .accessibilityAddTraits(.isStaticText)
+            .accessibilityIdentifier("transcript-position")
+    }
+
     private var positionLabel: some View {
         HStack(spacing: 10) {
             Image(systemName: "text.quote").foregroundStyle(Brand.tint).accessibilityHidden(true)
             Text("Le texte")
                 .accessibilityIdentifier("transcript-position")
-                .accessibilityValue(activeWord.map { "Mot \($0 + 1) sur \(timeline.words.count)" } ?? (isCurrent ? "Aucun mot actif" : "En attente de lecture"))
+                .accessibilityValue(positionValue)
         }.font(.headline).foregroundStyle(Brand.ink)
     }
 
