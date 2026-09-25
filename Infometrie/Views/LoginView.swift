@@ -41,8 +41,8 @@ struct LoginView: View {
                         if let error = model.loginError { ErrorNotice(message: error).accessibilityIdentifier("login-error") }
                         Button(action: signIn) {
                             HStack {
-                                if model.isLoggingIn { ProgressView().tint(Brand.primaryForeground) }
                                 Text(model.isLoggingIn ? "Connexion…" : "Se connecter").fontWeight(.semibold)
+                                    .skeleton(model.isLoggingIn, shapes: false)
                                 if !model.isLoggingIn { Image(systemName: "arrow.right") }
                             }.frame(maxWidth: .infinity)
                         }

@@ -89,6 +89,32 @@ struct KindBadge: View {
     }
 }
 
+/// Loading placeholder instead of a spinner: the real layout, drawn as soft shapes that pulse.
+/// The pulse stops with Reduce Motion. `shapes: false` only pulses, for a control that stays readable.
+struct Skeleton: ViewModifier {
+    var active = true
+    var shapes = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var dimmed = false
+
+    func body(content: Content) -> some View {
+        content
+            .redacted(reason: active && shapes ? .placeholder : [])
+            .opacity(active && dimmed ? 0.4 : 1)
+            .allowsHitTesting(!active)
+            .task(id: active && !reduceMotion) {
+                guard active && !reduceMotion else { dimmed = false; return }
+                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { dimmed = true }
+            }
+    }
+}
+
+extension View {
+    func skeleton(_ active: Bool = true, shapes: Bool = true) -> some View {
+        modifier(Skeleton(active: active, shapes: shapes))
+    }
+}
+
 /// A brand mark on an inverted-ink tile: X looks the same in the feed tabs, the cards and the passages.
 struct MarkTile: View {
     let image: Image

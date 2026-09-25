@@ -32,6 +32,19 @@ struct SequenceView: View {
             }
     }
 
+    /// The transcript heading and a paragraph, drawn as placeholders until the passage arrives.
+    private var textSkeleton: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Le texte", systemImage: "text.quote").font(.headline)
+            Text(String(repeating: "Le texte du passage arrive, ligne après ligne, dans cette zone. ", count: 4))
+                .font(.body).lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .skeleton()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Chargement du texte")
+    }
+
     private var sequenceContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -69,7 +82,7 @@ struct SequenceView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }.accessibilityIdentifier("sequence-summary")
                     }
-                } else { ProgressView("Chargement du texte…").frame(maxWidth: .infinity).padding(30) }
+                } else { textSkeleton }
                 SequenceDisclosure(title: "À propos du passage", icon: "info.circle") {
                     VStack(alignment: .leading, spacing: 12) {
                         KindBadge(item: item)
@@ -168,7 +181,6 @@ struct PlaybackDock: View {
                 Text("Écoute indisponible").font(.headline)
                 Button("Réessayer l’écoute") { playback.retry() }.buttonStyle(ActionButtonStyle(prominent: true))
             } else {
-                if playback.isLoading { ProgressView("Préparation de l’écoute…").font(.subheadline) }
                 VStack(spacing: 0) {
                     Slider(value: Binding(get: { min(playback.position, max(1, playback.duration)) }, set: { playback.scrub(to: $0) }), in: 0...max(1, playback.duration), onEditingChanged: { editing in
                         if editing { playback.beginScrubbing() } else { playback.endScrubbing() }
@@ -176,12 +188,14 @@ struct PlaybackDock: View {
                         .frame(minHeight: 44)
                         .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
                         .accessibilityLabel("Position dans le passage")
+                        .accessibilityHint(playback.isLoading ? "Préparation de l’écoute" : "")
                         .accessibilityIdentifier("player-position")
                     HStack {
                         Text(clock(playback.position)).accessibilityIdentifier("player-elapsed")
                         Spacer()
                         Text(clock(playback.duration)).accessibilityLabel("Durée totale, \(clock(playback.duration))")
                     }.font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
+                        .skeleton(playback.isLoading)
                 }
                 if compact {
                     HStack(spacing: 12) {

@@ -20,7 +20,7 @@ struct FeedView: View {
                             .padding(.vertical, 12)
                     }
                     if model.isRefreshing && model.items.isEmpty {
-                        ProgressView("Chargement du fil…").frame(maxWidth: .infinity).padding(.vertical, 40)
+                        FeedSkeleton().padding(.vertical, 5)
                     } else if model.visibleItems.isEmpty && model.feedError == nil {
                         VStack(alignment: .leading, spacing: 12) {
                             AppEmptyState(title: "Aucun passage pour le moment", icon: "text.magnifyingglass", message: "Aucun résultat sur les dernières 24 heures avec ces critères.")

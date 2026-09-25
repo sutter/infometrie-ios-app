@@ -204,3 +204,36 @@ struct FeedCard: View {
         }
     }
 }
+
+/// Placeholder cards while the feed loads, drawn from the real card layout so they follow its changes.
+struct FeedSkeleton: View {
+    var label = "Chargement du fil"
+
+    var body: some View {
+        VStack(spacing: 10) {
+            ForEach(FeedItem.skeletons) { FeedCard(item: $0) }
+        }
+        .skeleton()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityIdentifier("feed-skeleton")
+    }
+}
+
+private extension FeedItem {
+    /// Stand-in entries whose text lengths give the skeleton the rhythm of a real feed.
+    static let skeletons = [
+        FeedItem(id: -1, at: "2026-01-01T12:00:00Z", kind: "intervention", media: "tv", channel: "Média",
+                 person: "Nom de la personnalité", role: "Fonction de la personnalité", party: "",
+                 title: "Un titre de passage qui tient sur un peu plus d’une ligne", durationSec: 30, hasMedia: true),
+        FeedItem(id: -2, at: "2026-01-01T12:00:00Z", kind: "citation", media: "radio", channel: "Média",
+                 person: "Nom de personnalité", role: "Fonction", party: "",
+                 title: "Un titre plus court", durationSec: 30, hasMedia: true),
+        FeedItem(id: -3, at: "2026-01-01T12:00:00Z", kind: "intervention", media: "radio", channel: "Média",
+                 person: "Nom de la personnalité", role: "Fonction de la personnalité", party: "",
+                 title: "Un titre de passage plus long, qui occupe deux lignes pleines dans la carte du fil", durationSec: 30, hasMedia: true),
+        FeedItem(id: -4, at: "2026-01-01T12:00:00Z", kind: "intervention", media: "tv", channel: "Média",
+                 person: "Nom de personnalité", role: "Fonction de la personnalité", party: "",
+                 title: "Un titre de passage de longueur moyenne", durationSec: 30, hasMedia: true),
+    ]
+}

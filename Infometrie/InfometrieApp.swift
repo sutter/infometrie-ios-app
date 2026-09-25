@@ -43,7 +43,8 @@ struct RootView: View {
         @Bindable var binding = model
         Group {
             if model.isRestoring {
-                VStack(spacing: 24) { Wordmark(); ProgressView("Ouverture d’InfoMétrie…") }
+                VStack(alignment: .leading, spacing: 24) { Wordmark(); FeedSkeleton(label: "Ouverture d’InfoMétrie") }
+                    .padding(20).frame(maxWidth: AppLayout.readingWidth, maxHeight: .infinity, alignment: .top)
             } else if model.isAuthenticated {
                 let layout = horizontalSizeClass == .regular && !dynamicType.isAccessibilitySize
                     ? AnyLayout(HStackLayout(alignment: .top, spacing: 0))
