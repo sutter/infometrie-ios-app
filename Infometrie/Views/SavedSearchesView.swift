@@ -4,7 +4,6 @@ struct SavedSearchesView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var archived = false
-    @Namespace private var categoryUnderline
     @State private var deleting: SavedSearch?
     private var searches: [SavedSearch] {
         model.savedSearches.filter { $0.isArchived == archived }
@@ -22,7 +21,7 @@ struct SavedSearchesView: View {
                         category("Archivés", archived: true)
                         Spacer(minLength: 0)
                     }.overlay(alignment: .bottom) { AppRule() }
-                    .motion(value: archived)
+                    .slidingTabUnderline()
                     .sensoryFeedback(.selection, trigger: archived)
                 }.padding(.top, 16).padding(.bottom, 8)
                 if searches.isEmpty {
@@ -94,7 +93,7 @@ struct SavedSearchesView: View {
         } message: { Text("« \(deleting?.name ?? "") » disparaîtra de cet appareil. Cette action est définitive.") }
     }
     private func category(_ title: String, archived value: Bool) -> some View {
-        AppTabButton(title: title, selected: archived == value, accent: Brand.tint, underline: categoryUnderline) { archived = value }
+        AppTabButton(title: title, selected: archived == value, accent: Brand.tint, sharedUnderline: true) { archived = value }
             .accessibilityIdentifier(value ? "saved-archived" : "saved-active")
     }
 }

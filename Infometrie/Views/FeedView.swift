@@ -171,7 +171,6 @@ private struct FeedScrollOverflow: ViewModifier {
 private struct FeedKindPicker: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
-    @Namespace private var underline
 
     private enum Kind: Int, CaseIterable {
         case all, interventions, citations, tweets
@@ -211,6 +210,7 @@ private struct FeedKindPicker: View {
                                 .frame(maxWidth: .infinity)
                         }
                     }
+                    .slidingTabUnderline()
                     scrollableChoices
                 }
             }
@@ -220,7 +220,6 @@ private struct FeedKindPicker: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .motion(value: selection)
         .sensoryFeedback(.selection, trigger: selection)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Types de passages")
@@ -231,6 +230,7 @@ private struct FeedKindPicker: View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(Kind.allCases, id: \.self) { choice($0) }
         }
+        .slidingTabUnderline()
     }
 
     private var scrollableChoices: some View {
@@ -238,6 +238,7 @@ private struct FeedKindPicker: View {
             HStack(spacing: 0) {
                 ForEach(Kind.allCases, id: \.self) { choice($0) }
             }
+            .slidingTabUnderline()
         }
         .scrollIndicators(.hidden)
     }
@@ -245,7 +246,7 @@ private struct FeedKindPicker: View {
     private func choice(_ kind: Kind) -> some View {
         AppTabButton(title: kind.title, selected: selection == kind, icon: kind.symbol,
                      assetIcon: kind.assetSymbol, iconOnly: kind.assetSymbol != nil,
-                     iconTile: kind.assetSymbol != nil, compact: true, underline: underline) {
+                     iconTile: kind.assetSymbol != nil, compact: true, sharedUnderline: true) {
             var filters = model.filters
             filters.selectKind(kind.rawValue)
             guard filters != model.filters else { return }
