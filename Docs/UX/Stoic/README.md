@@ -32,6 +32,6 @@ Référence : [l’application Stoic sur Mobbin](https://mobbin.com/apps/stoic-i
 | Bordure de champ | `#DCDDDF` | blanc à 8 % | `inputBorder` |
 | Action destructive | `#E7000B` | `#FF6467` | `destructive` |
 
-`AccentColor`, dans le catalogue d’assets, reprend les valeurs de `tint` pour que les éléments système suivent la même encre.
+`AccentColor`, dans le catalogue d’assets, reprend les valeurs de `tint` par cohérence. Sous iOS 26.4, les alertes et les menus système ne l’utilisent pas : leur rendu est identique au pixel près avec l’ancien indigo, en clair comme en sombre (vérifié le 25 septembre 2026).
 
 Mesures communes (`AppLayout`) : rayon des contrôles de 14 points, largeur maximale de 1 100 points, largeur de lecture de 760 points, marge large de 24 points.
