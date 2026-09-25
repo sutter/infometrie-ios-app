@@ -19,9 +19,37 @@ How the project is tested: the layers, the tools, and the conventions. Where tes
 - Core suites live in `Tests/InfometrieCoreTests`, one file per concern. UI journeys live in `InfometrieUITests/InfometrieUITests.swift`, named `test<Behavior>`.
 - UI tests find elements by `accessibilityIdentifier` (`feed-item-1`, `reading-size-M`, `login-password`). Give any new interactive element an identifier.
 - Launch arguments, Debug builds only: `--uitesting` (no real session), `--demo`, `--reset-demo`, `--precise-word-timings`. Login journeys also need the `INFOMETRIE_LOGIN_TEST_ID` environment variable (a UUID).
-- UI tests attach screenshots. Results go to `build/<Name>.xcresult`, which git ignores. Report the result bundle and the counts in `Docs/VALIDATION.md`.
+- UI tests attach screenshots. Results go to `build/<Name>.xcresult`, which git ignores. Log a full-suite run and its counts in `Docs/VALIDATION.md`; smaller checks need no entry.
 - A failing UI journey is often the driver (keyboard focus, element hidden under the persistent player), not the app. Fix the gesture, never weaken the assertion.
 - Screenshots show fictional data only. The repository is public.
+
+## UI tests by area
+
+Run only the area a change touches; the first test of each row is the broadest.
+
+| Area | Tests |
+| ---- | ----- |
+| Login, session, device quota | `testLoginCallsAPIStoresSessionAndRestoresAfterRelaunch`, `testLoginDeviceQuotaRequiresConfirmationThenAuthenticates`, `testLoginDisplaysAPIErrorsAndAllowsRetry`, `testLoginFormAndEmptyFilters` |
+| Feed kinds, Publications X | `testFeedKindSelectionSyncNavigationAndPodcast`, `testPublicationsUseServerKindsResetCursorAndHaveNoAudio`, `testFeedKindsDarkAppearanceAndMaximumText` |
+| Filters | `testFilterSearchMultipleSelectionIntersectionAndReset`, `testFiltersDarkAppearanceAndMaximumText` |
+| Main navigation, iPad sidebar | `testMainNavigationPreservesFeedSelection` |
+| Suivis, sequence, podcast | `testDemoSearchPersistenceSequenceAndPodcast` |
+| Appearance, reading size | `testReadingComfortUpdatesTextImmediatelyAndPersists`, `testReadingSizesRespectSystemAccessibilityAndDarkAppearance`, `testDarkAppearanceAndLargeText` |
+| Transcript, player | `testTranscriptSeeksPlayerAndFollowsScrubbingWhilePaused`, `testFullscreenTranscriptKeepsPreciseSeekingAndPlayback`, `testFullscreenTranscriptStartsFromTextAtMaximumSize` |
+| Podcast, word timings | `testPodcastTranscriptUsesCurrentSequenceAndResetsOnNext`, `testPreciseAPITimingsSeekToTwelveSecondsAndLeaveSilencesUnhighlighted`, `testPodcastUsesPreciseAPITimingsAfterChangingSequence` |
+
+## Quick screenshot
+
+For a visual change, a few seconds and no UI test, on a booted iOS 26.4 iPhone (shown in Xcode's DeviceHub app), after the fast build:
+
+```sh
+xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/Infometrie.app
+xcrun simctl launch --terminate-running-process booted fr.yacast.infometrie.ios --uitesting --demo -appearance dark
+xcrun simctl io booted screenshot <file>.png
+```
+
+- Wait about two seconds after launch before capturing. `-appearance light` for light mode; add `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` for the largest text.
+- It shows the launch screen of the demo (the feed). A deeper screen needs its UI test.
 
 ## Run
 
