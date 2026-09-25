@@ -13,6 +13,7 @@ The visual language: the design system, tokens, and UI conventions. What it look
 
 - `Infometrie/Views/Design.swift`: `Brand` holds the light/dark color pairs, `AppLayout` the widths and corner radius.
 - `Infometrie/Resources/Assets.xcassets`: `AccentColor`, app icon, and the `channel-<key>` broadcaster logos. Aliased keys are normalized in the model.
+- App icon: an "i" whose stem rises out of a sound wave, drawn by `scripts/make_app_icon.swift` in light (ink on paper), dark (paper on ink) and tinted (grayscale) variants, opaque 1024 px. `scripts/create_project.py` declares the three variants; change the drawing in the Swift script and rerun both, never edit the PNGs by hand.
 - `AccentColor` mirrors `Brand.tint`. Change both together, and the asset through `scripts/create_project.py`. System alerts and menus ignore it on iOS 26 (label color only), so it is not a lever for their look.
 
 ## Components

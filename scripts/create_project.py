@@ -70,7 +70,9 @@ info={'CFBundleDevelopmentRegion':'fr','CFBundleDisplayName':'InfoMétrie','CFBu
 assets=root/'Infometrie/Resources/Assets.xcassets';assets.mkdir(exist_ok=True)
 (assets/'Contents.json').write_text(json.dumps({'info':{'author':'xcode','version':1}}))
 icon=assets/'AppIcon.appiconset';icon.mkdir(exist_ok=True)
-(icon/'Contents.json').write_text(json.dumps({'images':[{'filename':'AppIcon.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'xcode','version':1}}))
+# Light, dark and tinted variants drawn by scripts/make_app_icon.swift.
+def appicon(file,appearance=None):return ({'appearances':[{'appearance':'luminosity','value':appearance}]} if appearance else {})|{'filename':file,'idiom':'universal','platform':'ios','size':'1024x1024'}
+(icon/'Contents.json').write_text(json.dumps({'images':[appicon('AppIcon.png'),appicon('AppIcon-dark.png','dark'),appicon('AppIcon-tinted.png','tinted')],'info':{'author':'xcode','version':1}}))
 accent=assets/'AccentColor.colorset';accent.mkdir(exist_ok=True)
 def srgb(red,green,blue):return {'color-space':'srgb','components':{'red':red,'green':green,'blue':blue,'alpha':'1.0'}}
 (accent/'Contents.json').write_text(json.dumps({'colors':[{'idiom':'universal','color':srgb('0x29','0x2B','0x2E')},{'idiom':'universal','color':srgb('0xE6','0xE6','0xE4'),'appearances':[{'appearance':'luminosity','value':'dark'}]}],'info':{'author':'xcode','version':1}},indent=2)+'\n')
