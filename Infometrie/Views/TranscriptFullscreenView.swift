@@ -25,8 +25,7 @@ struct TranscriptFullscreenView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(currentDetail.item.person).font(.headline)
                         .lineLimit(dynamicType.isAccessibilitySize ? 2 : 1)
-                    Text(currentDetail.item.channel).font(.subheadline).foregroundStyle(Brand.secondary)
-                        .lineLimit(1)
+                    ChannelSource(item: currentDetail.item).font(.subheadline).lineLimit(1)
                 }.frame(maxWidth: .infinity, alignment: .leading)
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.down").font(.body.weight(.semibold))

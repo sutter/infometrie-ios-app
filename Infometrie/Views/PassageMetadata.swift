@@ -105,17 +105,7 @@ struct PassageMetadataRow: View {
         }
     }
 
-    private var source: some View {
-        HStack(spacing: 7) {
-            ChannelMark(item: item, size: 20)
-            if !ChannelMark.hasLogo(for: item) {
-                Text(item.channel).foregroundStyle(Brand.secondary)
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(item.isTweet ? item.kindLabel : item.channel)
-    }
+    private var source: some View { ChannelSource(item: item) }
 
     @ViewBuilder private var date: some View {
         if let date = item.date {
@@ -134,6 +124,24 @@ struct PassageMetadataRow: View {
                 .fixedSize(horizontal: true, vertical: false)
                 .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
         }
+    }
+}
+
+/// The broadcaster logo, or its name when no logo is bundled; X gets its tile.
+struct ChannelSource: View {
+    let item: FeedItem
+    var size: CGFloat = 20
+
+    var body: some View {
+        HStack(spacing: 7) {
+            ChannelMark(item: item, size: size)
+            if !ChannelMark.hasLogo(for: item) {
+                Text(item.channel).foregroundStyle(Brand.secondary)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(item.isTweet ? item.kindLabel : item.channel)
     }
 }
 
