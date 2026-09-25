@@ -4,6 +4,8 @@ struct FeedView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicType
+    /// New criteria show their results from the top, while only the cards fade.
+    @State private var scrollPosition = ScrollPosition(edge: .top)
     private var playable: [FeedItem] { model.visibleItems.filter(\.canPlay).sorted { $0.at < $1.at } }
     private var hasAudienceFilters: Bool { !model.filters.isEmpty }
     private var usesWideLayout: Bool { horizontalSizeClass == .regular }
@@ -19,23 +21,29 @@ struct FeedView: View {
                         ErrorNotice(message: error) { Task { await model.refresh(reset: true) } }
                             .padding(.vertical, 12)
                     }
-                    if model.isRefreshing && model.items.isEmpty {
-                        FeedSkeleton().padding(.vertical, 5).transition(.opacity)
-                    } else if model.visibleItems.isEmpty && model.feedError == nil {
-                        VStack(alignment: .leading, spacing: 12) {
-                            AppEmptyState(title: "Aucun passage pour le moment", icon: "text.magnifyingglass", message: "Aucun résultat sur les dernières 24 heures avec ces critères.")
-                            Button("Modifier les filtres") { model.openSearch(model.filters) }
-                                .buttonStyle(ActionButtonStyle())
-                        }
-                    } else {
-                        ForEach(model.visibleItems) { item in
-                            NavigationLink { SequenceView(item: item) } label: {
-                                FeedCard(item: item).padding(.vertical, 5)
-                                    .contentShape(Rectangle())
+                    // Only the cards fade as filters change or passages arrive. Animating the whole stack
+                    // would also animate the pinned type row, which then sticks and snaps.
+                    Group {
+                        if model.isRefreshing && model.items.isEmpty {
+                            FeedSkeleton().padding(.vertical, 5).transition(.opacity)
+                        } else if model.visibleItems.isEmpty && model.feedError == nil {
+                            VStack(alignment: .leading, spacing: 12) {
+                                AppEmptyState(title: "Aucun passage pour le moment", icon: "text.magnifyingglass", message: "Aucun résultat sur les dernières 24 heures avec ces critères.")
+                                Button("Modifier les filtres") { model.openSearch(model.filters) }
+                                    .buttonStyle(ActionButtonStyle())
                             }
-                            .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
+                        } else {
+                            ForEach(model.visibleItems) { item in
+                                NavigationLink { SequenceView(item: item) } label: {
+                                    FeedCard(item: item).padding(.vertical, 5)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
+                            }
                         }
                     }
+                    .motion(value: model.visibleItems.map(\.id))
+                    .motion(value: model.isRefreshing && model.items.isEmpty)
                     if let date = model.lastRefresh {
                         Text("Mis à jour à \(date.formatted(date: .omitted, time: .shortened))")
                             .font(.footnote).foregroundStyle(Brand.secondary)
@@ -47,9 +55,13 @@ struct FeedView: View {
             // scrollable tail space to bring the final card clear of the bar.
             .padding(.horizontal, 20).padding(.bottom, usesWideLayout ? 24 : 112)
             .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-            // Cards fade in and out as filters change or new passages arrive, and replace the skeleton softly.
-            .motion(value: model.visibleItems.map(\.id))
-            .motion(value: model.isRefreshing && model.items.isEmpty)
+        }
+        .scrollPosition($scrollPosition)
+        .onChange(of: model.filters) {
+            // Jump, never animate: pinned headers do not follow an animated programmatic scroll,
+            // which leaves a gap under the type row and makes the heading pop in at the end.
+            var jump = Transaction(); jump.disablesAnimations = true
+            withTransaction(jump) { scrollPosition.scrollTo(edge: .top) }
         }
         .refreshable { await model.refresh(reset: true) }
         .modifier(FeedScrollOverflow(overTabBar: !usesWideLayout))
