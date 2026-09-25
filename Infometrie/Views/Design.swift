@@ -89,23 +89,39 @@ struct KindBadge: View {
     }
 }
 
+/// A brand mark on an inverted-ink tile: X looks the same in the feed tabs, the cards and the passages.
+struct MarkTile: View {
+    let image: Image
+    let size: CGFloat
+
+    var body: some View {
+        // Custom symbols ship a medium scale only: size them by font, never by imageScale.
+        image.font(.system(size: size * 0.66))
+            .foregroundStyle(Brand.primaryForeground)
+            .frame(width: size, height: size)
+            .background(Brand.primary, in: RoundedRectangle(cornerRadius: size * 0.25, style: .continuous))
+    }
+}
+
 /// The API names embedded logos; unknown keys retain a readable media identity.
 struct ChannelMark: View {
     let item: FeedItem
     var size: CGFloat = 20
     private var logo: UIImage? { item.channelLogoAsset.flatMap { UIImage(named: $0) } }
     static func hasLogo(for item: FeedItem) -> Bool {
-        item.channelLogoAsset.flatMap { UIImage(named: $0) } != nil
+        showsX(item) || item.channelLogoAsset.flatMap { UIImage(named: $0) } != nil
+    }
+    private static func showsX(_ item: FeedItem) -> Bool {
+        item.isTweet || item.media.lowercased() == "x" || item.channelKey.lowercased() == "x"
     }
 
     var body: some View {
         Group {
-            if let logo {
+            if Self.showsX(item) {
+                MarkTile(image: Image("x.logo"), size: size)
+            } else if let logo {
                 Image(uiImage: logo).resizable().scaledToFit()
                     .frame(width: logoWidth(for: logo), height: size)
-            } else if item.isTweet || item.media.lowercased() == "x" || item.channelKey.lowercased() == "x" {
-                Text("𝕏").font(.system(size: size * 0.75, weight: .semibold, design: .monospaced))
-                    .frame(width: size, height: size)
             } else {
                 Image(systemName: item.media.lowercased() == "tv" ? "tv" : item.media.lowercased() == "radio" ? "radio" : "newspaper")
                     .font(.system(size: size * 0.8, weight: .medium))
@@ -253,8 +269,7 @@ struct AppTabButton: View {
     var accent: Color = Brand.tint
     var compact = false
     let action: () -> Void
-    @ScaledMetric(relativeTo: .footnote) private var tilePadding = 4.0
-    @ScaledMetric(relativeTo: .footnote) private var tileRadius = 5.0
+    @ScaledMetric(relativeTo: .footnote) private var tileSize = 20.0
 
     private var image: Image? {
         if let assetIcon { return Image(assetIcon) }
@@ -267,11 +282,7 @@ struct AppTabButton: View {
                 if let image {
                     Group {
                         if iconTile {
-                            // Custom symbols ship a medium scale only: size them by font, never by imageScale.
-                            image.font(.footnote)
-                                .foregroundStyle(Brand.primaryForeground)
-                                .padding(tilePadding)
-                                .background(Brand.primary, in: RoundedRectangle(cornerRadius: tileRadius, style: .continuous))
+                            MarkTile(image: image, size: tileSize)
                         } else {
                             // One step above the label, with a heavier stroke, so the icons read at a glance.
                             image.font((compact ? Font.subheadline : .title3).weight(.semibold))

@@ -12,7 +12,7 @@ Référence : [l’application Stoic sur Mobbin](https://mobbin.com/apps/stoic-i
 - Typographie système, Dynamic Type sans plafond, réglage S / M / L, cibles tactiles d’au moins 44 points.
 - Le fil défile sous la barre d’onglets flottante, et le dernier passage reste accessible.
 - Le mot courant du verbatim est mis en évidence en encre inversée (bouton principal et son texte).
-- Dans les types du fil, X est représenté par son logo seul, un symbole personnalisé (`x.logo`) dont les traits sont épaissis pour rester lisibles à petite taille, posé sur une tuile en encre inversée comme les logos de médias des cartes : tuile noire en clair, claire en sombre. La tuile garde le même contraste que l’onglet soit sélectionné ou non ; le soulignement marque la sélection.
+- X est représenté partout (types du fil, cartes, fiche) par son logo seul, un symbole personnalisé (`x.logo`) dont les traits sont épaissis pour rester lisibles à petite taille, posé sur une tuile en encre inversée comme les logos de médias des cartes : tuile noire en clair, claire en sombre. La tuile garde le même contraste que l’onglet soit sélectionné ou non ; le soulignement marque la sélection.
 
 ## Palette
 
