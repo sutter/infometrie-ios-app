@@ -312,8 +312,18 @@ struct PodcastView: View {
                         .accessibilityLabel("Passage \(model.player.index + 1) sur \(model.player.queue.count)")
                 }
                 .sharedBackgroundVisibility(.hidden)
-                // The system close role draws the standard cross and keeps "Fermer" for VoiceOver.
-                ToolbarItem(placement: .confirmationAction) { Button(role: .close) { model.player.stop() }.accessibilityIdentifier("close-podcast") }
+                // A ghost cross, like "Filtrer" in the feed: no capsule, no prominent tint.
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { model.player.stop() } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
+                            .frame(width: 44, height: 44).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).foregroundStyle(Brand.tint)
+                    .accessibilityLabel("Fermer")
+                    .accessibilityIdentifier("close-podcast")
+                }
+                .sharedBackgroundVisibility(.hidden)
             }
         }.presentationDragIndicator(.visible)
     }
