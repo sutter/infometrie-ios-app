@@ -38,18 +38,19 @@ Run only the area a change touches; the first test of each row is the broadest.
 | Transcript, player | `testTranscriptSeeksPlayerAndFollowsScrubbingWhilePaused`, `testFullscreenTranscriptKeepsPreciseSeekingAndPlayback`, `testFullscreenTranscriptStartsFromTextAtMaximumSize` |
 | Podcast, word timings | `testPodcastTranscriptUsesCurrentSequenceAndResetsOnNext`, `testPreciseAPITimingsSeekToTwelveSecondsAndLeaveSilencesUnhighlighted`, `testPodcastUsesPreciseAPITimingsAfterChangingSequence` |
 
-## Quick screenshot
+## Show it in the simulator
 
-For a visual change, a few seconds and no UI test, on a booted iOS 26.4 iPhone (shown in Xcode's DeviceHub app), after the fast build:
+Xcode 27 has no Simulator app: the simulator screen lives in DeviceHub (`/Applications/Xcode.app/Contents/Applications/DeviceHub.app`). After the fast build, on a booted iOS 26.4 iPhone:
 
 ```sh
+open -a /Applications/Xcode.app/Contents/Applications/DeviceHub.app
 xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/Infometrie.app
-xcrun simctl launch --terminate-running-process booted fr.yacast.infometrie.ios --uitesting --demo -appearance dark
-xcrun simctl io booted screenshot <file>.png
+xcrun simctl launch --terminate-running-process booted fr.yacast.infometrie.ios --demo
 ```
 
-- Wait about two seconds after launch before capturing. `-appearance light` for light mode; add `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` for the largest text.
-- It shows the launch screen of the demo (the feed). A deeper screen needs its UI test.
+- No simulator booted: `xcrun simctl boot <udid>` with the iOS 26.4 iPhone 17 Pro from `xcrun simctl list devices available`.
+- `-appearance dark` or `-appearance light` forces the theme for that launch; `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` gives the largest text.
+- A screenshot, only when asked: `xcrun simctl io booted screenshot <file>.png`, about two seconds after launch.
 
 ## Run
 

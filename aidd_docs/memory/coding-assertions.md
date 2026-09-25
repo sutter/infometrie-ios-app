@@ -14,10 +14,12 @@ The fast gate, every change (about 10 seconds).
 
 ## When the change shows on screen
 
+The user reviews the result in the simulator themselves: after any change that shows on screen, leave the updated app open on the booted simulator, in DeviceHub (`testing.md`).
+
 | Change | Check |
 | ------ | ----- |
-| Visual only (layout, color, icon, copy) | One quick screenshot on the booted simulator (`testing.md`), shown to the user. No UI test |
-| Behavior, navigation or interaction | The one or two UI tests of the touched area (`testing.md`), on iPhone. Add iPad only when the regular-width layout changed |
+| Visual only (layout, color, icon, copy) | Open the updated app in the simulator for the user. No UI test, no screenshot unless asked |
+| Behavior, navigation or interaction | The one or two UI tests of the touched area (`testing.md`), on iPhone, then open the updated app in the simulator. Add iPad only when the regular-width layout changed |
 
 ## Before push
 
