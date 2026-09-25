@@ -1,39 +1,60 @@
 from pathlib import Path
-import plistlib, json, wave, math, struct
+import plistlib, json, wave, math, re, struct
 root=Path(__file__).resolve().parents[1]
 project=root/'Infometrie.xcodeproj';project.mkdir(exist_ok=True)
+# Signing team and build number set in Xcode after the first generation; kept here so a rerun matches the committed project.
+TEAM='Q37972BSB3';APP_BUILD='2'
 # Stable IDs make the project reproducible without a generator dependency.
 ids={k:f'{i:024X}' for i,k in enumerate(['project','main','products','appgroup','testgroup','app','test','appproduct','testproduct','appsources','appresources','appframeworks','testsources','testresources','testframeworks','projectconfig','appconfig','testconfig','projectdebug','projectrelease','appdebug','apprelease','testdebug','testrelease','exception','dependency','proxy'],1)}
 def ref(k):return ids[k]
-objects=[]
-def obj(k,body):objects.append(f'{ref(k)} = {{ {body} }};')
-def config(k,settings):obj(k,'isa = XCBuildConfiguration; buildSettings = { '+ ' '.join(f'{key} = {value};' for key,value in settings.items())+' }; name = '+('Debug' if 'debug' in k else 'Release')+';')
-obj('project',f'isa = PBXProject; attributes = {{ BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 2700; TargetAttributes = {{ {ref("app")} = {{ CreatedOnToolsVersion = 27.0; }}; {ref("test")} = {{ CreatedOnToolsVersion = 27.0; TestTargetID = {ref("app")}; }}; }}; }}; buildConfigurationList = {ref("projectconfig")}; compatibilityVersion = "Xcode 16.0"; developmentRegion = fr; knownRegions = (fr, en, Base); mainGroup = {ref("main")}; productRefGroup = {ref("products")}; projectDirPath = ""; projectRoot = ""; targets = ({ref("app")}, {ref("test")});')
-obj('main',f'isa = PBXGroup; children = ({ref("appgroup")}, {ref("testgroup")}, {ref("products")}); sourceTree = "<group>";')
-obj('products',f'isa = PBXGroup; children = ({ref("appproduct")}, {ref("testproduct")}); name = Products; sourceTree = "<group>";')
-segment_types=' '.join(f'\"Resources/demo-segment-{i:02}.ts\" = \"video.mpeg\";' for i in range(7))
-obj('appgroup',f'isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {{{segment_types}}}; exceptions = ({ref("exception")}); path = Infometrie; sourceTree = "<group>";')
-obj('testgroup','isa = PBXFileSystemSynchronizedRootGroup; path = InfometrieUITests; sourceTree = "<group>";')
-obj('exception',f'isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Resources/Info.plist); target = {ref("app")};')
-for target,name,group,product in [('app','Infometrie','appgroup','appproduct'),('test','InfometrieUITests','testgroup','testproduct')]:
- obj(product,f'isa = PBXFileReference; explicitFileType = {"wrapper.application" if target=="app" else "wrapper.cfbundle"}; includeInIndex = 0; path = {name}.{ "app" if target=="app" else "xctest"}; sourceTree = BUILT_PRODUCTS_DIR;')
- for suffix,isa in [('sources','PBXSourcesBuildPhase'),('resources','PBXResourcesBuildPhase'),('frameworks','PBXFrameworksBuildPhase')]:obj(target+suffix,f'isa = {isa}; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;')
- obj(target,f'isa = PBXNativeTarget; buildConfigurationList = {ref(target+"config")}; buildPhases = ({ref(target+"sources")}, {ref(target+"frameworks")}, {ref(target+"resources")}); buildRules = (); dependencies = ({ref("dependency") if target=="test" else ""}); fileSystemSynchronizedGroups = ({ref(group)}); name = {name}; productName = {name}; productReference = {ref(product)}; productType = "com.apple.product-type.{"application" if target=="app" else "bundle.ui-testing"}";')
-obj('proxy',f'isa = PBXContainerItemProxy; containerPortal = {ref("project")}; proxyType = 1; remoteGlobalIDString = {ref("app")}; remoteInfo = Infometrie;')
-obj('dependency',f'isa = PBXTargetDependency; target = {ref("app")}; targetProxy = {ref("proxy")};')
-for prefix in ['project','app','test']:
- obj(prefix+'config',f'isa = XCConfigurationList; buildConfigurations = ({ref(prefix+"debug")}, {ref(prefix+"release")}); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;')
+class Ref(str):
+ """An object ID that Xcode follows with its target's comment."""
+def R(k):return Ref(ids[k])
+objects={};comments={}
+def obj(k,comment,isa,**fields):objects[ids[k]]={'isa':isa,**fields};comments[ids[k]]=comment
+# Xcode writes these object types on a single line.
+INLINE={'PBXBuildFile','PBXFileReference','PBXFileSystemSynchronizedRootGroup'}
+def q(s):return s if re.fullmatch(r'[A-Za-z0-9_./]+',s) else '"'+s.replace('\\','\\\\').replace('"','\\"')+'"'
+def fmt(v,level=0,inline=False):
+ """Serialize a value exactly as Xcode writes project.pbxproj: isa first, sorted keys, quoted strings, tab indentation."""
+ if isinstance(v,Ref):return f'{v} /* {comments[v]} */' if comments[v] else str(v)
+ if isinstance(v,str):return q(v)
+ pad='\t'*level
+ if isinstance(v,list):
+  if inline:return '('+''.join(fmt(x,inline=True)+', ' for x in v)+')'
+  return '(\n'+''.join(f'{pad}\t{fmt(x,level+1)},\n' for x in v)+pad+')'
+ keys=sorted(v,key=lambda k:(k!='isa',k))
+ if inline:return '{'+''.join(f'{q(k)} = {fmt(v[k],inline=True)}; ' for k in keys)+'}'
+ return '{\n'+''.join(f'{pad}\t{q(k)} = {fmt(v[k],level+1)};\n' for k in keys)+pad+'}'
+obj('project','Project object','PBXProject',attributes={'BuildIndependentTargetsInParallel':'YES','LastUpgradeCheck':'2700','TargetAttributes':{ref('app'):{'CreatedOnToolsVersion':'27.0'},ref('test'):{'CreatedOnToolsVersion':'27.0','TestTargetID':ref('app')}}},buildConfigurationList=R('projectconfig'),compatibilityVersion='Xcode 16.0',developmentRegion='fr',hasScannedForEncodings='0',knownRegions=['fr','en','Base'],mainGroup=R('main'),productRefGroup=R('products'),projectDirPath='',projectRoot='',targets=[R('app'),R('test')])
+obj('main',None,'PBXGroup',children=[R('appgroup'),R('testgroup'),R('products')],sourceTree='<group>')
+obj('products','Products','PBXGroup',children=[R('appproduct'),R('testproduct')],name='Products',sourceTree='<group>')
+obj('appgroup','Infometrie','PBXFileSystemSynchronizedRootGroup',exceptions=[R('exception')],explicitFileTypes={f'Resources/demo-segment-{i:02}.ts':'video.mpeg' for i in range(7)},explicitFolders=[],path='Infometrie',sourceTree='<group>')
+obj('testgroup','InfometrieUITests','PBXFileSystemSynchronizedRootGroup',explicitFileTypes={},explicitFolders=[],path='InfometrieUITests',sourceTree='<group>')
+obj('exception','PBXFileSystemSynchronizedBuildFileExceptionSet','PBXFileSystemSynchronizedBuildFileExceptionSet',membershipExceptions=['Resources/Info.plist'],target=R('app'))
+for target,name,group,product,kind in [('app','Infometrie','appgroup','appproduct','application'),('test','InfometrieUITests','testgroup','testproduct','bundle.ui-testing')]:
+ file=f'{name}.{"app" if target=="app" else "xctest"}'
+ obj(product,file,'PBXFileReference',explicitFileType='wrapper.application' if target=='app' else 'wrapper.cfbundle',includeInIndex='0',path=file,sourceTree='BUILT_PRODUCTS_DIR')
+ for suffix,isa in [('sources','PBXSourcesBuildPhase'),('resources','PBXResourcesBuildPhase'),('frameworks','PBXFrameworksBuildPhase')]:obj(target+suffix,suffix.capitalize(),isa,buildActionMask='2147483647',files=[],runOnlyForDeploymentPostprocessing='0')
+ obj(target,name,'PBXNativeTarget',buildConfigurationList=R(target+'config'),buildPhases=[R(target+'sources'),R(target+'frameworks'),R(target+'resources')],buildRules=[],dependencies=[R('dependency')] if target=='test' else [],fileSystemSynchronizedGroups=[R(group)],name=name,productName=name,productReference=R(product),productType=f'com.apple.product-type.{kind}')
+obj('proxy','PBXContainerItemProxy','PBXContainerItemProxy',containerPortal=R('project'),proxyType='1',remoteGlobalIDString=ref('app'),remoteInfo='Infometrie')
+obj('dependency','PBXTargetDependency','PBXTargetDependency',target=R('app'),targetProxy=R('proxy'))
+for prefix,owner in [('project','PBXProject "Infometrie"'),('app','PBXNativeTarget "Infometrie"'),('test','PBXNativeTarget "InfometrieUITests"')]:
+ obj(prefix+'config',f'Build configuration list for {owner}','XCConfigurationList',buildConfigurations=[R(prefix+'debug'),R(prefix+'release')],defaultConfigurationIsVisible='0',defaultConfigurationName='Release')
  for mode in ['debug','release']:
   common={'IPHONEOS_DEPLOYMENT_TARGET':'26.0','SDKROOT':'iphoneos','SWIFT_VERSION':'6.0','CLANG_ENABLE_MODULES':'YES','SWIFT_STRICT_CONCURRENCY':'complete','ENABLE_USER_SCRIPT_SANDBOXING':'YES'}
   if prefix=='project':
-   settings=common|{'SWIFT_OPTIMIZATION_LEVEL':'"-Onone"' if mode=='debug' else '"-O"','DEBUG_INFORMATION_FORMAT':'dwarf' if mode=='debug' else '"dwarf-with-dsym"','SWIFT_ACTIVE_COMPILATION_CONDITIONS':'"DEBUG $(inherited)"' if mode=='debug' else '"$(inherited)"'}
+   settings=common|{'SWIFT_OPTIMIZATION_LEVEL':'-Onone' if mode=='debug' else '-O','DEBUG_INFORMATION_FORMAT':'dwarf' if mode=='debug' else 'dwarf-with-dsym','SWIFT_ACTIVE_COMPILATION_CONDITIONS':'DEBUG $(inherited)' if mode=='debug' else '$(inherited)'}
   else:
-   name='Infometrie' if prefix=='app' else 'InfometrieUITests'
-   settings={'PRODUCT_NAME':'"$(TARGET_NAME)"','PRODUCT_BUNDLE_IDENTIFIER':'fr.yacast.infometrie.ios'+('.uitests' if prefix=='test' else ''),'TARGETED_DEVICE_FAMILY':'"1,2"','CODE_SIGN_STYLE':'Automatic','CURRENT_PROJECT_VERSION':'1','MARKETING_VERSION':'0.4.0','GENERATE_INFOPLIST_FILE':'YES' if prefix=='test' else 'NO','SUPPORTED_PLATFORMS':'"iphoneos iphonesimulator"','SUPPORTS_MACCATALYST':'NO','SWIFT_EMIT_LOC_STRINGS':'YES'}
-   if prefix=='app':settings|={'INFOPLIST_FILE':'Infometrie/Resources/Info.plist','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME':'AccentColor','LD_RUNPATH_SEARCH_PATHS':'"$(inherited) @executable_path/Frameworks"'}
-   else:settings|={'TEST_TARGET_NAME':'Infometrie','LD_RUNPATH_SEARCH_PATHS':'"$(inherited) @executable_path/Frameworks @loader_path/Frameworks"'}
-  config(prefix+mode,settings)
-project.joinpath('project.pbxproj').write_text('// !$*UTF8*$!\n{ archiveVersion = 1; classes = {}; objectVersion = 77; objects = {\n'+ '\n'.join(objects)+f'\n}}; rootObject = {ref("project")}; }}\n')
+   settings={'PRODUCT_NAME':'$(TARGET_NAME)','PRODUCT_BUNDLE_IDENTIFIER':'fr.yacast.infometrie.ios'+('.uitests' if prefix=='test' else ''),'TARGETED_DEVICE_FAMILY':'1,2','CODE_SIGN_STYLE':'Automatic','CURRENT_PROJECT_VERSION':'1','MARKETING_VERSION':'0.4.0','GENERATE_INFOPLIST_FILE':'YES' if prefix=='test' else 'NO','SUPPORTED_PLATFORMS':'iphoneos iphonesimulator','SUPPORTS_MACCATALYST':'NO','SWIFT_EMIT_LOC_STRINGS':'YES'}
+   if prefix=='app':settings|={'INFOPLIST_FILE':'Infometrie/Resources/Info.plist','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME':'AccentColor','LD_RUNPATH_SEARCH_PATHS':['$(inherited)','@executable_path/Frameworks'],'CURRENT_PROJECT_VERSION':APP_BUILD,'DEVELOPMENT_TEAM':TEAM}
+   else:settings|={'TEST_TARGET_NAME':'Infometrie','LD_RUNPATH_SEARCH_PATHS':['$(inherited)','@executable_path/Frameworks','@loader_path/Frameworks']}
+  obj(prefix+mode,mode.capitalize(),'XCBuildConfiguration',buildSettings=settings,name=mode.capitalize())
+def line(k):
+ o=objects[k]
+ return f'\t\t{fmt(Ref(k))} = {fmt(o,inline=True) if o["isa"] in INLINE else fmt(o,2)};\n'
+sections=''.join(f'\n/* Begin {isa} section */\n'+''.join(line(k) for k in sorted(objects) if objects[k]['isa']==isa)+f'/* End {isa} section */\n' for isa in sorted({o['isa'] for o in objects.values()}))
+project.joinpath('project.pbxproj').write_text('// !$*UTF8*$!\n{\n\tarchiveVersion = 1;\n\tclasses = {\n\t};\n\tobjectVersion = 71;\n\tobjects = {\n'+sections+f'\t}};\n\trootObject = {fmt(R("project"))};\n}}\n')
 scheme=project/'xcshareddata/xcschemes';scheme.mkdir(parents=True,exist_ok=True)
 def buildref(k,name,file):return f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ref(k)}" BuildableName="{file}" BlueprintName="{name}" ReferencedContainer="container:Infometrie.xcodeproj"/>'
 scheme.joinpath('Infometrie.xcscheme').write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
@@ -51,7 +72,8 @@ assets=root/'Infometrie/Resources/Assets.xcassets';assets.mkdir(exist_ok=True)
 icon=assets/'AppIcon.appiconset';icon.mkdir(exist_ok=True)
 (icon/'Contents.json').write_text(json.dumps({'images':[{'filename':'AppIcon.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'xcode','version':1}}))
 accent=assets/'AccentColor.colorset';accent.mkdir(exist_ok=True)
-(accent/'Contents.json').write_text(json.dumps({'colors':[{'idiom':'universal','color':{'color-space':'srgb','components':{'red':'0.19','green':'0.28','blue':'0.87','alpha':'1.0'}}}],'info':{'author':'xcode','version':1}}))
+def srgb(red,green,blue):return {'color-space':'srgb','components':{'red':red,'green':green,'blue':blue,'alpha':'1.0'}}
+(accent/'Contents.json').write_text(json.dumps({'colors':[{'idiom':'universal','color':srgb('0x43','0x2D','0xD7')},{'idiom':'universal','color':srgb('0xA3','0xB3','0xFF'),'appearances':[{'appearance':'luminosity','value':'dark'}]}],'info':{'author':'xcode','version':1}},indent=2)+'\n')
 with wave.open(str(root/'Infometrie/Resources/demo.wav'),'wb') as w:
  w.setnchannels(1);w.setsampwidth(2);w.setframerate(22050)
  notes=[261.63,329.63,392,523.25,392,329.63]
