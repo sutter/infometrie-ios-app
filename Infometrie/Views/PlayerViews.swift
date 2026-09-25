@@ -41,6 +41,7 @@ struct SequenceView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .skeleton()
+        .transition(.opacity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Chargement du texte")
     }
@@ -95,6 +96,7 @@ struct SequenceView: View {
                 }.accessibilityIdentifier("sequence-context")
                 if model.isDemo { DemoBanner() }
             }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+                .motion(value: displayDetail?.id)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !isTranscriptExpanded {
