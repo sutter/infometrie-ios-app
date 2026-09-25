@@ -113,7 +113,7 @@ struct FeedCard: View {
                     .foregroundStyle(Brand.secondary)
                     .lineLimit(1)
             }
-            kindMark
+            if !item.isTweet { kindMark }
         }
         .font(.caption)
         .fixedSize(horizontal: true, vertical: false)
@@ -132,10 +132,11 @@ struct FeedCard: View {
         .fixedSize(horizontal: true, vertical: false)
     }
 
+    /// The X tile already says what a publication is, so it gets no kind icon.
     private var sourceAndKind: some View {
         HStack(spacing: 8) {
             source
-            kindMark
+            if !item.isTweet { kindMark }
         }
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -181,7 +182,7 @@ struct FeedCard: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(item.channel)
+        .accessibilityLabel(item.isTweet ? item.kindLabel : item.channel)
     }
 
     @ViewBuilder private var date: some View {
