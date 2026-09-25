@@ -33,6 +33,10 @@ struct TranscriptView: View {
 
     private var activeWord: Int? { timeline.wordIndex(at: isCurrent ? model.player.instant : nil) }
     private var canSeek: Bool { detail.item.canPlay && timeline.canSynchronize }
+    /// Following is on by default and says nothing; the control appears only once scrolling suspended it.
+    private var showsResume: Bool { canSeek && isCurrent && !reading.followsPlayback }
+    /// Feedback to a word the user just tapped, such as one outside the available excerpt.
+    private var notice: String? { isCurrent ? model.player.transcriptNotice : nil }
 
     var body: some View {
         if expanded {
@@ -42,9 +46,9 @@ struct TranscriptView: View {
                         positionLabel
                     }
                     Spacer(minLength: 0)
-                    if canSeek, isCurrent { followButton.labelStyle(.iconOnly) }
+                    if showsResume { followButton.labelStyle(.iconOnly) }
                 }
-                if isCurrent, let notice = model.player.transcriptNotice {
+                if let notice {
                     Text(notice).font(.footnote).foregroundStyle(Brand.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("transcript-notice")
@@ -70,14 +74,19 @@ struct TranscriptView: View {
                     }
                     textScroll.frame(height: min(textHeight, 380))
                 }.padding(.top, 4).padding(.bottom, 8)
-                VStack(alignment: .leading, spacing: 10) {
-                    if canSeek, isCurrent { followButton }
-                    synchronizationStatus
+                if showsResume || notice != nil {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if showsResume { followButton }
+                        if let notice {
+                            Text(notice).font(.footnote).foregroundStyle(Brand.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("transcript-notice")
+                        }
+                    }
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .overlay(alignment: .top) { AppRule() }
                 }
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .overlay(alignment: .top) { AppRule() }
             }
         }
     }
@@ -104,10 +113,7 @@ struct TranscriptView: View {
                         .id(passage.id)
                         .accessibilityIdentifier("transcript-passage-\(passage.id)")
                 }
-                if expanded {
-                    synchronizationStatus.padding(.top, 8)
-                    if isCurrent, let error = model.player.error { ErrorNotice(message: error) }
-                }
+                if expanded, isCurrent, let error = model.player.error { ErrorNotice(message: error) }
             }.scrollTargetLayout().padding(.vertical, expanded ? 12 : 4)
         }
         .scrollEdgeEffectHidden(true)
@@ -134,8 +140,8 @@ struct TranscriptView: View {
     }
 
     private var followButton: some View {
-        Button { reading.followsPlayback.toggle() } label: {
-            Label(reading.followsPlayback ? "Suivi de l’écoute activé" : "Reprendre le suivi", systemImage: reading.followsPlayback ? "checkmark.circle.fill" : "arrow.down.to.line")
+        Button { reading.followsPlayback = true } label: {
+            Label("Reprendre le suivi", systemImage: "arrow.down.to.line")
                 .font(.subheadline.weight(.medium))
                 .frame(minWidth: 44, maxWidth: expanded ? nil : .infinity, minHeight: 44, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true).contentShape(Rectangle())
@@ -143,43 +149,6 @@ struct TranscriptView: View {
         .buttonStyle(.plain).foregroundStyle(Brand.tint)
         .accessibilityIdentifier("transcript-follow")
         .accessibilityValue(reading.followsPlayback ? "Activé" : "Désactivé")
-    }
-
-    private var synchronizationStatus: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if !expanded, isCurrent, let notice = model.player.transcriptNotice {
-                Text(notice).font(.footnote).foregroundStyle(Brand.ink).accessibilityIdentifier("transcript-notice")
-            }
-            if !timeline.hasPreciseTimings {
-                let explanation = canSeek
-                    ? "Le suivi des mots est approximatif."
-                    : "Le texte ne peut pas être synchronisé avec l’audio."
-                switch model.wordTimingStates[detail.id] {
-                case .failed:
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(explanation)
-                            .font(.footnote).foregroundStyle(Brand.secondary)
-                            .accessibilityIdentifier("transcript-estimated")
-                        Button {
-                            model.loadWordTimings(for: detail.id, retry: true)
-                        } label: {
-                            Label("Réessayer", systemImage: "arrow.clockwise")
-                                .font(.footnote.weight(.medium))
-                                .frame(minHeight: 44, alignment: .leading)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain).foregroundStyle(Brand.tint)
-                        .accessibilityIdentifier("retry-transcript-timing")
-                    }
-                case .unavailable, .available:
-                    Text(explanation)
-                        .font(.footnote).foregroundStyle(Brand.secondary)
-                        .accessibilityIdentifier("transcript-estimated")
-                case .loading, .none:
-                    EmptyView()
-                }
-            }
-        }.fixedSize(horizontal: false, vertical: true)
     }
 
     private func follow(_ passage: Int?) {

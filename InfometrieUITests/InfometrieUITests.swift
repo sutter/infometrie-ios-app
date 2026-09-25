@@ -731,8 +731,9 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertNotEqual(fullStatus.value as? String, "Mot 19 sur 41", "Le curseur met aussi à jour le texte")
         XCTAssertEqual(fullToggle.label, "Écouter", "Déplacer le curseur conserve la pause")
         let pausedPosition = fullElapsed.label
+        scroll.swipeUp()
         let follow = fullscreen.buttons["transcript-follow"]
-        if follow.value as? String == "Activé" { follow.tap() }
+        wait(follow, key: "value", equals: "Désactivé")
         close.tap()
         XCTAssertTrue(expand.waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["player-elapsed"].label, pausedPosition)
@@ -742,6 +743,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(close.waitForExistence(timeout: 5))
         XCTAssertEqual(follow.value as? String, "Désactivé")
         follow.tap()
+        XCTAssertTrue(follow.waitForNonExistence(timeout: 3), "Reprendre le suivi disparaît une fois le suivi repris")
         for _ in 0..<4 {
             if fullscreen.links["Cette"].isHittable { break }
             scroll.swipeDown()
@@ -799,7 +801,7 @@ final class InfometrieUITests: XCTestCase {
         let follow = fullscreen.buttons["transcript-follow"]
         wait(follow, key: "value", equals: "Désactivé")
         follow.tap()
-        wait(follow, key: "value", equals: "Activé")
+        XCTAssertTrue(follow.waitForNonExistence(timeout: 3), "Reprendre le suivi disparaît une fois le suivi repris")
         capture("25-texte-plein-ecran-accessibilite", app: app)
         close.tap()
         XCTAssertTrue(expand.waitForExistence(timeout: 5))
@@ -853,11 +855,14 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 4), .completed)
         toggle.tap()
         let follow = app.buttons["transcript-follow"]
+        XCTAssertFalse(follow.exists, "Le suivi actif n’affiche aucune commande")
+        let text = app.scrollViews["transcript-scroll"]
+        reveal(text, in: app, down: false)
+        text.swipeUp()
+        wait(follow, key: "value", equals: "Désactivé")
         reveal(follow, in: app, down: false)
         follow.tap()
-        XCTAssertEqual(follow.value as? String, "Désactivé")
-        follow.tap()
-        XCTAssertEqual(follow.value as? String, "Activé")
+        XCTAssertTrue(follow.waitForNonExistence(timeout: 3), "Reprendre le suivi disparaît une fois le suivi repris")
         capture("08-verbatim-suivi-lecteur", app: app)
     }
 
