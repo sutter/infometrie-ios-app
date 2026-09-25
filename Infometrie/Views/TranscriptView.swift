@@ -40,20 +40,16 @@ struct TranscriptView: View {
 
     var body: some View {
         if expanded {
+            // No header: the text starts right away, and resuming sits below it as on the page.
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        positionLabel
-                    }
-                    Spacer(minLength: 0)
-                    if showsResume { followButton.labelStyle(.iconOnly) }
-                }
                 if let notice {
                     Text(notice).font(.footnote).foregroundStyle(Brand.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("transcript-notice")
                 }
                 textScroll.frame(maxHeight: .infinity)
+                    .overlay(alignment: .topLeading) { positionStatus }
+                if showsResume { followButton }
             }
         } else {
             VStack(alignment: .leading, spacing: 0) {
@@ -96,7 +92,7 @@ struct TranscriptView: View {
         activeWord.map { "Mot \($0 + 1) sur \(timeline.words.count)" } ?? (isCurrent ? "Aucun mot actif" : "En attente de lecture")
     }
 
-    /// The page shows no position label; VoiceOver still reads where listening stands in the text.
+    /// No position label is drawn; VoiceOver still reads where listening stands in the text.
     private var positionStatus: some View {
         Color.clear.frame(width: 1, height: 1)
             .accessibilityElement()
@@ -104,15 +100,6 @@ struct TranscriptView: View {
             .accessibilityValue(positionValue)
             .accessibilityAddTraits(.isStaticText)
             .accessibilityIdentifier("transcript-position")
-    }
-
-    private var positionLabel: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "text.quote").foregroundStyle(Brand.tint).accessibilityHidden(true)
-            Text("Le texte")
-                .accessibilityIdentifier("transcript-position")
-                .accessibilityValue(positionValue)
-        }.font(.headline).foregroundStyle(Brand.ink)
     }
 
     private var textScroll: some View {
