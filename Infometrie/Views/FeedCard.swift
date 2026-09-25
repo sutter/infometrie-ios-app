@@ -12,7 +12,7 @@ struct FeedCard: View {
                 .font(.body).foregroundStyle(Brand.ink)
                 .lineLimit(dynamicType.isAccessibilitySize ? nil : 4)
                 .fixedSize(horizontal: false, vertical: true)
-            metadata
+            PassageMetadataRow(item: item)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -68,140 +68,6 @@ struct FeedCard: View {
         }
         return String(trimmedTitle.dropFirst(prefix.count))
             .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var metadata: some View {
-        Group {
-            if dynamicType.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 6) {
-                    sourceAndKind
-                    date
-                    duration
-                }
-            } else {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 10) {
-                        sourceAndKind
-                        Spacer(minLength: 4)
-                        timeAndDuration
-                    }
-                    HStack(spacing: 6) {
-                        compactSourceAndKind
-                        Spacer(minLength: 2)
-                        compactTimeAndDuration
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        sourceAndKind
-                        HStack(spacing: 8) {
-                            date
-                            Spacer(minLength: 4)
-                            duration
-                        }
-                    }
-                }
-            }
-        }
-        .font(.footnote)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var compactSourceAndKind: some View {
-        HStack(spacing: 6) {
-            ChannelMark(item: item, size: 16)
-            if !ChannelMark.hasLogo(for: item) {
-                Text(item.channel)
-                    .foregroundStyle(Brand.secondary)
-                    .lineLimit(1)
-            }
-            if !item.isTweet { kindMark }
-        }
-        .font(.caption)
-        .fixedSize(horizontal: true, vertical: false)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(item.channel), \(item.kindLabel)")
-    }
-
-    private var compactTimeAndDuration: some View {
-        HStack(spacing: 6) {
-            compactDate
-            if item.canPlay && item.durationSec > 0 {
-                duration
-            }
-        }
-        .font(.caption)
-        .fixedSize(horizontal: true, vertical: false)
-    }
-
-    /// The X tile already says what a publication is, so it gets no kind icon.
-    private var sourceAndKind: some View {
-        HStack(spacing: 8) {
-            source
-            if !item.isTweet { kindMark }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var kindMark: some View {
-        Label(item.kindLabel, systemImage: item.kindSymbol)
-            .labelStyle(.iconOnly)
-            .foregroundStyle(Brand.secondary)
-            .frame(width: 24, height: 24)
-            .accessibilityLabel(item.kindLabel)
-    }
-
-    private var timeAndDuration: some View {
-        HStack(spacing: 8) {
-            date
-            if item.canPlay && item.durationSec > 0 {
-                Rectangle()
-                    .fill(Brand.rule)
-                    .frame(width: 1, height: 14)
-                    .accessibilityHidden(true)
-                duration
-            }
-        }
-        .fixedSize(horizontal: true, vertical: false)
-    }
-
-    @ViewBuilder private var duration: some View {
-        if item.canPlay && item.durationSec > 0 {
-            Label(item.readableDuration, systemImage: "headphones")
-                .monospacedDigit()
-                .foregroundStyle(Brand.secondary)
-                .fixedSize()
-                .accessibilityLabel("Durée d’écoute : \(item.readableDuration)")
-        }
-    }
-
-    private var source: some View {
-        HStack(spacing: 7) {
-            ChannelMark(item: item, size: 20)
-            if !ChannelMark.hasLogo(for: item) {
-                Text(item.channel).foregroundStyle(Brand.secondary)
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(item.isTweet ? item.kindLabel : item.channel)
-    }
-
-    @ViewBuilder private var date: some View {
-        if let date = item.date {
-            Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) · \(date, style: .time)")
-                .foregroundStyle(Brand.secondary).monospacedDigit()
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
-        }
-    }
-
-    @ViewBuilder private var compactDate: some View {
-        if let date = item.date {
-            Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) \(date, style: .time)")
-                .foregroundStyle(Brand.secondary)
-                .monospacedDigit()
-                .fixedSize(horizontal: true, vertical: false)
-                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
-        }
     }
 }
 

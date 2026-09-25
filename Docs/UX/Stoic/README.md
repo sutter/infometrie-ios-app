@@ -9,6 +9,7 @@ Référence : [l’application Stoic sur Mobbin](https://mobbin.com/apps/stoic-i
 - Surfaces neutres, faible contraste entre le fond et les cartes, coins arrondis.
 - La couleur est réservée aux logos des médias et aux actions destructives. Liens, icônes et navigation utilisent une encre neutre.
 - La hiérarchie du fil dense est conservée : personne, fonction, texte, puis média et date, type et durée.
+- La fiche d’un passage reprend exactement la ligne de métadonnées des cartes (média, type, date, durée sur une ligne). La date s’écrit partout « 25/09 14:39 ».
 - Typographie système, Dynamic Type sans plafond, réglage S / M / L, cibles tactiles d’au moins 44 points.
 - Le fil défile sous la barre d’onglets flottante, et le dernier passage reste accessible.
 - Le mot courant du verbatim est mis en évidence en encre inversée (bouton principal et son texte).

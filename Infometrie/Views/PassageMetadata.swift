@@ -1,31 +1,138 @@
 import SwiftUI
 
-/// Consistent source and byline across the feed and the passage.
-struct PassageSource: View {
+/// Source, kind, date and duration on one line, shared by the feed cards and the passage page
+/// so both read the same way; it wraps only when the line does not fit.
+struct PassageMetadataRow: View {
     let item: FeedItem
     @Environment(\.dynamicTypeSize) private var dynamicType
 
-    var body: some View {
-        AdaptiveRow {
-            HStack(spacing: 8) {
-                ChannelMark(item: item, size: 24)
-                if !ChannelMark.hasLogo(for: item) {
-                    Text(item.channel)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Brand.ink)
-                        .fixedSize(horizontal: false, vertical: true)
+    var body: some View { metadata }
+
+    private var metadata: some View {
+        Group {
+            if dynamicType.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 6) {
+                    sourceAndKind
+                    date
+                    duration
+                }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) {
+                        sourceAndKind
+                        Spacer(minLength: 4)
+                        timeAndDuration
+                    }
+                    HStack(spacing: 6) {
+                        compactSourceAndKind
+                        Spacer(minLength: 2)
+                        compactTimeAndDuration
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        sourceAndKind
+                        HStack(spacing: 8) {
+                            date
+                            Spacer(minLength: 4)
+                            duration
+                        }
+                    }
                 }
             }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(item.channel)
-            if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
-            if let date = item.date {
-                Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) · \(date, style: .time)")
-                    .font(.subheadline.monospacedDigit())
+        }
+        .font(.footnote)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var compactSourceAndKind: some View {
+        HStack(spacing: 6) {
+            ChannelMark(item: item, size: 16)
+            if !ChannelMark.hasLogo(for: item) {
+                Text(item.channel)
                     .foregroundStyle(Brand.secondary)
-                    .fixedSize(horizontal: !dynamicType.isAccessibilitySize, vertical: true)
-                    .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
+                    .lineLimit(1)
             }
+            if !item.isTweet { kindMark }
+        }
+        .font(.caption)
+        .fixedSize(horizontal: true, vertical: false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(item.channel), \(item.kindLabel)")
+    }
+
+    private var compactTimeAndDuration: some View {
+        HStack(spacing: 6) {
+            compactDate
+            if item.canPlay && item.durationSec > 0 {
+                duration
+            }
+        }
+        .font(.caption)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    /// The X tile already says what a publication is, so it gets no kind icon.
+    private var sourceAndKind: some View {
+        HStack(spacing: 8) {
+            source
+            if !item.isTweet { kindMark }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var kindMark: some View {
+        Label(item.kindLabel, systemImage: item.kindSymbol)
+            .labelStyle(.iconOnly)
+            .foregroundStyle(Brand.secondary)
+            .frame(width: 24, height: 24)
+            .accessibilityLabel(item.kindLabel)
+    }
+
+    private var timeAndDuration: some View {
+        HStack(spacing: 6) {
+            date
+            duration
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    @ViewBuilder private var duration: some View {
+        if item.canPlay && item.durationSec > 0 {
+            Label(item.readableDuration, systemImage: "headphones")
+                .monospacedDigit()
+                .foregroundStyle(Brand.secondary)
+                .fixedSize()
+                .accessibilityLabel("Durée d’écoute : \(item.readableDuration)")
+        }
+    }
+
+    private var source: some View {
+        HStack(spacing: 7) {
+            ChannelMark(item: item, size: 20)
+            if !ChannelMark.hasLogo(for: item) {
+                Text(item.channel).foregroundStyle(Brand.secondary)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(item.isTweet ? item.kindLabel : item.channel)
+    }
+
+    @ViewBuilder private var date: some View {
+        if let date = item.date {
+            Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) \(date, style: .time)")
+                .foregroundStyle(Brand.secondary).monospacedDigit()
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
+        }
+    }
+
+    @ViewBuilder private var compactDate: some View {
+        if let date = item.date {
+            Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) \(date, style: .time)")
+                .foregroundStyle(Brand.secondary)
+                .monospacedDigit()
+                .fixedSize(horizontal: true, vertical: false)
+                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
         }
     }
 }
@@ -61,17 +168,7 @@ struct PassageHeading: View {
                 .foregroundStyle(Brand.ink)
                 .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(titleIdentifier)
-            VStack(alignment: .leading, spacing: 8) {
-                PassageSource(item: item)
-                AdaptiveRow {
-                    KindBadge(item: item)
-                    Spacer(minLength: 0)
-                    if item.canPlay && item.durationSec > 0 {
-                        Label(item.readableDuration, systemImage: "headphones")
-                            .font(.subheadline).foregroundStyle(Brand.secondary)
-                    }
-                }
-            }
+            PassageMetadataRow(item: item)
         }
     }
 }
