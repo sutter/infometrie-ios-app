@@ -301,27 +301,6 @@ struct PodcastView: View {
                             model.player.seekToWord(word, sequenceID: detail.id)
                         }.id(detail.id)
                     }
-                    AppSection(title: "Tous les passages") {
-                        Text("Du plus ancien au plus récent").font(.subheadline).foregroundStyle(Brand.secondary)
-                        ForEach(Array(model.player.queue.enumerated()), id: \.element.id) { index, item in
-                            Button { model.player.select(index) } label: {
-                                HStack(spacing: 14) {
-                                    Image(systemName: index == model.player.index ? "speaker.wave.2.fill" : "play.circle")
-                                        .foregroundStyle(Brand.tint).font(.title2).accessibilityHidden(true)
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text(item.person).font(.headline).foregroundStyle(Brand.ink)
-                                        Text(item.title).font(.body).foregroundStyle(Brand.ink)
-                                        Text(item.durationLabel).font(.subheadline.monospacedDigit()).foregroundStyle(index == model.player.index ? Brand.secondaryOnSurface : Brand.secondary)
-                                    }
-                                }.padding(.vertical, 12).padding(.horizontal, 12)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(index == model.player.index ? Brand.selection : .clear)
-                                    .overlay(alignment: .bottom) { AppRule() }
-                                    .contentShape(Rectangle())
-                            }.buttonStyle(.plain).accessibilityIdentifier("queue-item-\(index)")
-                                .accessibilityAddTraits(index == model.player.index ? .isSelected : [])
-                        }
-                    }
                     if model.isDemo { DemoBanner() }
                 }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
