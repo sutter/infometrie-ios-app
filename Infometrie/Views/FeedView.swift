@@ -210,7 +210,6 @@ private struct FeedKindPicker: View {
                                 .frame(maxWidth: .infinity)
                         }
                     }
-                    .slidingTabUnderline()
                     scrollableChoices
                 }
             }
@@ -230,7 +229,6 @@ private struct FeedKindPicker: View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(Kind.allCases, id: \.self) { choice($0) }
         }
-        .slidingTabUnderline()
     }
 
     private var scrollableChoices: some View {
@@ -238,7 +236,6 @@ private struct FeedKindPicker: View {
             HStack(spacing: 0) {
                 ForEach(Kind.allCases, id: \.self) { choice($0) }
             }
-            .slidingTabUnderline()
         }
         .scrollIndicators(.hidden)
     }
@@ -246,7 +243,7 @@ private struct FeedKindPicker: View {
     private func choice(_ kind: Kind) -> some View {
         AppTabButton(title: kind.title, selected: selection == kind, icon: kind.symbol,
                      assetIcon: kind.assetSymbol, iconOnly: kind.assetSymbol != nil,
-                     iconTile: kind.assetSymbol != nil, compact: true, sharedUnderline: true) {
+                     iconTile: kind.assetSymbol != nil, compact: true) {
             var filters = model.filters
             filters.selectKind(kind.rawValue)
             guard filters != model.filters else { return }

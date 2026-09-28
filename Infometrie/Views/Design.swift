@@ -321,34 +321,6 @@ struct AppRule: View {
     }
 }
 
-/// Where the selected tab of a group sits, so the group draws one underline that slides between tabs.
-struct SelectedTabBounds: PreferenceKey {
-    static let defaultValue: Anchor<CGRect>? = nil
-    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) { value = value ?? nextValue() }
-}
-
-extension View {
-    /// One underline for a group of `AppTabButton(sharedUnderline: true)`, sliding to the selected tab.
-    /// It lives in the group's own coordinates and only it animates, so moving the whole group
-    /// (a pinned header jumping as the feed scrolls) never sends the tabs flying.
-    func slidingTabUnderline(_ color: Color = Brand.tint) -> some View {
-        overlayPreferenceValue(SelectedTabBounds.self) { anchor in
-            GeometryReader { proxy in
-                if let anchor {
-                    let rect = proxy[anchor]
-                    Capsule().fill(color)
-                        .frame(width: rect.width, height: 3)
-                        .position(x: rect.midX, y: rect.maxY - 1.5)
-                        // Keyed on the rect itself: it arrives through a preference, after the selection
-                        // change, and it only moves when the selected tab does.
-                        .motion(value: rect)
-                }
-            }
-            .accessibilityHidden(true)
-        }
-    }
-}
-
 /// A visible underline and a selected trait make the state independent of color.
 struct AppTabButton: View {
     let title: String
@@ -362,8 +334,6 @@ struct AppTabButton: View {
     var iconTile = false
     var accent: Color = Brand.tint
     var compact = false
-    /// Leave the underline to the group's `slidingTabUnderline`, which slides it between tabs.
-    var sharedUnderline = false
     let action: () -> Void
     @ScaledMetric(relativeTo: .footnote) private var tileSize = 20.0
 
@@ -395,9 +365,8 @@ struct AppTabButton: View {
             .padding(.horizontal, compact ? 4 : 12).padding(.vertical, 12)
             .frame(minWidth: 44, minHeight: 48)
             .overlay(alignment: .bottom) {
-                if selected && !sharedUnderline { Capsule().fill(accent).frame(height: 3) }
+                if selected { Capsule().fill(accent).frame(height: 3) }
             }
-            .anchorPreference(key: SelectedTabBounds.self, value: .bounds) { selected && sharedUnderline ? $0 : nil }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
