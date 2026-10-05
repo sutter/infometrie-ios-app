@@ -6,7 +6,6 @@ struct LoginView: View {
     @State private var showPassword = false
     @State private var selectedDevice: DeviceInfo?
     @State private var viewportHeight: CGFloat = 0
-    @Environment(\.horizontalSizeClass) private var sizeClass
     @FocusState private var focused: Field?
     private enum Field { case email, password }
 
@@ -58,8 +57,8 @@ struct LoginView: View {
                         .frame(maxWidth: .infinity)
                 }.padding(.horizontal, 24).padding(.bottom, 35).frame(maxWidth: 520)
                     .frame(maxWidth: .infinity)
-                    // On iPad the form sits in the middle of the screen; it still scrolls when taller.
-                    .frame(minHeight: sizeClass == .regular ? viewportHeight : 0)
+                    // The form sits in the middle of the screen; it still scrolls when taller.
+                    .frame(minHeight: viewportHeight)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
             .background(Brand.background).scrollDismissesKeyboard(.interactively)
