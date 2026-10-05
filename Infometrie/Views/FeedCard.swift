@@ -1,22 +1,17 @@
 import SwiftUI
 
 /// A compact timeline entry. Opening the row reveals the complete passage.
+/// Every kind shares one order: what it is and where it was heard, then who, then the passage.
 struct FeedCard: View {
     let item: FeedItem
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
-            if item.isCitation {
-                citationHeader
-                citationSource
-                citationSpeaker
-                title
-            } else {
-                byline
-                title
-                PassageMetadataRow(item: item)
-            }
+            header
+            source
+            speaker
+            title
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -33,13 +28,15 @@ struct FeedCard: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// A citation leads with what it is and where it was heard, then who is mentioned, then the passage.
-    private var citationHeader: some View {
+    /// The kind, how a citation was heard, and the channel logo on the right.
+    private var header: some View {
         AdaptiveRow {
             HStack(spacing: 8) {
-                KindBadge(item: item)
-                Text(item.citedBy.isEmpty ? "mention à l’antenne" : "mention par \(item.citedBy)")
-                    .font(.footnote).foregroundStyle(Brand.secondary)
+                KindBadge(item: item, font: .footnote.weight(.semibold))
+                if item.isCitation {
+                    Text(item.citedBy.isEmpty ? "mention à l’antenne" : "mention par \(item.citedBy)")
+                        .font(.footnote).foregroundStyle(Brand.secondary)
+                }
             }
             .fixedSize(horizontal: false, vertical: true)
             if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
@@ -47,7 +44,8 @@ struct FeedCard: View {
         }
     }
 
-    private var citationSource: some View {
+    /// Date, channel and medium on the left, listening duration on the right.
+    private var source: some View {
         AdaptiveRow {
             HStack(spacing: 8) {
                 PassageDate(item: item)
@@ -61,7 +59,8 @@ struct FeedCard: View {
         .font(.footnote)
     }
 
-    private var citationSpeaker: some View {
+    /// The person and their party on one line, then their role when it adds something.
+    private var speaker: some View {
         let party = item.party.trimmingCharacters(in: .whitespacesAndNewlines)
         let role = item.role.trimmingCharacters(in: .whitespacesAndNewlines)
         let repeatsParty = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
@@ -72,46 +71,6 @@ struct FeedCard: View {
                 .lineLimit(2)
             if !role.isEmpty && (party.isEmpty || !repeatsParty) {
                 Text(role).font(.footnote).foregroundStyle(Brand.secondary).lineLimit(2)
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var byline: some View {
-        HStack(spacing: 9) {
-            initialsAvatar
-            speaker
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var initialsAvatar: some View {
-        Text(item.initials)
-            .font(.system(size: 12, weight: .semibold))
-            // Small text on the shaded circle needs the reinforced secondary to reach 4.5:1.
-            .foregroundStyle(Brand.secondaryOnSurface)
-            .frame(width: 36, height: 36)
-            .background(Brand.surface, in: Circle())
-            .accessibilityHidden(true)
-    }
-
-    private var speaker: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            // Two lines at most: a long name or role wraps at large sizes instead of being cut.
-            Text(item.person)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Brand.ink)
-                .lineLimit(2)
-            let role = item.role.trimmingCharacters(in: .whitespacesAndNewlines)
-            let party = item.party.trimmingCharacters(in: .whitespacesAndNewlines)
-            let overlaps = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
-                || party.range(of: role, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
-            let details = role.isEmpty ? party : party.isEmpty || overlaps ? role : "\(role) · \(party)"
-            if !details.isEmpty {
-                Text(details)
-                    .font(.footnote)
-                    .foregroundStyle(Brand.secondary)
-                    .lineLimit(2)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
