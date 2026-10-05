@@ -166,89 +166,92 @@ private struct FeedScrollOverflow: ViewModifier {
     }
 }
 
-/// Applies only the passage type through the same filters as the full editor.
+/// Applies only the passage types through the same filters as the full editor, one checkbox per type.
 private struct FeedKindPicker: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
+    @ScaledMetric(relativeTo: .subheadline) private var tileSize = 20.0
 
     private enum Kind: Int, CaseIterable {
-        case all, interventions, citations, tweets
+        case interventions = 1, citations, tweets
         var title: String {
             switch self {
-            case .all: "Tous"
             case .interventions: "Interventions"
             case .citations: "Citations"
-            case .tweets: "X"
+            case .tweets: "Publications X"
             }
         }
-        var symbol: String? {
-            switch self {
-            case .all: "square.grid.2x2"
-            case .interventions: "waveform"
-            case .citations: "quote.bubble"
-            case .tweets: nil
-            }
-        }
-        /// X is shown by its official logo alone, on an ink tile so it stands out like in the feed cards.
-        var assetSymbol: String? { self == .tweets ? "x.logo" : nil }
-        var accessibilityLabel: String { self == .all ? "Tous les contenus" : self == .tweets ? "Publications X" : title }
     }
 
-    private var selection: Kind? {
-        model.filters.kindSelection.flatMap(Kind.init(rawValue:))
+    private func isChecked(_ kind: Kind) -> Bool {
+        switch kind {
+        case .interventions: model.filters.interventions
+        case .citations: model.filters.citations
+        case .tweets: model.filters.tweets
+        }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if dynamicType.isAccessibilitySize { verticalChoices }
-            else {
+        Group {
+            if dynamicType.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 4) { choices }
+            } else {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 0) {
-                        ForEach(Kind.allCases, id: \.self) { kind in
-                            choice(kind).fixedSize(horizontal: true, vertical: false)
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                    scrollableChoices
+                    HStack(spacing: 16) { choices }
+                    ScrollView(.horizontal) { HStack(spacing: 16) { choices } }
+                        .scrollIndicators(.hidden)
                 }
             }
-            if selection == nil {
-                Text(model.filters.kindSummary).font(.subheadline).foregroundStyle(Brand.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
         }
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sensoryFeedback(.selection, trigger: selection)
+        .sensoryFeedback(.selection, trigger: model.filters.selectedKinds)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Types de passages")
         .accessibilityIdentifier("feed-kind-picker")
     }
 
-    private var verticalChoices: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ForEach(Kind.allCases, id: \.self) { choice($0) }
-        }
+    private var choices: some View {
+        ForEach(Kind.allCases, id: \.self) { checkbox($0) }
     }
 
-    private var scrollableChoices: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 0) {
-                ForEach(Kind.allCases, id: \.self) { choice($0) }
+    private func checkbox(_ kind: Kind) -> some View {
+        let checked = isChecked(kind)
+        // Unchecking the last type would empty the feed, so it stays checked.
+        let isLast = checked && model.filters.selectedKinds.count == 1
+        return Button { toggle(kind) } label: {
+            HStack(spacing: 8) {
+                Image(systemName: checked ? "checkmark.square.fill" : "square")
+                    .font(.title3).foregroundStyle(checked ? Brand.tint : Brand.secondary)
+                // X is shown by its official logo alone, on an ink tile like in the feed cards.
+                if kind == .tweets {
+                    MarkTile(image: Image("x.logo"), size: tileSize)
+                } else {
+                    Text(kind.title)
+                        .font(.subheadline.weight(checked ? .semibold : .regular))
+                        .foregroundStyle(checked ? Brand.ink : Brand.secondary)
+                }
             }
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(minWidth: 44, minHeight: 48)
+            .contentShape(Rectangle())
         }
-        .scrollIndicators(.hidden)
+        .buttonStyle(.plain)
+        .disabled(isLast)
+        .accessibilityLabel(kind.title)
+        .accessibilityValue(checked ? "Coché" : "Non coché")
+        .accessibilityHint(isLast ? "Au moins un type reste coché" : "")
+        .accessibilityIdentifier("feed-kind-\(kind.rawValue)")
     }
 
-    private func choice(_ kind: Kind) -> some View {
-        AppTabButton(title: kind.title, selected: selection == kind, icon: kind.symbol,
-                     assetIcon: kind.assetSymbol, iconOnly: kind.assetSymbol != nil,
-                     iconTile: kind.assetSymbol != nil, compact: true) {
-            var filters = model.filters
-            filters.selectKind(kind.rawValue)
-            guard filters != model.filters else { return }
-            Task { await model.apply(filters) }
+    private func toggle(_ kind: Kind) {
+        var filters = model.filters
+        switch kind {
+        case .interventions: filters.interventions.toggle()
+        case .citations: filters.citations.toggle()
+        case .tweets: filters.tweets.toggle()
         }
-        .accessibilityLabel(kind.accessibilityLabel)
-        .accessibilityIdentifier("feed-kind-\(kind.rawValue)")
+        guard filters.hasKinds else { return }
+        Task { await model.apply(filters) }
     }
 }

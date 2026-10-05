@@ -102,7 +102,7 @@ final class InfometrieUITests: XCTestCase {
         app.launch()
         submitLogin(in: app, password: "valide")
         XCTAssertTrue(app.staticTexts["3 passages"].waitForExistence(timeout: 10))
-        app.buttons["feed-kind-3"].tap()
+        showKinds([3], in: app)
         XCTAssertTrue(app.buttons["feed-item-903"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["1 passage"].exists)
         XCTAssertFalse(app.buttons["start-podcast"].isEnabled)
@@ -117,7 +117,7 @@ final class InfometrieUITests: XCTestCase {
         capture("21-publication-x", app: app)
         app.navigationBars["Publication X"].buttons.element(boundBy: 0).tap()
         for (selection, id) in [(1, 901), (2, 902), (3, 903)] {
-            app.buttons["feed-kind-\(selection)"].tap()
+            showKinds([selection], in: app)
             XCTAssertTrue(app.buttons["feed-item-\(id)"].waitForExistence(timeout: 5))
             XCTAssertTrue(app.staticTexts["1 passage"].exists)
         }
@@ -131,7 +131,7 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["confirm-save-search"].tap()
         XCTAssertTrue(app.staticTexts[String(name)].waitForExistence(timeout: 5))
         app.terminate(); app.launch()
-        XCTAssertTrue(app.buttons["feed-kind-0"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["feed-kind-1"].waitForExistence(timeout: 10))
         navigationButton("Mes suivis", in: app).tap()
         XCTAssertTrue(app.staticTexts[String(name)].waitForExistence(timeout: 5))
         app.buttons["saved-actions-\(name)"].tap()
@@ -140,8 +140,8 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.buttons["filter-kind-3"].isSelected)
         app.buttons["apply-search"].tap()
         XCTAssertTrue(app.buttons["feed-item-903"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["feed-kind-3"].isSelected)
-        app.buttons["feed-kind-0"].tap()
+        assertKinds([3], in: app)
+        showKinds([1, 2, 3], in: app)
         XCTAssertTrue(app.staticTexts["3 passages"].waitForExistence(timeout: 5))
     }
 
@@ -314,7 +314,7 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["player-toggle"].tap()
         wait(app.buttons["player-toggle"], key: "label", equals: "Écouter")
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.buttons["feed-kind-0"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["feed-kind-1"].waitForExistence(timeout: 5))
         reveal(app.buttons["start-podcast"], in: app, down: true)
         app.buttons["start-podcast"].tap()
         XCTAssertTrue(app.buttons["close-podcast"].waitForExistence(timeout: 5))
@@ -408,14 +408,14 @@ final class InfometrieUITests: XCTestCase {
         capture("17-filtres-citations", app: app)
         app.buttons["apply-search"].tap()
         XCTAssertTrue(app.buttons["feed-kind-2"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["feed-kind-2"].isSelected)
+        assertKinds([2], in: app)
         XCTAssertFalse(app.buttons["feed-item-1"].exists)
         capture("18-fil-citations", app: app)
         app.buttons["feed-item-2"].tap()
         XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
         capture("17-citation-claire", app: app)
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
-        app.buttons["feed-kind-0"].tap()
+        showKinds([1, 2, 3], in: app)
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 5))
         // Cancelling the sheet must leave the applied criteria unchanged.
         app.buttons["edit-filters"].tap()
@@ -469,15 +469,15 @@ final class InfometrieUITests: XCTestCase {
         capture("15-fil-filtre", app: app)
 
         // A type change preserves both personality and party restrictions.
-        app.buttons["feed-kind-2"].tap()
+        showKinds([2], in: app)
         XCTAssertTrue(app.staticTexts["Aucun passage pour le moment"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["start-podcast"].isEnabled)
         XCTAssertTrue(app.buttons["clear-filters"].exists)
         capture("18-fil-citations-vide", app: app)
-        app.buttons["feed-kind-0"].tap()
+        showKinds([1, 2, 3], in: app)
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["feed-item-2"].exists, "Tous ne doit pas réinitialiser les partis")
-        XCTAssertFalse(app.buttons["feed-item-3"].exists, "Tous ne doit pas réinitialiser les personnalités")
+        XCTAssertFalse(app.buttons["feed-item-2"].exists, "Recocher les types ne doit pas réinitialiser les partis")
+        XCTAssertFalse(app.buttons["feed-item-3"].exists, "Recocher les types ne doit pas réinitialiser les personnalités")
 
         app.buttons["edit-filters"].tap()
         reveal(app.buttons["reset-search"], in: app, down: false)
@@ -550,7 +550,7 @@ final class InfometrieUITests: XCTestCase {
             XCTAssertLessThanOrEqual(apply.frame.maxX, app.frame.maxX)
             apply.tap()
             XCTAssertTrue(app.buttons["feed-kind-1"].waitForExistence(timeout: 5))
-            XCTAssertTrue(app.buttons["feed-kind-1"].isSelected)
+            assertKinds([1], in: app)
             app.terminate()
         }
     }
@@ -566,7 +566,7 @@ final class InfometrieUITests: XCTestCase {
         if app.buttons["navigation-feed"].exists {
             XCTAssertFalse(app.tabBars.firstMatch.exists, "L’iPad ne doit afficher qu’une navigation principale")
         }
-        citations.tap()
+        showKinds([2], in: app)
         XCTAssertTrue(app.staticTexts["2 passages"].waitForExistence(timeout: 5))
 
         let saved = navigationButton("Mes suivis", in: app)
@@ -580,12 +580,12 @@ final class InfometrieUITests: XCTestCase {
         let feed = navigationButton("Le fil", in: app)
         feed.tap()
         XCTAssertTrue(citations.waitForExistence(timeout: 5))
-        XCTAssertTrue(citations.isSelected)
+        assertKinds([2], in: app)
         XCTAssertTrue(app.staticTexts["2 passages"].exists)
         app.buttons["feed-item-2"].tap()
         XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(citations.isSelected)
+        assertKinds([2], in: app)
         capture("19-navigation-principale", app: app)
     }
 
@@ -594,25 +594,24 @@ final class InfometrieUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--signed-in", "--reset-searches", "-appearance", "light"]
         app.launch()
-        let all = app.buttons["feed-kind-0"]
         let interventions = app.buttons["feed-kind-1"]
         let citations = app.buttons["feed-kind-2"]
-        XCTAssertTrue(all.waitForExistence(timeout: 10))
-        XCTAssertTrue(all.isSelected)
+        XCTAssertTrue(interventions.waitForExistence(timeout: 10))
+        assertKinds([1, 2, 3], in: app)
         XCTAssertTrue(app.staticTexts["7 passages"].exists)
         capture("18-fil-tous", app: app)
 
-        citations.tap()
-        XCTAssertTrue(citations.isSelected)
-        XCTAssertFalse(all.isSelected)
+        showKinds([2], in: app)
         XCTAssertTrue(app.staticTexts["2 passages"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["feed-item-1"].exists)
+        XCTAssertFalse(citations.isEnabled, "Le dernier type coché reste coché")
         XCTAssertFalse(app.buttons["clear-filters"].exists, "Le type seul ne doit pas ajouter un récapitulatif redondant")
         capture("18-fil-citations", app: app)
         app.buttons["feed-item-2"].tap()
         XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(citations.isSelected, "Le retour au fil conserve le type choisi")
+        XCTAssertTrue(citations.waitForExistence(timeout: 5))
+        assertKinds([2], in: app, "Le retour au fil conserve les types cochés")
 
         app.buttons["edit-filters"].tap()
         reveal(app.buttons["filter-kind-2"], in: app, down: false)
@@ -620,16 +619,18 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["filter-kind-1"].tap()
         app.buttons["apply-search"].tap()
         XCTAssertTrue(interventions.waitForExistence(timeout: 5))
-        XCTAssertTrue(interventions.isSelected, "Le panneau doit actualiser le sélecteur du fil")
+        assertKinds([1], in: app, "Le panneau doit actualiser les cases du fil")
         XCTAssertTrue(app.staticTexts["3 passages"].exists)
         XCTAssertFalse(app.buttons["feed-item-2"].exists)
         capture("18-fil-interventions", app: app)
 
-        reveal(all, in: app, down: true)
-        all.tap()
+        // Checkboxes combine types, which the former tabs could not do.
+        showKinds([1, 3], in: app)
+        XCTAssertTrue(app.staticTexts["5 passages"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["feed-item-2"].exists)
+        showKinds([1, 2, 3], in: app)
         XCTAssertTrue(app.staticTexts["7 passages"].waitForExistence(timeout: 5))
-        citations.tap()
-        XCTAssertTrue(citations.isSelected)
+        showKinds([2], in: app)
         XCTAssertTrue(app.staticTexts["2 passages"].waitForExistence(timeout: 5))
         reveal(app.buttons["start-podcast"], in: app, down: true)
         app.buttons["start-podcast"].tap()
@@ -643,7 +644,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertFalse(app.buttons["player-next"].isEnabled)
         app.buttons["close-podcast"].tap()
         XCTAssertTrue(citations.waitForExistence(timeout: 5))
-        XCTAssertTrue(citations.isSelected)
+        assertKinds([2], in: app)
     }
 
     @MainActor
@@ -654,28 +655,22 @@ final class InfometrieUITests: XCTestCase {
             if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
             app.launch()
             let suffix = largeText ? "grand-texte" : "sombre"
-            let citations = app.buttons["feed-kind-2"]
-            XCTAssertTrue(citations.waitForExistence(timeout: 10))
-            reveal(citations, in: app, down: false)
-            citations.tap()
-            XCTAssertTrue(citations.isSelected)
+            XCTAssertTrue(app.buttons["feed-kind-2"].waitForExistence(timeout: 10))
+            showKinds([2], in: app)
+            assertKinds([2], in: app)
             capture("18-fil-citations-\(suffix)", app: app)
-            for index in 0...3 {
+            for index in 1...3 {
                 let choice = app.buttons["feed-kind-\(index)"]
+                reveal(choice, in: app, down: false)
                 XCTAssertGreaterThanOrEqual(choice.frame.height, 48)
                 XCTAssertGreaterThanOrEqual(choice.frame.minX, app.frame.minX + 20)
                 XCTAssertLessThanOrEqual(choice.frame.maxX, app.frame.maxX - 20)
             }
-            let interventions = app.buttons["feed-kind-1"]
-            reveal(interventions, in: app, down: true)
-            interventions.tap()
-            XCTAssertTrue(interventions.isSelected)
-            XCTAssertFalse(citations.isSelected)
+            showKinds([1], in: app)
+            assertKinds([1], in: app)
             capture("18-fil-interventions-\(suffix)", app: app)
-            let all = app.buttons["feed-kind-0"]
-            reveal(all, in: app, down: true)
-            all.tap()
-            XCTAssertTrue(all.isSelected)
+            showKinds([1, 2, 3], in: app)
+            assertKinds([1, 2, 3], in: app)
             capture("18-fil-tous-\(suffix)", app: app)
             app.terminate()
         }
@@ -883,6 +878,31 @@ final class InfometrieUITests: XCTestCase {
         let identifiers = ["Le fil": "navigation-feed", "Mes suivis": "navigation-saved", "Compte": "navigation-account"]
         let editorial = app.buttons[identifiers[title] ?? ""]
         return editorial.exists ? editorial : app.tabBars.buttons[title]
+    }
+
+    /// Checks exactly the given feed types: 1 interventions, 2 citations, 3 Publications X.
+    @MainActor private func showKinds(_ kinds: Set<Int>, in app: XCUIApplication) {
+        // Check before unchecking: the last checked type cannot be unchecked.
+        for index in kinds.sorted() where !isKindChecked(index, in: app) { toggleKind(index, in: app) }
+        for index in [1, 2, 3] where !kinds.contains(index) && isKindChecked(index, in: app) { toggleKind(index, in: app) }
+    }
+
+    @MainActor private func isKindChecked(_ index: Int, in app: XCUIApplication) -> Bool {
+        app.buttons["feed-kind-\(index)"].value as? String == "Coché"
+    }
+
+    @MainActor private func toggleKind(_ index: Int, in app: XCUIApplication) {
+        let box = app.buttons["feed-kind-\(index)"]
+        let expected = isKindChecked(index, in: app) ? "Non coché" : "Coché"
+        reveal(box, in: app, down: false)
+        box.tap()
+        wait(box, key: "value", equals: expected)
+    }
+
+    @MainActor private func assertKinds(_ kinds: Set<Int>, in app: XCUIApplication, _ message: String = "") {
+        for index in 1...3 {
+            XCTAssertEqual(isKindChecked(index, in: app), kinds.contains(index), "feed-kind-\(index) \(message)")
+        }
     }
 
     /// A sequence page prepares its player on opening: wait until it can play, then start listening.
