@@ -137,8 +137,8 @@ struct FeedView: View {
             Label("Tout écouter", systemImage: "play.fill")
                 .font(.subheadline.weight(.semibold))
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 14).padding(.vertical, 10)
-                .frame(minHeight: 48)
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .frame(minHeight: 44)
                 // Outlined, like the secondary action buttons: it stays findable without outweighing the count.
                 .foregroundStyle(Brand.ink)
                 .background(Brand.card, in: Capsule())
@@ -314,20 +314,33 @@ private struct FeedViewOptions: View {
         } message: { Text(comingSoon ?? "") }
     }
 
+    /// Underlined text tabs, like Actifs / Archivés: lighter than a gray track for choices that mostly wait.
     private var period: some View {
-        ChoiceGroup(label: "Période", selected: "live", options: [
-            .init(id: "live", title: "Live", accessibilityLabel: "Live, dernières 24 heures", isAvailable: true),
-            .init(id: "7", title: "7 j", accessibilityLabel: "7 jours", isAvailable: false),
-            .init(id: "30", title: "30 j", accessibilityLabel: "30 jours", isAvailable: false)
-        ], identifier: "feed-period") { _ in
-            comingSoon = "Les périodes de 7 et 30 jours arriveront avec une prochaine version du service."
+        HStack(spacing: 8) {
+            periodTab("Live", label: "Live, dernières 24 heures", id: "live", available: true)
+            periodTab("7 j", label: "7 jours", id: "7", available: false)
+            periodTab("30 j", label: "30 jours", id: "30", available: false)
         }
+        // The tabs' inner padding would push "Live" past the checkboxes' edge.
+        .padding(.leading, -4)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Période")
     }
 
+    private func periodTab(_ title: String, label: String, id: String, available: Bool) -> some View {
+        AppTabButton(title: title, selected: id == "live", compact: true) {
+            if !available { comingSoon = "Les périodes de 7 et 30 jours arriveront avec une prochaine version du service." }
+        }
+        .accessibilityLabel(label)
+        .accessibilityValue(available ? "" : "Bientôt disponible")
+        .accessibilityIdentifier("feed-period-\(id)")
+    }
+
+    /// Icons in a small capsule, so the display reads apart from the period tabs.
     private var display: some View {
         ChoiceGroup(label: "Affichage", selected: "list", options: [
-            .init(id: "list", title: "Liste", accessibilityLabel: "Liste", isAvailable: true),
-            .init(id: "chart", title: "Graphique", accessibilityLabel: "Synthèse graphique", isAvailable: false)
+            .init(id: "list", title: "Liste", symbol: "list.bullet", accessibilityLabel: "Liste", isAvailable: true),
+            .init(id: "chart", title: "Graphique", symbol: "chart.bar.xaxis", accessibilityLabel: "Synthèse graphique", isAvailable: false)
         ], identifier: "feed-display") { _ in
             comingSoon = "La synthèse graphique arrivera avec une prochaine version du service."
         }
@@ -339,6 +352,7 @@ private struct ChoiceGroup: View {
     struct Option: Identifiable {
         let id: String
         let title: String
+        var symbol: String? = nil
         let accessibilityLabel: String
         let isAvailable: Bool
     }
@@ -353,8 +367,13 @@ private struct ChoiceGroup: View {
             ForEach(options) { option in
                 let isSelected = option.id == selected
                 Button { if !option.isAvailable { onUnavailable(option) } } label: {
-                    Text(option.title)
-                        .font(.footnote.weight(isSelected ? .semibold : .regular))
+                    Group {
+                        if let symbol = option.symbol {
+                            Image(systemName: symbol).font(.subheadline.weight(.semibold)).frame(minWidth: 20)
+                        } else {
+                            Text(option.title).font(.footnote.weight(isSelected ? .semibold : .regular))
+                        }
+                    }
                         .foregroundStyle(isSelected ? Brand.ink : Brand.secondaryOnSurface)
                         .fixedSize()
                         .padding(.horizontal, 12).frame(minHeight: 44)
