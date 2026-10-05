@@ -201,20 +201,6 @@ private struct FeedKindPicker: View {
 
     private enum Kind: Int, CaseIterable {
         case interventions = 1, citations, tweets
-        var color: Color {
-            switch self {
-            case .interventions: Brand.intervention
-            case .citations: Brand.citation
-            case .tweets: Brand.ink
-            }
-        }
-        var wash: Color {
-            switch self {
-            case .interventions: Brand.interventionWash
-            case .citations: Brand.citationWash
-            case .tweets: Brand.surface
-            }
-        }
         var title: String {
             switch self {
             case .interventions: "Interventions"
@@ -262,9 +248,9 @@ private struct FeedKindPicker: View {
         let isLast = checked && model.filters.selectedKinds.count == 1
         return Button { toggle(kind) } label: {
             HStack(spacing: 6) {
-                // Each box takes its kind's color, matching the tags on the rows it shows.
+                // Green, like every control: the color says "you can act", not the kind.
                 Image(systemName: checked ? "checkmark.square.fill" : "square")
-                    .font(.body).foregroundStyle(checked ? kind.color : Brand.secondary)
+                    .font(.body).foregroundStyle(checked ? Brand.accent : Brand.secondary)
                 // The bare X mark: an ink tile beside a filled checkbox would read as a second box.
                 if kind == .tweets {
                     Image("x.logo").font(.subheadline.weight(.semibold))
@@ -276,7 +262,7 @@ private struct FeedKindPicker: View {
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
-            .chip(selected: checked, wash: kind.wash)
+            .chip(selected: checked)
         }
         .buttonStyle(.plain)
         .disabled(isLast)

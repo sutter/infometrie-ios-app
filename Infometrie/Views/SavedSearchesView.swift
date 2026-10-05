@@ -38,11 +38,11 @@ struct SavedSearchesView: View {
                             .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                         Text(search.filters.isEmpty ? "Toutes les personnalités" : search.filters.summary)
                             .font(.subheadline).foregroundStyle(Brand.secondary)
-                        // The kinds in their colors, as in the feed.
+                        // The kinds as tags, as in the feed.
                         HStack(spacing: 6) {
-                            if search.filters.interventions { KindTag(kind: "intervention", label: "Interventions") }
-                            if search.filters.citations { KindTag(kind: "citation", label: "Citations") }
-                            if search.filters.tweets { KindTag(kind: "tweet", label: "Publications X") }
+                            if search.filters.interventions { KindTag(label: "Interventions") }
+                            if search.filters.citations { KindTag(label: "Citations") }
+                            if search.filters.tweets { KindTag(label: "Publications X") }
                         }
                         .accessibilityElement(children: .combine)
                         AdaptiveRow {

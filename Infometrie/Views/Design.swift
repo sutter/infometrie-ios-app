@@ -22,16 +22,13 @@ enum Brand {
     static let sidebar = color(light: 0xFFFFFF, dark: 0x101113)
     static let sidebarRule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
-    /// One brand green (the client's color) for the wordmark and interventions, citations in graphite:
-    /// a single hue, never paired like the flag. Text at 5:1 or more on its wash, in both themes.
-    /// The brand green, also the color of listening: play, pause, skips and progress.
+    /// The brand green, the color of interaction only: what can be tapped, checked or played,
+    /// plus the wordmark. Read-only labels stay neutral. A single hue, never paired like the flag.
     static let accent = color(light: 0x17753A, dark: 0x4ADE80)
     /// Text and icons on `accent`: 5.8:1 in light, 9.9:1 in dark.
     static let onAccent = color(light: 0xFFFFFF, dark: 0x0B1F12)
-    static let intervention = accent
-    static let interventionWash = color(light: 0xE7F5EA, dark: 0x0F2A18)
-    static let citation = color(light: 0x3A3D42, dark: 0xD4D6DA)
-    static let citationWash = color(light: 0xEDEEF0, dark: 0x26282C)
+    /// The pale green behind a selected chip.
+    static let accentWash = color(light: 0xE7F5EA, dark: 0x0F2A18)
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
     static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
@@ -54,7 +51,7 @@ struct Wordmark: View {
     var size: CGFloat = 22
     var body: some View {
         // Two tones: "Info" in ink, "Métrie" in the brand green.
-        (Text("Info").foregroundStyle(Brand.ink) + Text("Métrie").foregroundStyle(Brand.intervention))
+        (Text("Info").foregroundStyle(Brand.ink) + Text("Métrie").foregroundStyle(Brand.accent))
         .font(.system(size: size, weight: .bold))
         .tracking(-0.7)
         .fixedSize(horizontal: true, vertical: false)
@@ -123,7 +120,7 @@ struct KindBadge: View {
     var body: some View {
         Label(item.kindLabel, systemImage: item.kindSymbol)
             .font(.subheadline.weight(.medium))
-            .foregroundStyle(item.kindColor)
+            .foregroundStyle(Brand.ink)
     }
 }
 
@@ -298,10 +295,10 @@ extension View {
         modifier(AppNavigationTitle(title: title))
     }
 
-    /// A capsule chip: tinted when selected, outlined otherwise; 40 pt drawn, 48 pt to touch.
-    func chip(selected: Bool, wash: Color = Brand.surface) -> some View {
+    /// A capsule chip: pale green when selected, outlined otherwise; 40 pt drawn, 48 pt to touch.
+    func chip(selected: Bool) -> some View {
         padding(.horizontal, 12).frame(minHeight: 40)
-            .background(selected ? wash : .clear, in: Capsule())
+            .background(selected ? Brand.accentWash : .clear, in: Capsule())
             .overlay { Capsule().strokeBorder(selected ? .clear : Brand.rule) }
             .frame(minWidth: 44, minHeight: 48)
             .contentShape(Rectangle())
