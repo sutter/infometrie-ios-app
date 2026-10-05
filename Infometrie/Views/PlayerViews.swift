@@ -163,7 +163,7 @@ private struct SequenceDisclosure<Content: View>: View {
                 Text(title).font(.headline)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .foregroundStyle(Brand.tint).frame(minHeight: 56).padding(.vertical, 4)
+            .foregroundStyle(Brand.tint).frame(minHeight: 48)
         }
         .tint(Brand.tint)
         .overlay(alignment: .top) { AppRule() }

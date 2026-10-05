@@ -12,6 +12,7 @@ struct TranscriptView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicType
     @ScaledMetric(relativeTo: .body) private var textHeight = 250.0
+    @State private var textContentHeight: CGFloat?
     @State private var localReading = TranscriptReadingState()
     private let sharedReading: TranscriptReadingState?
     private var reading: TranscriptReadingState { sharedReading ?? localReading }
@@ -31,7 +32,11 @@ struct TranscriptView: View {
         largeTextTimeline = TranscriptTimeline(detail: detail, timings: timings, maximumWordsPerPassage: 4)
     }
 
-    private var activeWord: Int? { timeline.wordIndex(at: isCurrent ? model.player.instant : nil) }
+    /// No word is marked before listening starts: a highlighted first word at rest is only noise.
+    private var activeWord: Int? {
+        guard isCurrent, model.player.isPlaying || model.player.position > 0 else { return nil }
+        return timeline.wordIndex(at: model.player.instant)
+    }
     private var canSeek: Bool { detail.item.canPlay && timeline.canSynchronize }
     /// Following is on by default and says nothing; the control appears only once scrolling suspended it.
     private var showsResume: Bool { canSeek && isCurrent && !reading.followsPlayback }
@@ -63,7 +68,6 @@ struct TranscriptView: View {
                 AppRule()
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 12) {
-                        positionStatus
                         Text("Verbatim").font(.headline).foregroundStyle(Brand.ink)
                             .accessibilityAddTraits(.isHeader)
                         Spacer(minLength: 0)
@@ -78,7 +82,9 @@ struct TranscriptView: View {
                             .accessibilityIdentifier("expand-transcript")
                         }
                     }
-                    textScroll.frame(height: min(textHeight, 380))
+                    .overlay(alignment: .topLeading) { positionStatus }
+                    // As tall as the text, up to the former fixed height: a short verbatim leaves no gap.
+                    textScroll.frame(height: min(textContentHeight ?? textHeight, textHeight, 380))
                 }.padding(.top, 4).padding(.bottom, 8)
                 if showsResume || notice != nil {
                     VStack(alignment: .leading, spacing: 10) {
@@ -127,6 +133,7 @@ struct TranscriptView: View {
                 }
                 if expanded, isCurrent, let error = model.player.error { ErrorNotice(message: error) }
             }.scrollTargetLayout().padding(.vertical, expanded ? 12 : 4)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textContentHeight = $0 }
         }
         .scrollEdgeEffectHidden(true)
         .accessibilityIdentifier("transcript-scroll")
