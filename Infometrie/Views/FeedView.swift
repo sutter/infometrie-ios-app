@@ -230,7 +230,9 @@ private struct FeedKindPicker: View {
                     .scrollClipDisabled()
             }
         }
-        .padding(.vertical, 8)
+        // The navigation bar already leaves room under the logo; the chips' invisible touch margin
+        // (48 pt around a 40 pt chip) tucks under it instead of widening the gap.
+        .padding(.top, -4).padding(.bottom, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sensoryFeedback(.selection, trigger: model.filters.selectedKinds)
         .accessibilityElement(children: .contain)
