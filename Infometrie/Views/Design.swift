@@ -22,11 +22,12 @@ enum Brand {
     static let sidebar = color(light: 0xFFFFFF, dark: 0x101113)
     static let sidebarRule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
-    /// Kind colors, from the brand's navy and red: text at 5.5:1 or more on its wash, in both themes.
-    static let intervention = color(light: 0x1E3A8A, dark: 0x9DB4FF)
-    static let interventionWash = color(light: 0xE6ECFA, dark: 0x1B2440)
-    static let citation = color(light: 0xB4232F, dark: 0xFF6B6B)
-    static let citationWash = color(light: 0xFCE8EA, dark: 0x3A1A1D)
+    /// Kind colors, teal and amber: hues no major French party has made its own, and never paired
+    /// like the flag. Text at 4.8:1 or more on its wash, in both themes.
+    static let intervention = color(light: 0x0F766E, dark: 0x5EEAD4)
+    static let interventionWash = color(light: 0xE6F4F1, dark: 0x0F2E2B)
+    static let citation = color(light: 0x92400E, dark: 0xFBBF24)
+    static let citationWash = color(light: 0xFBF0DC, dark: 0x3A2A0B)
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
     static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
@@ -48,8 +49,8 @@ enum Brand {
 struct Wordmark: View {
     var size: CGFloat = 22
     var body: some View {
-        // Two tones, as on the Android app: "Info" in navy, "Métrie" in red.
-        (Text("Info").foregroundStyle(Brand.intervention) + Text("Métrie").foregroundStyle(Brand.citation))
+        // Two tones: "Info" in ink, "Métrie" in the brand teal.
+        (Text("Info").foregroundStyle(Brand.ink) + Text("Métrie").foregroundStyle(Brand.intervention))
         .font(.system(size: size, weight: .bold))
         .tracking(-0.7)
         .fixedSize(horizontal: true, vertical: false)

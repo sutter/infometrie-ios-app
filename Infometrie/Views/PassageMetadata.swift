@@ -171,7 +171,7 @@ struct PassageHeading: View {
 }
 
 extension FeedItem {
-    /// Interventions in navy, citations in red, X in ink: the color says the kind at a glance.
+    /// Interventions in teal, citations in amber, X in ink: the color says the kind at a glance.
     var kindColor: Color { isCitation ? Brand.citation : kind == "intervention" ? Brand.intervention : Brand.ink }
     var kindWash: Color { isCitation ? Brand.citationWash : kind == "intervention" ? Brand.interventionWash : Brand.surface }
     var kindSymbol: String { isTweet ? "text.bubble" : isCitation ? "quote.bubble" : kind == "intervention" ? "waveform" : "doc.text" }
