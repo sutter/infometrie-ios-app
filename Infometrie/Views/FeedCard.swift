@@ -10,7 +10,7 @@ struct FeedCard: View {
         VStack(alignment: .leading, spacing: 9) {
             header
             source
-            speaker
+            PassageSpeaker(item: item)
             title
         }
         .padding(14)
@@ -80,23 +80,6 @@ struct FeedCard: View {
 
     /// The logo at the top names the channel; its name shows here only when no logo is bundled.
     private var channelLine: String { ChannelMark.hasLogo(for: item) ? "" : item.channel }
-
-    /// The person and their party on one line, then their role when it adds something.
-    private var speaker: some View {
-        let party = item.party.trimmingCharacters(in: .whitespacesAndNewlines)
-        let role = item.role.trimmingCharacters(in: .whitespacesAndNewlines)
-        let repeatsParty = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
-            || party.range(of: role, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
-        return VStack(alignment: .leading, spacing: 1) {
-            (Text(item.person).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink)
-                + Text(party.isEmpty ? "" : " · \(party)").font(.subheadline).foregroundStyle(Brand.secondary))
-                .lineLimit(2)
-            if !role.isEmpty && (party.isEmpty || !repeatsParty) {
-                Text(role).font(.footnote).foregroundStyle(Brand.secondary).lineLimit(2)
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
 
     private var displayTitle: String {
         let prefix = "(\(item.person))"

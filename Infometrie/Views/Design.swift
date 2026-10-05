@@ -202,18 +202,6 @@ struct ChannelMark: View {
     }
 }
 
-struct PersonAvatar: View {
-    let item: FeedItem
-    var size: CGFloat = 42
-    var body: some View {
-        Text(item.initials).font(.system(size: size * 0.32, weight: .semibold))
-            .foregroundStyle(Brand.tint)
-            .frame(width: size, height: size)
-            .background(Brand.surface, in: Circle())
-            .accessibilityHidden(true)
-    }
-}
-
 enum AppLayout {
     static let maximumWidth: CGFloat = 1100
     static let readingWidth: CGFloat = 760

@@ -64,6 +64,8 @@ struct TranscriptView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 12) {
                         positionStatus
+                        Text("Verbatim").font(.headline).foregroundStyle(Brand.ink)
+                            .accessibilityAddTraits(.isHeader)
                         Spacer(minLength: 0)
                         if let onExpand {
                             Button(action: onExpand) {

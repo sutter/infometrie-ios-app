@@ -1,109 +1,5 @@
 import SwiftUI
 
-/// Source, kind, date and duration on one line, shared by the feed cards and the passage page
-/// so both read the same way; it wraps only when the line does not fit.
-struct PassageMetadataRow: View {
-    let item: FeedItem
-    @Environment(\.dynamicTypeSize) private var dynamicType
-
-    var body: some View { metadata }
-
-    private var metadata: some View {
-        Group {
-            if dynamicType.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 6) {
-                    sourceAndKind
-                    date
-                    duration
-                }
-            } else {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 10) {
-                        sourceAndKind
-                        Spacer(minLength: 4)
-                        timeAndDuration
-                    }
-                    HStack(spacing: 6) {
-                        compactSourceAndKind
-                        Spacer(minLength: 2)
-                        compactTimeAndDuration
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        sourceAndKind
-                        HStack(spacing: 8) {
-                            date
-                            Spacer(minLength: 4)
-                            duration
-                        }
-                    }
-                }
-            }
-        }
-        .font(.footnote)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var compactSourceAndKind: some View {
-        HStack(spacing: 6) {
-            ChannelMark(item: item, size: 16)
-            if !ChannelMark.hasLogo(for: item) {
-                Text(item.channel)
-                    .foregroundStyle(Brand.secondary)
-                    .lineLimit(1)
-            }
-            if !item.isTweet { kindMark }
-        }
-        .font(.caption)
-        .fixedSize(horizontal: true, vertical: false)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(item.channel), \(item.kindLabel)")
-    }
-
-    private var compactTimeAndDuration: some View {
-        HStack(spacing: 6) {
-            compactDate
-            if item.canPlay && item.durationSec > 0 {
-                duration
-            }
-        }
-        .font(.caption)
-        .fixedSize(horizontal: true, vertical: false)
-    }
-
-    /// The X tile already says what a publication is, so it gets no kind icon.
-    private var sourceAndKind: some View {
-        HStack(spacing: 8) {
-            source
-            if !item.isTweet { kindMark }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var kindMark: some View {
-        Label(item.kindLabel, systemImage: item.kindSymbol)
-            .labelStyle(.iconOnly)
-            .foregroundStyle(Brand.secondary)
-            .frame(width: 24, height: 24)
-            .accessibilityLabel(item.kindLabel)
-    }
-
-    private var timeAndDuration: some View {
-        HStack(spacing: 6) {
-            date
-            duration
-        }
-        .fixedSize(horizontal: true, vertical: false)
-    }
-
-    private var duration: some View { PassageDuration(item: item) }
-
-    private var source: some View { ChannelSource(item: item) }
-
-    private var date: some View { PassageDate(item: item).fixedSize(horizontal: false, vertical: true) }
-
-    private var compactDate: some View { PassageDate(item: item).fixedSize(horizontal: true, vertical: false) }
-}
-
 /// The passage date as every variant writes it: `25/09 14:39`.
 struct PassageDate: View {
     let item: FeedItem
@@ -150,39 +46,78 @@ struct ChannelSource: View {
     }
 }
 
-struct PassageByline: View {
+/// The person and their party on one line, then their role when it adds something.
+struct PassageSpeaker: View {
     let item: FeedItem
-    private var details: String {
-        var values = [item.role, item.party].filter { !$0.isEmpty }
-        if values.count == 2, values[0] == values[1] { values.removeLast() }
-        return values.joined(separator: " · ")
-    }
+    var nameFont: Font = .subheadline
+    var lineLimit: Int? = 2
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            PersonAvatar(item: item, size: 44)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(item.person).font(.headline).foregroundStyle(Brand.ink)
-                if !details.isEmpty { Text(details).font(.subheadline).foregroundStyle(Brand.secondary) }
-            }.fixedSize(horizontal: false, vertical: true)
+        let party = item.party.trimmingCharacters(in: .whitespacesAndNewlines)
+        let role = item.role.trimmingCharacters(in: .whitespacesAndNewlines)
+        let repeatsParty = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
+            || party.range(of: role, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
+        VStack(alignment: .leading, spacing: 1) {
+            (Text(item.person).font(nameFont.weight(.semibold)).foregroundStyle(Brand.ink)
+                + Text(party.isEmpty ? "" : " · \(party)").font(nameFont).foregroundStyle(Brand.secondary))
+                .lineLimit(lineLimit)
+            if !role.isEmpty && (party.isEmpty || !repeatsParty) {
+                Text(role).font(.footnote).foregroundStyle(Brand.secondary).lineLimit(lineLimit)
+            }
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 
+/// The top of a passage page, in the order of the user's reference: kind, date and duration with the
+/// channel logo on the right; the person, party and role; then what was said ("Propos").
 struct PassageHeading: View {
     let item: FeedItem
     let titleIdentifier: String
+    @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            PassageByline(item: item)
-            Text(item.title)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(Brand.ink)
-                .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier(titleIdentifier)
-            PassageMetadataRow(item: item)
+        VStack(alignment: .leading, spacing: 14) {
+            facts
+            PassageSpeaker(item: item, nameFont: .headline, lineLimit: nil)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Propos").font(.subheadline.weight(.semibold)).foregroundStyle(Brand.secondary)
+                Text(item.title)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Brand.ink)
+                    .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier(titleIdentifier)
+            }
         }
+    }
+
+    /// One line when it fits; otherwise kind and logo, then date and duration.
+    @ViewBuilder private var facts: some View {
+        let kind = Text(item.kindLabel).font(.footnote.weight(.semibold)).foregroundStyle(item.kindColor)
+        Group {
+            if dynamicType.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 6) {
+                    kind; PassageDate(item: item); channelName; PassageDuration(item: item); ChannelMark(item: item)
+                }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) {
+                        kind; PassageDate(item: item); channelName; PassageDuration(item: item)
+                        Spacer(minLength: 0); ChannelMark(item: item)
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 10) { kind; Spacer(minLength: 0); ChannelMark(item: item) }
+                        HStack(spacing: 10) { PassageDate(item: item); channelName; Spacer(minLength: 0); PassageDuration(item: item) }
+                    }
+                }
+            }
+        }
+        .font(.footnote)
+    }
+
+    /// The logo names the channel; its name shows only when no logo is bundled.
+    @ViewBuilder private var channelName: some View {
+        if !ChannelMark.hasLogo(for: item) { Text(item.channel).foregroundStyle(Brand.secondary) }
     }
 }
 

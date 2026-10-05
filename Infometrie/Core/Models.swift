@@ -53,7 +53,6 @@ struct FeedItem: Codable, Identifiable, Hashable, Sendable {
         return "channel-\(Self.channelLogoAliases[key] ?? key)"
     }
     var date: Date? { APIDate.parse(at) }
-    var initials: String { person.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined() }
     var durationLabel: String { String(format: "%d:%02d", max(0, durationSec) / 60, max(0, durationSec) % 60) }
 
     enum CodingKeys: String, CodingKey {
