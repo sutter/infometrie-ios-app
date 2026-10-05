@@ -188,14 +188,6 @@ struct PassageHeading: View {
 
 extension FeedItem {
     var kindColor: Color { Brand.ink }
-    /// The broadcast medium as readers name it, empty when unknown.
-    var mediaLabel: String {
-        switch media.lowercased() {
-        case "tv": "TV"
-        case "radio": "Radio"
-        default: ""
-        }
-    }
     var kindSymbol: String { isTweet ? "text.bubble" : isCitation ? "quote.bubble" : kind == "intervention" ? "waveform" : "doc.text" }
 
     var readableDuration: String {

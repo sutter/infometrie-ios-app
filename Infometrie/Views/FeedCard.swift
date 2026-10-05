@@ -53,7 +53,7 @@ struct FeedCard: View {
         }
     }
 
-    /// Date and medium on the left, listening duration on the right.
+    /// Date on the left, listening duration on the right.
     /// A channel too long for the line moves below the date instead of squeezing beside it.
     @ViewBuilder private var source: some View {
         Group {
@@ -78,14 +78,8 @@ struct FeedCard: View {
         }
     }
 
-    /// The medium, plus the channel name only when no logo shows it at the top,
-    /// without repeating a medium the name already gives ("BFM TV").
-    private var channelLine: String {
-        let name = ChannelMark.hasLogo(for: item) ? "" : item.channel
-        let medium = item.mediaLabel
-        let repeated = !medium.isEmpty && name.range(of: medium, options: [.caseInsensitive, .diacriticInsensitive]) != nil
-        return [name, repeated ? "" : medium].filter { !$0.isEmpty }.joined(separator: " · ")
-    }
+    /// The logo at the top names the channel; its name shows here only when no logo is bundled.
+    private var channelLine: String { ChannelMark.hasLogo(for: item) ? "" : item.channel }
 
     /// The person and their party on one line, then their role when it adds something.
     private var speaker: some View {
