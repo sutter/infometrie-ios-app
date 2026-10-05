@@ -17,11 +17,12 @@ struct SavedSearchesView: View {
                     Button { model.newSearch() } label: { Label("Créer un suivi", systemImage: "plus") }
                         // Prominent only while the list is empty; afterwards the suivis themselves lead.
                         .buttonStyle(ActionButtonStyle(prominent: model.savedSearches.isEmpty)).accessibilityIdentifier("new-search")
-                    HStack(spacing: 12) {
+                    // Chips, like the feed's types: one look for every choice that narrows a list.
+                    HStack(spacing: 8) {
                         category("Actifs", archived: false)
                         category("Archivés", archived: true)
                         Spacer(minLength: 0)
-                    }.overlay(alignment: .bottom) { AppRule() }
+                    }
                     .sensoryFeedback(.selection, trigger: archived)
                 }.padding(.top, 16).padding(.bottom, 8)
                 if searches.isEmpty {
@@ -37,8 +38,13 @@ struct SavedSearchesView: View {
                             .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                         Text(search.filters.isEmpty ? "Toutes les personnalités" : search.filters.summary)
                             .font(.subheadline).foregroundStyle(Brand.secondary)
-                        Text(search.filters.kindSummary)
-                            .font(.subheadline).foregroundStyle(Brand.secondary)
+                        // The kinds in their colors, as in the feed.
+                        HStack(spacing: 6) {
+                            if search.filters.interventions { KindTag(kind: "intervention", label: "Interventions") }
+                            if search.filters.citations { KindTag(kind: "citation", label: "Citations") }
+                            if search.filters.tweets { KindTag(kind: "tweet", label: "Publications X") }
+                        }
+                        .accessibilityElement(children: .combine)
                         AdaptiveRow {
                             if archived {
                                 Button("Restaurer ce suivi") { model.archive(search) }
@@ -94,7 +100,14 @@ struct SavedSearchesView: View {
         } message: { Text("« \(deleting?.name ?? "") » disparaîtra de cet appareil. Cette action est définitive.") }
     }
     private func category(_ title: String, archived value: Bool) -> some View {
-        AppTabButton(title: title, selected: archived == value, accent: Brand.tint) { archived = value }
-            .accessibilityIdentifier(value ? "saved-archived" : "saved-active")
+        let selected = archived == value
+        return Button { archived = value } label: {
+            Text(title).font(.subheadline.weight(selected ? .semibold : .regular))
+                .foregroundStyle(selected ? Brand.ink : Brand.secondary)
+                .chip(selected: selected)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityIdentifier(value ? "saved-archived" : "saved-active")
     }
 }

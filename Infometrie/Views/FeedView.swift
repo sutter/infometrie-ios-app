@@ -276,12 +276,7 @@ private struct FeedKindPicker: View {
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
-            // A chip: tinted with its kind when checked, outlined otherwise; 40 pt drawn, 48 pt to touch.
-            .padding(.horizontal, 12).frame(minHeight: 40)
-            .background(checked ? kind.wash : .clear, in: Capsule())
-            .overlay { Capsule().strokeBorder(checked ? .clear : Brand.rule) }
-            .frame(minWidth: 44, minHeight: 48)
-            .contentShape(Rectangle())
+            .chip(selected: checked, wash: kind.wash)
         }
         .buttonStyle(.plain)
         .disabled(isLast)

@@ -285,6 +285,15 @@ extension View {
         modifier(AppNavigationTitle(title: title))
     }
 
+    /// A capsule chip: tinted when selected, outlined otherwise; 40 pt drawn, 48 pt to touch.
+    func chip(selected: Bool, wash: Color = Brand.surface) -> some View {
+        padding(.horizontal, 12).frame(minHeight: 40)
+            .background(selected ? wash : .clear, in: Capsule())
+            .overlay { Capsule().strokeBorder(selected ? .clear : Brand.rule) }
+            .frame(minWidth: 44, minHeight: 48)
+            .contentShape(Rectangle())
+    }
+
     func appInput() -> some View {
         background(Brand.surface, in: RoundedRectangle(cornerRadius: AppLayout.controlRadius))
             .overlay { RoundedRectangle(cornerRadius: AppLayout.controlRadius).strokeBorder(Brand.inputBorder) }

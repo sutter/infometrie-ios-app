@@ -49,14 +49,27 @@ struct ChannelSource: View {
 
 /// The passage kind as a tag in its kind color, easy to spot while scrolling.
 struct KindTag: View {
-    let item: FeedItem
+    let label: String
+    let color: Color
+    let wash: Color
+
+    init(item: FeedItem) {
+        label = item.kindLabel; color = item.kindColor; wash = item.kindWash
+    }
+
+    /// A kind named on its own, as in a suivi's kinds: `kind` is an API kind (`intervention`, `citation`, `tweet`).
+    init(kind: String, label: String) {
+        self.label = label
+        color = kind == "citation" ? Brand.citation : kind == "intervention" ? Brand.intervention : Brand.ink
+        wash = kind == "citation" ? Brand.citationWash : kind == "intervention" ? Brand.interventionWash : Brand.surface
+    }
 
     var body: some View {
-        Text(item.kindLabel)
+        Text(label)
             .font(.caption.weight(.semibold))
-            .foregroundStyle(item.kindColor)
+            .foregroundStyle(color)
             .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(item.kindWash, in: Capsule())
+            .background(wash, in: Capsule())
             .fixedSize()
     }
 }
