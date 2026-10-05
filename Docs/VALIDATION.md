@@ -1,5 +1,14 @@
 # Validation du portage
 
+## Suite complète avant TestFlight (build 4) — 5 octobre 2026
+
+Après le retrait du mode démonstration, le serveur API local des tests (`UITestServer`) et la refonte visuelle (style Medium, vert de marque, pastilles, nouveau logo et nouvelle icône).
+
+- `swift test` : 41 tests réussis.
+- `build/Full.xcresult`, iPhone 17 Pro, iOS 26.4 : **16 tests réussis sur 20**, en 25 minutes.
+- Trois échecs connus, antérieurs à ces changements et toujours sans cause trouvée : `testFiltersDarkAppearanceAndMaximumText` (menu de thème jamais « hittable » au texte maximal), `testFullscreenTranscriptSeeksFromTextAtMaximumSize` (le balayage au texte maximal ne suspend pas le suivi), `testLoginFormAndEmptyFilters` (audit d’accessibilité : contrastes et textes coupés sans élément exposé).
+- `testSearchPersistenceSequenceAndPodcast` a échoué dans la suite (« Enregistrer ce suivi » jugé non touchable dans la feuille de filtres), puis réussi seul (`build/rerun.log`) : instabilité déjà connue.
+
 ## Logo X dans les types du fil — 25 septembre 2026
 
 L’onglet X n’affiche plus que le logo officiel de X, sans texte. Le logo est un symbole personnalisé (`x.logo.symbolset`) : il suit la taille du texte et les couleurs des onglets (gris, puis encre une fois sélectionné). VoiceOver annonce toujours « Publications X ».
