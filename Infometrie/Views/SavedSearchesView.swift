@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SavedSearchesView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var archived = false
     @State private var deleting: SavedSearch?
@@ -90,7 +91,7 @@ struct SavedSearchesView: View {
         .toolbarBackground(Brand.background, for: .navigationBar)
         .toolbar {
             if sizeClass != .regular {
-                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21) }
+                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
             }
         }

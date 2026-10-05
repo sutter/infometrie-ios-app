@@ -22,6 +22,14 @@ enum Brand {
     static let sidebar = color(light: 0xFFFFFF, dark: 0x101113)
     static let sidebarRule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
+    /// `color` fixed to one appearance. The navigation bar of a tab that is off screen during a theme
+    /// change keeps resolving adaptive colors with the old theme; colors fixed by the page do not.
+    static func fixed(_ color: Color, for scheme: ColorScheme?) -> Color {
+        guard let scheme else { return color }
+        let style: UIUserInterfaceStyle = scheme == .dark ? .dark : .light
+        return Color(uiColor: UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style)))
+    }
+
     /// The brand green: primary calls to action, listening and the wordmark; checkboxes and chips stay in grays.
     /// A single hue, never paired like the flag.
     static let accent = color(light: 0x17753A, dark: 0x4ADE80)
@@ -49,12 +57,15 @@ enum Brand {
 /// and "métrie" regular in ink: the weights alone set them apart, green stays in the tile. `size` is the text size; the tile scales with it.
 struct Wordmark: View {
     var size: CGFloat = 22
+    /// Set in navigation bars, which may not follow a theme change (`Brand.fixed`).
+    var scheme: ColorScheme? = nil
 
     var body: some View {
+        let ink = Brand.fixed(Brand.ink, for: scheme)
         HStack(spacing: size * 0.38) {
-            BrandTile(side: size * 1.45)
-            (Text("info").font(.system(size: size * 1.05, weight: .heavy)).foregroundStyle(Brand.ink)
-                + Text("métrie").font(.system(size: size * 1.05, weight: .regular)).foregroundStyle(Brand.ink))
+            BrandTile(side: size * 1.45, scheme: scheme)
+            (Text("info").font(.system(size: size * 1.05, weight: .heavy)).foregroundStyle(ink)
+                + Text("métrie").font(.system(size: size * 1.05, weight: .regular)).foregroundStyle(ink))
                 .tracking(-size * 0.03)
         }
         .fixedSize()
@@ -65,18 +76,19 @@ struct Wordmark: View {
 /// The brand pictogram: an "i" (stem and dot) on a green speech bubble, its sharp corner bottom left.
 struct BrandTile: View {
     let side: CGFloat
+    var scheme: ColorScheme? = nil
 
     var body: some View {
         UnevenRoundedRectangle(topLeadingRadius: side * 0.3, bottomLeadingRadius: side * 0.04,
                                bottomTrailingRadius: side * 0.3, topTrailingRadius: side * 0.3, style: .continuous)
-            .fill(Brand.accent)
+            .fill(Brand.fixed(Brand.accent, for: scheme))
             .frame(width: side, height: side)
             .overlay {
                 VStack(spacing: side * 0.064) {
                     Circle().frame(width: side * 0.157, height: side * 0.157)
                     Capsule().frame(width: side * 0.128, height: side * 0.36)
                 }
-                .foregroundStyle(Brand.onAccent)
+                .foregroundStyle(Brand.fixed(Brand.onAccent, for: scheme))
             }
             .accessibilityHidden(true)
     }
@@ -296,12 +308,13 @@ struct AppEmptyState: View {
 /// Keep native navigation controls and a consistent title across sheets and details.
 private struct AppNavigationTitle: ViewModifier {
     let title: String
+    @Environment(\.colorScheme) private var colorScheme
     func body(content: Content) -> some View {
         content.navigationTitle(title).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text(title).font(.headline)
-                        .foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
+                        .foregroundStyle(Brand.fixed(Brand.ink, for: colorScheme)).accessibilityAddTraits(.isHeader)
                 }
             }
             .toolbarBackground(Brand.background, for: .navigationBar)

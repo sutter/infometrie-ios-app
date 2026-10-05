@@ -50,7 +50,7 @@ xcrun simctl launch --terminate-running-process booted fr.yacast.infometrie.ios 
 ```
 
 - No simulator booted: `xcrun simctl boot <udid>` with the iOS 26.4 iPhone 17 Pro from `xcrun simctl list devices available`.
-- `-appearance dark` or `-appearance light` forces the theme for that launch; `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` gives the largest text.
+- `-appearance dark` or `-appearance light` forces the theme for that launch, and also blocks the Thème picker (the launch argument outranks the stored choice): drive theme changes without it; `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` gives the largest text.
 - A screenshot, only when asked: `xcrun simctl io booted screenshot <file>.png`, about two seconds after launch.
 - Motion glitches never show on a screenshot. Record the simulator (`xcrun simctl io <udid> recordVideo --codec=h264 --force <file>.mp4`, stopped with SIGINT) while a temporary UI test, never committed, drives the journey. Then extract frames with `ffmpeg -i <file>.mp4 -vf "select='between(t,A,B)',crop=…,drawtext=text='%{pts\\:hms}'" -vsync vfr`: `-ss` lands on the wrong frames of these variable-frame-rate recordings, and scene detection misses thin changes such as an underline.
 - The test server's feed holds seven passages, so a bug tied to scrolling a long list may not reproduce there. Ask the user for a screen recording of the real feed and read it frame by frame the same way.

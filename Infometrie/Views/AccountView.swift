@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AccountView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var sizeClass
     @AppStorage("appearance") private var appearance = "system"
     @AppStorage("readingSize") private var readingSize = ReadingSize.medium
@@ -57,7 +58,7 @@ struct AccountView: View {
         .toolbarBackground(Brand.background, for: .navigationBar)
         .toolbar {
             if sizeClass != .regular {
-                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21) }
+                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
             }
         }
@@ -113,6 +114,8 @@ struct AccountView: View {
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Taille du texte")
             }
+            // Contain, or this identifier would replace the picker's and the size buttons' own.
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("appearance-card")
             Text("Taille du texte · \(readingSize.title)")
                 .font(.footnote).foregroundStyle(Brand.secondary)

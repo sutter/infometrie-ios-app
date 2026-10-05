@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FeedView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicType
     /// New criteria show their results from the top, while only the cards fade.
@@ -66,9 +67,9 @@ struct FeedView: View {
         .toolbarBackground(Brand.background, for: .navigationBar)
         .toolbar {
             if !usesWideLayout {
-                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21) }
+                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
-                ToolbarItem(placement: .topBarTrailing) { filtersButton }
+                ToolbarItem(placement: .topBarTrailing) { filtersButton(scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
             }
         }
@@ -81,13 +82,13 @@ struct FeedView: View {
             HStack(spacing: 12) {
                 FeedStatus(singleLine: true)
                 Spacer(minLength: 0)
-                if usesWideLayout { filtersButton }
+                if usesWideLayout { filtersButton() }
                 listenButton
             }
             VStack(alignment: .leading, spacing: 8) {
                 FeedStatus(singleLine: !dynamicType.isAccessibilitySize)
                 HStack(spacing: 12) {
-                    if usesWideLayout { filtersButton }
+                    if usesWideLayout { filtersButton() }
                     listenButton
                 }
             }
@@ -119,7 +120,8 @@ struct FeedView: View {
         }
     }
 
-    private var filtersButton: some View {
+    /// `scheme` is set in the navigation bar, which may not follow a theme change (`Brand.fixed`).
+    private func filtersButton(scheme: ColorScheme? = nil) -> some View {
         Button { model.openSearch(model.filters) } label: {
             Label("Filtrer", systemImage: hasAudienceFilters ? "line.3.horizontal.decrease.circle.fill" : "slider.horizontal.3")
                 .labelStyle(.titleAndIcon)
@@ -128,7 +130,7 @@ struct FeedView: View {
                 .padding(.horizontal, 8).frame(minHeight: 48)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain).foregroundStyle(Brand.tint)
+        .buttonStyle(.plain).foregroundStyle(Brand.fixed(Brand.tint, for: scheme))
         .accessibilityIdentifier("edit-filters")
         .accessibilityValue(hasAudienceFilters ? "Filtres actifs" : "")
     }
