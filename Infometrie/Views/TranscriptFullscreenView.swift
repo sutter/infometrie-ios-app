@@ -52,7 +52,7 @@ struct TranscriptFullscreenView: View {
                     Button { model.player.start(items: [detail.item], app: model, podcast: false) } label: {
                         Label("Écouter ce passage", systemImage: "play.fill")
                     }
-                    .buttonStyle(.listen)
+                    .buttonStyle(ActionButtonStyle(prominent: true))
                     .accessibilityIdentifier("play-sequence")
                     .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                     .background(Brand.background).overlay(alignment: .top) { AppRule() }

@@ -22,7 +22,7 @@ enum Brand {
     static let sidebar = color(light: 0xFFFFFF, dark: 0x101113)
     static let sidebarRule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
-    /// The brand green, for listening and the wordmark only; checkboxes and chips stay in grays.
+    /// The brand green: primary calls to action, listening and the wordmark; checkboxes and chips stay in grays.
     /// A single hue, never paired like the flag.
     static let accent = color(light: 0x17753A, dark: 0x4ADE80)
     /// Text and icons on `accent`: 5.8:1 in light, 9.9:1 in dark.
@@ -61,9 +61,9 @@ struct Wordmark: View {
 struct ActionButtonStyle: ButtonStyle {
     var prominent = false
     var horizontalPadding: CGFloat = 16
-    /// Fill and foreground of a prominent button: ink by default, green for listening.
-    var fill = Brand.primary
-    var foreground = Brand.primaryForeground
+    /// Every primary call to action is green, the brand color; secondary ones are outlined in ink.
+    var fill = Brand.accent
+    var foreground = Brand.onAccent
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func makeBody(configuration: Configuration) -> some View {
@@ -82,11 +82,6 @@ struct ActionButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
             .animation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
-}
-
-extension ButtonStyle where Self == ActionButtonStyle {
-    /// The listening action ("Écouter", "Pause"): prominent, in the brand green.
-    static var listen: ActionButtonStyle { ActionButtonStyle(prominent: true, fill: Brand.accent, foreground: Brand.onAccent) }
 }
 
 /// Icon controls without a capsule of their own (player skips, round play button) that sink under the finger.
