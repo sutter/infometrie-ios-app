@@ -105,7 +105,7 @@ struct SequenceView: View {
                         .accessibilityIdentifier("open-publication")
                         .accessibilityHint("Ouvre la publication dans X ou votre navigateur")
                         .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-                        .background(Brand.page).overlay(alignment: .top) { AppRule() }
+                        .background(Brand.background).overlay(alignment: .top) { AppRule() }
                 } else if displayItem.canPlay {
                     if isCurrent { PlaybackDock() }
                     else {
@@ -119,7 +119,7 @@ struct SequenceView: View {
                                 }
                             }
                         }.buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("play-sequence")
-                            .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.page)
+                            .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.background)
                             .overlay(alignment: .top) { AppRule() }
                     }
                 }
@@ -127,7 +127,7 @@ struct SequenceView: View {
         }
         .scrollEdgeEffectHidden(true, for: .bottom)
         .scrollEdgeEffectStyle(.hard, for: .top)
-        .background(Brand.page).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence", background: Brand.page)
+        .background(Brand.background).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
         .toolbar(.hidden, for: .tabBar)
         .task(id: reload) {
             do {
@@ -234,7 +234,7 @@ struct PlaybackDock: View {
         }
         .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
         .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-        .background(Brand.page).overlay(alignment: .top) { AppRule() }
+        .background(Brand.background).overlay(alignment: .top) { AppRule() }
         .sensoryFeedback(.impact(weight: .light), trigger: presses)
     }
     private var playButton: some View {
@@ -314,7 +314,7 @@ struct PodcastView: View {
                     .motion(value: model.player.detail?.id)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock(queue: true) }
-            .background(Brand.page).appNavigationTitle("Tout écouter", background: Brand.page)
+            .background(Brand.background).appNavigationTitle("Tout écouter")
             .toolbar {
                 // The position shares the title line to leave the height to the passage.
                 ToolbarItem(placement: .topBarLeading) {

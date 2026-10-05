@@ -113,9 +113,6 @@ struct AccountView: View {
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Taille du texte")
             }
-            .padding(16)
-            .background(Brand.card, in: RoundedRectangle(cornerRadius: 24))
-            .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(Brand.rule, lineWidth: 0.5) }
             .accessibilityIdentifier("appearance-card")
             Text("Taille du texte · \(readingSize.title)")
                 .font(.footnote).foregroundStyle(Brand.secondary)

@@ -60,10 +60,10 @@ struct FeedView: View {
         .modifier(FeedScrollOverflow(overTabBar: !usesWideLayout))
         .scrollEdgeEffectHidden(true, for: .bottom)
         .scrollEdgeEffectStyle(.hard, for: .top)
-        .background(Brand.page)
+        .background(Brand.background)
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbar(usesWideLayout ? .hidden : .visible, for: .navigationBar)
-        .toolbarBackground(Brand.page, for: .navigationBar)
+        .toolbarBackground(Brand.background, for: .navigationBar)
         .toolbar {
             if !usesWideLayout {
                 ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21) }
@@ -99,7 +99,7 @@ struct FeedView: View {
             FeedKindPicker()
             AppRule()
         }
-        .background(Brand.page)
+        .background(Brand.background)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("feed-filter-bar")
     }

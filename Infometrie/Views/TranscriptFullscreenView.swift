@@ -55,11 +55,11 @@ struct TranscriptFullscreenView: View {
                     .buttonStyle(ActionButtonStyle(prominent: true))
                     .accessibilityIdentifier("play-sequence")
                     .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-                    .background(Brand.page).overlay(alignment: .top) { AppRule() }
+                    .background(Brand.background).overlay(alignment: .top) { AppRule() }
                 }
             }
         }
         .foregroundStyle(Brand.ink).tint(Brand.tint)
-        .background(Brand.page)
+        .background(Brand.background)
     }
 }

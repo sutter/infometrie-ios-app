@@ -4,10 +4,9 @@ import SwiftUI
 enum Brand {
     // Neutral, low-contrast surfaces inspired by Stoic. Color remains reserved
     // for actual media branding and destructive system feedback.
-    static let background = color(light: 0xF1F2F3, dark: 0x08090A)
+    /// A plain white page, after Medium: sections and rows sit on dividers rather than cards.
+    static let background = color(light: 0xFFFFFF, dark: 0x101113)
     static let card = color(light: 0xFFFFFF, dark: 0x151719)
-    /// Reading pages (feed, passage): a plain white page with rows on dividers, after Medium.
-    static let page = color(light: 0xFFFFFF, dark: 0x101113)
     static let ink = color(light: 0x111214, dark: 0xF5F5F4)
     static let primary = color(light: 0x151618, dark: 0xF1F1EF)
     static let primaryForeground = color(light: 0xFFFFFF, dark: 0x111214)
@@ -18,7 +17,7 @@ enum Brand {
     static let selection = color(light: 0xE7E8EA, dark: 0x292B2E)
     static let selectionForeground = color(light: 0x151618, dark: 0xF5F5F4)
     static let rule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.09)
-    static let sidebar = color(light: 0xF1F2F3, dark: 0x0D0E10)
+    static let sidebar = color(light: 0xFFFFFF, dark: 0x101113)
     static let sidebarRule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
 
@@ -232,15 +231,15 @@ struct AppSection<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
+        // A title over its content on the plain page: whitespace separates sections, not cards or extra rules.
         VStack(alignment: .leading, spacing: 12) {
             Text(title).font(.headline)
                 .foregroundStyle(Brand.ink).fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             content()
         }
-        .padding(16)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Brand.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 
@@ -264,7 +263,6 @@ struct AppEmptyState: View {
 /// Keep native navigation controls and a consistent title across sheets and details.
 private struct AppNavigationTitle: ViewModifier {
     let title: String
-    let background: Color
     func body(content: Content) -> some View {
         content.navigationTitle(title).navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -273,13 +271,13 @@ private struct AppNavigationTitle: ViewModifier {
                         .foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
                 }
             }
-            .toolbarBackground(background, for: .navigationBar)
+            .toolbarBackground(Brand.background, for: .navigationBar)
     }
 }
 
 extension View {
-    func appNavigationTitle(_ title: String, background: Color = Brand.background) -> some View {
-        modifier(AppNavigationTitle(title: title, background: background))
+    func appNavigationTitle(_ title: String) -> some View {
+        modifier(AppNavigationTitle(title: title))
     }
 
     func appInput() -> some View {

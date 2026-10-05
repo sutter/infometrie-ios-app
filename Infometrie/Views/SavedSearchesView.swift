@@ -58,9 +58,10 @@ struct SavedSearchesView: View {
                             }.accessibilityLabel("Options de \(search.name)").accessibilityIdentifier("saved-actions-\(search.name)")
                         }
                     }
-                    .padding(16)
-                    .background(Brand.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .padding(.top, 12)
+                    // A row on a hairline, like the feed, rather than a card.
+                    .padding(.vertical, 20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .overlay(alignment: .bottom) { AppRule() }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button("Supprimer", role: .destructive) { deleting = search }
                             Button(archived ? "Restaurer" : "Archiver") { model.archive(search) }.tint(Brand.primary)

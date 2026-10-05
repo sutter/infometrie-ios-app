@@ -4,10 +4,10 @@ The visual language: the design system, tokens, and UI conventions. What it look
 
 ## System
 
-- No mockups: design happens directly in the code. The visual reference is the Stoic iOS app on Mobbin (<https://mobbin.com/apps/stoic-ios-621f0be7-8046-45cd-b667-97add5f9c3c7/e20c833d-975b-401c-8601-74d135883e25/screens>, account required, so human only).
-- Neutral, low-contrast rounded surfaces. Color is reserved for broadcaster logos and destructive feedback.
-- Stoic is the source of truth. `Docs/UX/Stoic/README.md` records the direction and its palette. Earlier directions (editorial "Revue", Nova / Indigo) are history in `Docs/UX/`.
-- Since 2026-10-05 the reading pages (feed, passage, podcast, fullscreen text) follow the Medium iOS app instead (<https://mobbin.com/apps/medium-ios-c0e5f243-4979-40c6-a7c8-c57cfef6658d/b22663f9-abed-4c19-97ce-e22e886a3ff9/screens>, human only): a plain white page (`Brand.page`), feed rows on hairline dividers instead of cards, bold sans-serif titles (`title3` in the feed, `title2` on the passage), airier transcript lines. Never a serif font, at the user's request. The other pages stay Stoic until the user validates the reading pages.
+- No mockups: design happens directly in the code. The visual reference is the Medium iOS app on Mobbin (<https://mobbin.com/apps/medium-ios-c0e5f243-4979-40c6-a7c8-c57cfef6658d/b22663f9-abed-4c19-97ce-e22e886a3ff9/screens>, account required, so human only), chosen by the user on 2026-10-05. Never a serif font, at the user's request.
+- A plain white page (`Brand.background`, sidebar included): no cards; feed and suivi rows sit on hairline dividers, sections (`AppSection`) are a title over content separated by whitespace, never a card or an extra rule. Color is reserved for broadcaster logos and destructive feedback.
+- The previous direction, Stoic (gray page, white rounded cards), is history with the earlier ones (editorial "Revue", Nova / Indigo) in `Docs/UX/`.
+- Reading pages: bold sans-serif titles (`title3` in the feed, `title2` on the passage), airier transcript lines.
 - A small in-house design system in SwiftUI, with system fonts and native controls.
 
 ## Tokens
