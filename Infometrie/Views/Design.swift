@@ -45,7 +45,7 @@ enum Brand {
     }
 }
 
-/// The brand lockup: a green tile holding a simplified wave around an "i", then "info" heavy in ink
+/// The brand lockup: an "i" on a green speech bubble, then "info" heavy in ink
 /// and "métrie" regular in green. `size` is the text size; the tile scales with it.
 struct Wordmark: View {
     var size: CGFloat = 22
@@ -62,31 +62,23 @@ struct Wordmark: View {
     }
 }
 
-/// The brand pictogram: an "i" (stem and dot) between two shorter wave bars, on a green tile.
+/// The brand pictogram: an "i" (stem and dot) on a green speech bubble, its sharp corner bottom left.
 struct BrandTile: View {
     let side: CGFloat
 
     var body: some View {
-        RoundedRectangle(cornerRadius: side * 0.26, style: .continuous)
+        UnevenRoundedRectangle(topLeadingRadius: side * 0.3, bottomLeadingRadius: side * 0.04,
+                               bottomTrailingRadius: side * 0.3, topTrailingRadius: side * 0.3, style: .continuous)
             .fill(Brand.accent)
             .frame(width: side, height: side)
             .overlay {
-                HStack(alignment: .center, spacing: side * 0.09) {
-                    bar
-                    VStack(spacing: side * 0.07) {
-                        Circle().frame(width: side * 0.18, height: side * 0.18)
-                        Capsule().frame(width: side * 0.145, height: side * 0.41)
-                    }
-                    bar
+                VStack(spacing: side * 0.064) {
+                    Circle().frame(width: side * 0.157, height: side * 0.157)
+                    Capsule().frame(width: side * 0.128, height: side * 0.36)
                 }
                 .foregroundStyle(Brand.onAccent)
-                .offset(y: side * 0.03)
             }
             .accessibilityHidden(true)
-    }
-
-    private var bar: some View {
-        Capsule().fill(Brand.onAccent.opacity(0.75)).frame(width: side * 0.12, height: side * 0.30)
     }
 }
 
