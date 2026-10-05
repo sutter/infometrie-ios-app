@@ -13,9 +13,8 @@ struct FeedView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: dynamicType.isAccessibilitySize ? [] : [.sectionHeaders]) {
-                feedHeading.padding(.vertical, 12)
                 Section {
-                    FeedStatus().padding(.top, 10).padding(.bottom, 4)
+                    statusRow.padding(.top, 6).padding(.bottom, 4)
                     if hasAudienceFilters { selectionSummary.padding(.vertical, 12) }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.refresh(reset: true) } }
@@ -73,9 +72,10 @@ struct FeedView: View {
         }
     }
 
-    private var feedHeading: some View {
+    /// The result count and its freshness, with "Tout écouter" at the end of the line.
+    private var statusRow: some View {
         AdaptiveRow {
-            if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
+            FeedStatus()
             if usesWideLayout { filtersButton }
             listenButton
         }
@@ -145,16 +145,13 @@ private struct FeedStatus: View {
         // Re-read the age every 15 seconds; the feed itself refreshes every 30.
         TimelineView(.periodic(from: .now, by: 15)) { context in
             let count = model.visibleItems.count
-            HStack(spacing: 4) {
-                Text(count <= 1 ? "\(count) résultat" : "\(count) résultats")
-                    .fontWeight(.semibold).foregroundStyle(Brand.ink)
-                if let date = model.lastRefresh {
-                    Text("· \(Self.age(of: date, at: context.date))").foregroundStyle(Brand.secondary)
-                }
-            }
-            .font(.footnote.monospacedDigit())
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            // One text, so the age wraps under the count instead of squeezing beside it.
+            (Text(count <= 1 ? "\(count) résultat" : "\(count) résultats").fontWeight(.semibold).foregroundStyle(Brand.ink)
+                + Text(model.lastRefresh.map { " · \(Self.age(of: $0, at: context.date))" } ?? "").foregroundStyle(Brand.secondary))
+                .font(.footnote.monospacedDigit())
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("feed-status")
         }
     }
 
