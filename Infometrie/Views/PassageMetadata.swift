@@ -19,8 +19,8 @@ struct PassageDuration: View {
 
     var body: some View {
         if item.canPlay && item.durationSec > 0 {
-            Label(item.readableDuration, systemImage: "headphones")
-                .imageScale(.small)
+            // The duration alone: the headphones icon beside it added noise, not meaning.
+            Text(item.readableDuration)
                 .monospacedDigit()
                 .foregroundStyle(Brand.secondary)
                 .fixedSize()
