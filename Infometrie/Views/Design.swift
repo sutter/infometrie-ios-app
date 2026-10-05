@@ -22,12 +22,12 @@ enum Brand {
     static let sidebar = color(light: 0xFFFFFF, dark: 0x101113)
     static let sidebarRule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
-    /// Kind colors, teal and amber: hues no major French party has made its own, and never paired
-    /// like the flag. Text at 4.8:1 or more on its wash, in both themes.
-    static let intervention = color(light: 0x0F766E, dark: 0x5EEAD4)
-    static let interventionWash = color(light: 0xE6F4F1, dark: 0x0F2E2B)
-    static let citation = color(light: 0x92400E, dark: 0xFBBF24)
-    static let citationWash = color(light: 0xFBF0DC, dark: 0x3A2A0B)
+    /// One brand green (the client's color) for the wordmark and interventions, citations in graphite:
+    /// a single hue, never paired like the flag. Text at 5:1 or more on its wash, in both themes.
+    static let intervention = color(light: 0x17753A, dark: 0x4ADE80)
+    static let interventionWash = color(light: 0xE7F5EA, dark: 0x0F2A18)
+    static let citation = color(light: 0x3A3D42, dark: 0xD4D6DA)
+    static let citationWash = color(light: 0xEDEEF0, dark: 0x26282C)
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
     static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
@@ -49,7 +49,7 @@ enum Brand {
 struct Wordmark: View {
     var size: CGFloat = 22
     var body: some View {
-        // Two tones: "Info" in ink, "Métrie" in the brand teal.
+        // Two tones: "Info" in ink, "Métrie" in the brand green.
         (Text("Info").foregroundStyle(Brand.ink) + Text("Métrie").foregroundStyle(Brand.intervention))
         .font(.system(size: size, weight: .bold))
         .tracking(-0.7)
