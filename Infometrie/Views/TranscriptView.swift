@@ -67,8 +67,9 @@ struct TranscriptView: View {
             VStack(alignment: .leading, spacing: 0) {
                 AppRule()
                 VStack(alignment: .leading, spacing: 0) {
+                    // No "Verbatim" title: the text follows the passage title directly; only the
+                    // fullscreen control remains, on the right.
                     HStack(spacing: 12) {
-                        SectionLabel(title: "Verbatim")
                         Spacer(minLength: 0)
                         if let onExpand {
                             Button(action: onExpand) {

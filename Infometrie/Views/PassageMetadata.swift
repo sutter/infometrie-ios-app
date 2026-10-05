@@ -64,7 +64,7 @@ struct KindTag: View {
     }
 }
 
-/// The small gray title of a section ("Verbatim", "Apparence"…): one style for every section label.
+/// The small gray title of a section ("Apparence", "Votre abonnement"…): one style for every section label.
 struct SectionLabel: View {
     let title: String
 

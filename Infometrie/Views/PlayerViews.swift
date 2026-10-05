@@ -60,11 +60,10 @@ struct SequenceView: View {
                 } else if let detail = displayDetail {
                     if displayItem.isTweet {
                         if !detail.verbatim.isEmpty && detail.verbatim != displayItem.title {
-                            AppSection(title: "La publication") {
-                                Text(detail.verbatim).font(.body).lineSpacing(3)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .accessibilityIdentifier("publication-text")
-                            }
+                            // The post itself, with no "La publication" title above it.
+                            Text(detail.verbatim).font(.body).lineSpacing(6)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("publication-text")
                         }
                         if displayItem.publicationURL == nil {
                             Text("Le lien vers cette publication n’est pas disponible.")
