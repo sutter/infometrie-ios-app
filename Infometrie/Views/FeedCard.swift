@@ -29,34 +29,55 @@ struct FeedCard: View {
     }
 
     /// The kind, how a citation was heard, and the channel logo on the right.
-    private var header: some View {
-        AdaptiveRow {
-            HStack(spacing: 8) {
-                KindBadge(item: item, font: .footnote.weight(.semibold))
-                if item.isCitation {
-                    Text(item.citedBy.isEmpty ? "mention à l’antenne" : "mention par \(item.citedBy)")
-                        .font(.footnote).foregroundStyle(Brand.secondary)
+    /// A mention too long for the line moves below the badge instead of squeezing beside it.
+    @ViewBuilder private var header: some View {
+        let badge = KindBadge(item: item, font: .footnote.weight(.semibold))
+        if dynamicType.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 6) { badge; mention; ChannelMark(item: item) }
+        } else {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { badge; mention; Spacer(minLength: 0); ChannelMark(item: item) }
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) { badge; Spacer(minLength: 0); ChannelMark(item: item) }
+                    mention
                 }
             }
-            .fixedSize(horizontal: false, vertical: true)
-            if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
-            ChannelMark(item: item)
+        }
+    }
+
+    @ViewBuilder private var mention: some View {
+        if item.isCitation {
+            Text(item.citedBy.isEmpty ? "mention à l’antenne" : "mention par \(item.citedBy)")
+                .font(.footnote).foregroundStyle(Brand.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     /// Date, channel and medium on the left, listening duration on the right.
-    private var source: some View {
-        AdaptiveRow {
-            HStack(spacing: 8) {
-                PassageDate(item: item)
-                Text([item.channel, item.mediaLabel].filter { !$0.isEmpty }.joined(separator: " · "))
-                    .foregroundStyle(Brand.secondary)
+    /// A channel too long for the line moves below the date instead of squeezing beside it.
+    @ViewBuilder private var source: some View {
+        let channel = Text(channelLine).foregroundStyle(Brand.secondary).fixedSize(horizontal: false, vertical: true)
+        Group {
+            if dynamicType.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 6) { PassageDate(item: item); channel; PassageDuration(item: item) }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) { PassageDate(item: item); channel; Spacer(minLength: 0); PassageDuration(item: item) }
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) { PassageDate(item: item); Spacer(minLength: 0); PassageDuration(item: item) }
+                        channel
+                    }
+                }
             }
-            .fixedSize(horizontal: false, vertical: true)
-            if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
-            PassageDuration(item: item)
         }
         .font(.footnote)
+    }
+
+    /// The channel and its medium, without repeating a medium the channel name already gives ("BFM TV").
+    private var channelLine: String {
+        let medium = item.mediaLabel
+        guard !medium.isEmpty, item.channel.range(of: medium, options: [.caseInsensitive, .diacriticInsensitive]) == nil else { return item.channel }
+        return "\(item.channel) · \(medium)"
     }
 
     /// The person and their party on one line, then their role when it adds something.
