@@ -99,10 +99,9 @@ struct AdaptiveRow<Content: View>: View {
 
 struct KindBadge: View {
     let item: FeedItem
-    var font: Font = .subheadline.weight(.medium)
     var body: some View {
         Label(item.kindLabel, systemImage: item.kindSymbol)
-            .font(font)
+            .font(.subheadline.weight(.medium))
             .foregroundStyle(item.kindColor)
     }
 }

@@ -31,7 +31,7 @@ struct FeedCard: View {
     /// The kind, how a citation was heard, and the channel logo on the right.
     /// A mention too long for the line moves below the badge instead of squeezing beside it.
     @ViewBuilder private var header: some View {
-        let badge = KindBadge(item: item, font: .footnote.weight(.semibold))
+        let badge = Text(item.kindLabel).font(.footnote.weight(.semibold)).foregroundStyle(item.kindColor)
         if dynamicType.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 6) { badge; mention; ChannelMark(item: item) }
         } else {
