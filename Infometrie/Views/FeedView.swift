@@ -350,7 +350,7 @@ private struct ChoiceGroup: View {
                         .foregroundStyle(isSelected ? Brand.ink : Brand.secondaryOnSurface)
                         .fixedSize()
                         .padding(.horizontal, 12).frame(minHeight: 44)
-                        .background(isSelected ? Brand.card : .clear, in: Capsule())
+                        .background(isSelected ? Brand.raised : .clear, in: Capsule())
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)

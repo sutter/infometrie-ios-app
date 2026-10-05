@@ -13,6 +13,8 @@ enum Brand {
     static let tint = color(light: 0x292B2E, dark: 0xE6E6E4)
     static let secondary = color(light: 0x696B70, dark: 0xA0A2A6)
     static let surface = color(light: 0xE7E8EA, dark: 0x1D1F22)
+    /// The selected segment of a capsule control: lifted from its `surface` track in both themes.
+    static let raised = color(light: 0xFFFFFF, dark: 0x3A3C40)
     static let inputBorder = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
     static let selection = color(light: 0xE7E8EA, dark: 0x292B2E)
     static let selectionForeground = color(light: 0x151618, dark: 0xF5F5F4)

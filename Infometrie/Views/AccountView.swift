@@ -96,7 +96,7 @@ struct AccountView: View {
                                 .background {
                                     // The selection pill slides to the chosen size.
                                     if readingSize == size {
-                                        Capsule().fill(Brand.card).matchedGeometryEffect(id: "size", in: sizeSelection)
+                                        Capsule().fill(Brand.raised).matchedGeometryEffect(id: "size", in: sizeSelection)
                                     }
                                 }
                                 .contentShape(Capsule())

@@ -8,18 +8,18 @@ struct FeedCard: View {
 
     var body: some View {
         // Two groups read faster than five evenly spaced lines: what and when, then who and what was said.
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
                 header
                 source
             }
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 PassageSpeaker(item: item)
                 title
             }
         }
         // Rows on a plain page, separated by a hairline, rather than cards: the Medium reading list.
-        .padding(.vertical, 20)
+        .padding(.vertical, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .bottom) { AppRule() }
         .contentShape(Rectangle())
