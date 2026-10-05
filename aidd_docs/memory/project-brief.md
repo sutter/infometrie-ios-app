@@ -11,6 +11,7 @@ What this project is, the problem it solves, and its domain language. The non-de
 
 - Port of the Android app `fr.yacast.iactus` 0.4.0. No Android source was provided: the contract was rebuilt from the decompiled APK (`Docs/APK-ANALYSIS.md`), then aligned on the official Swagger (`Docs/API/README.md`).
 - Read-only by design, like the APK: no export, copy or share of a sequence. Alerts and the daily digest are announced "coming soon" in the APK and are not shown as working.
+- Asked by the client on 2026-10-05, waiting for an API: feed periods 7 j and 30 j beside Live (the current 24 h), and a chart synthesis beside the list, counting passages per person, per party and per kind. The feed shows these choices with "Bientôt disponible" until the API exists; the live Swagger (0.9.0) has no route for them yet.
 
 ## Domain language
 

@@ -985,7 +985,7 @@ final class InfometrieUITests: XCTestCase {
             // The compact type row begins 8pt below the native navigation bar.
             // It is fully visible there; do not keep pulling to refresh in an
             // attempt to create the larger gap used by scrolling body controls.
-            let picker = app.otherElements["feed-kind-picker"]
+            let picker = app.otherElements["feed-filter-bar"]
             let contentTop = identifier.hasPrefix("feed-item-") && picker.exists && picker.isHittable
                 ? max(top, picker.frame.maxY + 8) : top
             let controlTop = identifier.hasPrefix("feed-kind-") ? top - 8 : contentTop
@@ -1040,7 +1040,7 @@ final class InfometrieUITests: XCTestCase {
         let mainNavigation = app.otherElements["primary-navigation"]
         let sidebar = mainNavigation.exists && mainNavigation.frame.height > mainNavigation.frame.width
         let navigationTop = mainNavigation.exists && !sidebar ? mainNavigation.frame.maxY : (navigationBar.exists ? navigationBar.frame.maxY : app.frame.minY)
-        let picker = app.otherElements["feed-kind-picker"]
+        let picker = app.otherElements["feed-filter-bar"]
         let top = picker.exists && picker.isHittable ? max(navigationTop, picker.frame.maxY) : navigationTop
         let bottom = tabBar.exists ? tabBar.frame.minY : app.frame.maxY
         let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "feed-item-")).allElementsBoundByIndex.map(\.frame)

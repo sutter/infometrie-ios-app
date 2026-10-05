@@ -98,9 +98,12 @@ struct FeedView: View {
     private var filterControls: some View {
         VStack(spacing: 0) {
             FeedKindPicker()
+            FeedViewOptions().padding(.bottom, 8)
             AppRule()
         }
         .background(Brand.background)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("feed-filter-bar")
     }
 
     private var selectionSummary: some View {
@@ -250,5 +253,91 @@ private struct FeedKindPicker: View {
         }
         guard filters.hasKinds else { return }
         Task { await model.apply(filters) }
+    }
+}
+
+/// Period and display of the feed. Only Live and Liste work today: 7 j, 30 j and the chart synthesis
+/// wait for an API, so they stay visible and say they are coming instead of pretending to work.
+private struct FeedViewOptions: View {
+    @Environment(\.dynamicTypeSize) private var dynamicType
+    @State private var comingSoon: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if dynamicType.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) { period; display }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) { period; Spacer(minLength: 0); display }
+                    VStack(alignment: .leading, spacing: 8) { period; display }
+                }
+            }
+            if let comingSoon {
+                Text(comingSoon).font(.footnote).foregroundStyle(Brand.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("feed-coming-soon")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var period: some View {
+        ChoiceGroup(label: "Période", selected: "live", options: [
+            .init(id: "live", title: "Live", accessibilityLabel: "Live, dernières 24 heures", isAvailable: true),
+            .init(id: "7", title: "7 j", accessibilityLabel: "7 jours", isAvailable: false),
+            .init(id: "30", title: "30 j", accessibilityLabel: "30 jours", isAvailable: false)
+        ], identifier: "feed-period") { _ in
+            comingSoon = "Bientôt disponible : les périodes de 7 et 30 jours arrivent avec une prochaine version du service."
+        }
+    }
+
+    private var display: some View {
+        ChoiceGroup(label: "Affichage", selected: "list", options: [
+            .init(id: "list", title: "Liste", accessibilityLabel: "Liste", isAvailable: true),
+            .init(id: "chart", title: "Graphique", accessibilityLabel: "Synthèse graphique", isAvailable: false)
+        ], identifier: "feed-display") { _ in
+            comingSoon = "Bientôt disponible : la synthèse graphique arrive avec une prochaine version du service."
+        }
+    }
+}
+
+/// Mutually exclusive choices on one capsule. An unavailable choice stays visible and explains itself when tapped.
+private struct ChoiceGroup: View {
+    struct Option: Identifiable {
+        let id: String
+        let title: String
+        let accessibilityLabel: String
+        let isAvailable: Bool
+    }
+    let label: String
+    let selected: String
+    let options: [Option]
+    let identifier: String
+    let onUnavailable: (Option) -> Void
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(options) { option in
+                let isSelected = option.id == selected
+                Button { if !option.isAvailable { onUnavailable(option) } } label: {
+                    Text(option.title)
+                        .font(.footnote.weight(isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? Brand.ink : Brand.secondaryOnSurface)
+                        .fixedSize()
+                        .padding(.horizontal, 12).frame(minHeight: 44)
+                        .background(isSelected ? Brand.card : .clear, in: Capsule())
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(option.accessibilityLabel)
+                .accessibilityValue(option.isAvailable ? "" : "Bientôt disponible")
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+                .accessibilityIdentifier("\(identifier)-\(option.id)")
+            }
+        }
+        .padding(2)
+        .background(Brand.surface, in: Capsule())
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(label)
     }
 }
