@@ -118,7 +118,7 @@ struct SequenceView: View {
                                         .accessibilityLabel("Durée : \(item.readableDuration)")
                                 }
                             }
-                        }.buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("play-sequence")
+                        }.buttonStyle(.listen).accessibilityIdentifier("play-sequence")
                             .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.background)
                             .overlay(alignment: .top) { AppRule() }
                     }
@@ -196,6 +196,7 @@ struct PlaybackDock: View {
                         if editing { playback.beginScrubbing() } else { playback.endScrubbing() }
                     })
                         .frame(minHeight: 44)
+                        .tint(Brand.accent)
                         .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
                         .accessibilityLabel("Position dans le passage")
                         .accessibilityHint(playback.isLoading ? "Préparation de l’écoute" : "")
@@ -241,7 +242,7 @@ struct PlaybackDock: View {
         Button { presses += 1; playback.toggle() } label: {
             Label(playLabel, systemImage: playSymbol)
                 .contentTransition(.symbolEffect(.replace))
-        }.buttonStyle(ActionButtonStyle(prominent: true))
+        }.buttonStyle(.listen)
             .motion(Motion.quick, value: playSymbol)
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityIdentifier("player-toggle")
@@ -256,7 +257,7 @@ struct PlaybackDock: View {
                 .frame(width: playCircleSize, height: playCircleSize)
                 .overlay { Circle().strokeBorder(Brand.rule) }
                 .contentShape(Circle())
-        }.buttonStyle(PressableStyle()).foregroundStyle(Brand.tint)
+        }.buttonStyle(PressableStyle()).foregroundStyle(Brand.accent)
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityLabel(playLabel)
             .accessibilityIdentifier("player-toggle")
@@ -269,7 +270,7 @@ struct PlaybackDock: View {
                 Text(forward ? "Suivant" : "Précédent").lineLimit(1).minimumScaleFactor(0.85)
                 if forward { Image(systemName: "forward.end.fill") }
             }
-        }.buttonStyle(ActionButtonStyle(prominent: true, horizontalPadding: 10))
+        }.buttonStyle(ActionButtonStyle(prominent: true, horizontalPadding: 10, fill: Brand.accent, foreground: Brand.onAccent))
             .disabled(forward ? !playback.hasNext : !playback.hasPrevious)
             .accessibilityLabel(forward ? "Séquence suivante" : "Séquence précédente")
             .accessibilityIdentifier(forward ? "player-next" : "player-previous")
@@ -280,7 +281,7 @@ struct PlaybackDock: View {
                 .font(.title2).frame(minWidth: 52, maxWidth: dynamicType.isAccessibilitySize ? .infinity : 60, minHeight: 56)
                 .overlay { Capsule().strokeBorder(Brand.rule) }
                 .contentShape(Rectangle())
-        }.buttonStyle(PressableStyle()).foregroundStyle(Brand.tint)
+        }.buttonStyle(PressableStyle()).foregroundStyle(Brand.accent)
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityLabel(forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes")
     }

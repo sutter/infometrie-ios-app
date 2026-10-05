@@ -24,7 +24,11 @@ enum Brand {
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
     /// One brand green (the client's color) for the wordmark and interventions, citations in graphite:
     /// a single hue, never paired like the flag. Text at 5:1 or more on its wash, in both themes.
-    static let intervention = color(light: 0x17753A, dark: 0x4ADE80)
+    /// The brand green, also the color of listening: play, pause, skips and progress.
+    static let accent = color(light: 0x17753A, dark: 0x4ADE80)
+    /// Text and icons on `accent`: 5.8:1 in light, 9.9:1 in dark.
+    static let onAccent = color(light: 0xFFFFFF, dark: 0x0B1F12)
+    static let intervention = accent
     static let interventionWash = color(light: 0xE7F5EA, dark: 0x0F2A18)
     static let citation = color(light: 0x3A3D42, dark: 0xD4D6DA)
     static let citationWash = color(light: 0xEDEEF0, dark: 0x26282C)
@@ -62,6 +66,9 @@ struct Wordmark: View {
 struct ActionButtonStyle: ButtonStyle {
     var prominent = false
     var horizontalPadding: CGFloat = 16
+    /// Fill and foreground of a prominent button: ink by default, green for listening.
+    var fill = Brand.primary
+    var foreground = Brand.primaryForeground
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func makeBody(configuration: Configuration) -> some View {
@@ -71,8 +78,8 @@ struct ActionButtonStyle: ButtonStyle {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, horizontalPadding).padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 52)
-            .foregroundStyle(prominent ? Brand.primaryForeground : Brand.ink)
-            .background(prominent ? Brand.primary : Brand.card, in: Capsule())
+            .foregroundStyle(prominent ? foreground : Brand.ink)
+            .background(prominent ? fill : Brand.card, in: Capsule())
             .overlay { if !prominent { Capsule().strokeBorder(Brand.rule) } }
             .contentShape(Capsule())
             .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.45)
@@ -80,6 +87,11 @@ struct ActionButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
             .animation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
+}
+
+extension ButtonStyle where Self == ActionButtonStyle {
+    /// The listening action ("Écouter", "Pause"): prominent, in the brand green.
+    static var listen: ActionButtonStyle { ActionButtonStyle(prominent: true, fill: Brand.accent, foreground: Brand.onAccent) }
 }
 
 /// Icon controls without a capsule of their own (player skips, round play button) that sink under the finger.
