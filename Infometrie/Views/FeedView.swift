@@ -20,11 +20,10 @@ struct FeedView: View {
                         ErrorNotice(message: error) { Task { await model.refresh(reset: true) } }
                             .padding(.vertical, 12)
                     }
-                    // Only the cards fade as filters change or passages arrive. Animating the whole stack
-                    // would also animate the pinned type row, which then sticks and snaps.
+                    // The cards change without animation: the user asked for a still list.
                     Group {
                         if model.isRefreshing && model.items.isEmpty {
-                            FeedSkeleton().padding(.vertical, 5).transition(.opacity)
+                            FeedSkeleton().padding(.vertical, 5)
                         } else if model.visibleItems.isEmpty && model.feedError == nil {
                             VStack(alignment: .leading, spacing: 12) {
                                 AppEmptyState(title: "Aucun passage pour le moment", icon: "text.magnifyingglass", message: "Aucun résultat sur les dernières 24 heures avec ces critères.")
@@ -41,8 +40,6 @@ struct FeedView: View {
                             }
                         }
                     }
-                    .motion(value: model.visibleItems.map(\.id))
-                    .motion(value: model.isRefreshing && model.items.isEmpty)
                     if let date = model.lastRefresh {
                         Text("Mis à jour à \(date.formatted(date: .omitted, time: .shortened))")
                             .font(.footnote).foregroundStyle(Brand.secondary)
