@@ -35,7 +35,7 @@ struct FeedView: View {
                         } else {
                             ForEach(model.visibleItems) { item in
                                 NavigationLink { SequenceView(item: item) } label: {
-                                    FeedCard(item: item).padding(.vertical, 5)
+                                    FeedCard(item: item)
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
@@ -60,10 +60,10 @@ struct FeedView: View {
         .modifier(FeedScrollOverflow(overTabBar: !usesWideLayout))
         .scrollEdgeEffectHidden(true, for: .bottom)
         .scrollEdgeEffectStyle(.hard, for: .top)
-        .background(Brand.background)
+        .background(Brand.page)
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbar(usesWideLayout ? .hidden : .visible, for: .navigationBar)
-        .toolbarBackground(Brand.background, for: .navigationBar)
+        .toolbarBackground(Brand.page, for: .navigationBar)
         .toolbar {
             if !usesWideLayout {
                 ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21) }
@@ -99,7 +99,7 @@ struct FeedView: View {
             FeedKindPicker()
             AppRule()
         }
-        .background(Brand.background)
+        .background(Brand.page)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("feed-filter-bar")
     }

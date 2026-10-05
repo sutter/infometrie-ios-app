@@ -6,6 +6,8 @@ enum Brand {
     // for actual media branding and destructive system feedback.
     static let background = color(light: 0xF1F2F3, dark: 0x08090A)
     static let card = color(light: 0xFFFFFF, dark: 0x151719)
+    /// Reading pages (feed, passage): a plain white page with rows on dividers, after Medium.
+    static let page = color(light: 0xFFFFFF, dark: 0x101113)
     static let ink = color(light: 0x111214, dark: 0xF5F5F4)
     static let primary = color(light: 0x151618, dark: 0xF1F1EF)
     static let primaryForeground = color(light: 0xFFFFFF, dark: 0x111214)
@@ -262,6 +264,7 @@ struct AppEmptyState: View {
 /// Keep native navigation controls and a consistent title across sheets and details.
 private struct AppNavigationTitle: ViewModifier {
     let title: String
+    let background: Color
     func body(content: Content) -> some View {
         content.navigationTitle(title).navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -270,13 +273,13 @@ private struct AppNavigationTitle: ViewModifier {
                         .foregroundStyle(Brand.ink).accessibilityAddTraits(.isHeader)
                 }
             }
-            .toolbarBackground(Brand.background, for: .navigationBar)
+            .toolbarBackground(background, for: .navigationBar)
     }
 }
 
 extension View {
-    func appNavigationTitle(_ title: String) -> some View {
-        modifier(AppNavigationTitle(title: title))
+    func appNavigationTitle(_ title: String, background: Color = Brand.background) -> some View {
+        modifier(AppNavigationTitle(title: title, background: background))
     }
 
     func appInput() -> some View {

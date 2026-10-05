@@ -106,7 +106,7 @@ struct PassageHeading: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Propos").font(.subheadline.weight(.semibold)).foregroundStyle(Brand.secondary)
                 Text(item.title)
-                    .font(.title3.weight(.semibold))
+                    .font(.title2.weight(.bold))
                     .foregroundStyle(Brand.ink)
                     .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier(titleIdentifier)

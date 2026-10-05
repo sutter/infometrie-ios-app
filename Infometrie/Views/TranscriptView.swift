@@ -125,7 +125,7 @@ struct TranscriptView: View {
                 ForEach(timeline.passages) { passage in
                     Text(attributed(passage))
                         .font(expanded ? .title2.weight(.semibold) : .body)
-                        .lineSpacing(expanded ? 8 : 3)
+                        .lineSpacing(expanded ? 8 : 6)
                         .foregroundStyle(Brand.ink).tint(Brand.ink)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .id(passage.id)

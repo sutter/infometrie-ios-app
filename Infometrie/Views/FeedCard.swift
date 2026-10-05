@@ -18,9 +18,10 @@ struct FeedCard: View {
                 title
             }
         }
-        .padding(16)
+        // Rows on a plain page, separated by a hairline, rather than cards: the Medium reading list.
+        .padding(.vertical, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Brand.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(alignment: .bottom) { AppRule() }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityHint(item.canPlay ? "Ouvre le texte et le lecteur de ce passage" : "Ouvre le texte de cette publication")
@@ -28,7 +29,7 @@ struct FeedCard: View {
 
     private var title: some View {
         Text(displayTitle)
-            .font(.body).foregroundStyle(Brand.ink)
+            .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
             .lineLimit(dynamicType.isAccessibilitySize ? nil : 4)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -87,7 +88,7 @@ struct FeedSkeleton: View {
     var label = "Chargement du fil"
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 0) {
             ForEach(FeedItem.skeletons) { FeedCard(item: $0) }
         }
         .skeleton()
