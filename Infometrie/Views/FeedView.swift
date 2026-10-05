@@ -72,12 +72,23 @@ struct FeedView: View {
         }
     }
 
-    /// The result count and its freshness, with "Tout écouter" at the end of the line.
+    /// The result count and its freshness on one line, with "Tout écouter" at its end.
+    /// When both cannot fit, the button moves below rather than the text wrapping.
     private var statusRow: some View {
-        AdaptiveRow {
-            FeedStatus()
-            if usesWideLayout { filtersButton }
-            listenButton
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                FeedStatus(singleLine: true)
+                Spacer(minLength: 0)
+                if usesWideLayout { filtersButton }
+                listenButton
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                FeedStatus(singleLine: !dynamicType.isAccessibilitySize)
+                HStack(spacing: 12) {
+                    if usesWideLayout { filtersButton }
+                    listenButton
+                }
+            }
         }
     }
 
@@ -137,28 +148,30 @@ struct FeedView: View {
     }
 }
 
-/// How many results the list holds and how fresh they are, like "50 résultats · il y a moins d’une minute".
+/// How many results the list holds and how fresh they are, like "50 résultats · il y a 3 min".
 private struct FeedStatus: View {
     @Environment(AppModel.self) private var model
+    var singleLine = true
 
     var body: some View {
         // Re-read the age every 15 seconds; the feed itself refreshes every 30.
         TimelineView(.periodic(from: .now, by: 15)) { context in
             let count = model.visibleItems.count
-            // One text, so the age wraps under the count instead of squeezing beside it.
+            // One text, so that at accessibility sizes the age wraps under the count rather than beside it.
             (Text(count <= 1 ? "\(count) résultat" : "\(count) résultats").fontWeight(.semibold).foregroundStyle(Brand.ink)
                 + Text(model.lastRefresh.map { " · \(Self.age(of: $0, at: context.date))" } ?? "").foregroundStyle(Brand.secondary))
                 .font(.footnote.monospacedDigit())
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: singleLine, vertical: true)
                 .accessibilityIdentifier("feed-status")
         }
     }
 
-    /// The age of the last refresh as an upper bound in minutes, which reads calmer than a ticking count.
+    /// The age of the last refresh, short enough to keep the line whole beside "Tout écouter".
     static func age(of date: Date, at now: Date) -> String {
-        let minutes = Int(max(0, now.timeIntervalSince(date)) / 60) + 1
-        return minutes == 1 ? "il y a moins d’une minute" : "il y a moins de \(minutes) minutes"
+        let seconds = max(0, now.timeIntervalSince(date))
+        if seconds < 60 { return "à l’instant" }
+        if seconds < 3_600 { return "il y a \(Int(seconds / 60)) min" }
+        return "il y a \(Int(seconds / 3_600)) h"
     }
 }
 
