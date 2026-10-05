@@ -54,24 +54,24 @@ struct RootView: View {
                 layout {
                     if horizontalSizeClass == .regular { MainNavigation() }
                     TabView(selection: $binding.tab) {
-                        Tab("Le fil", systemImage: "newspaper", value: .feed) {
+                        Tab(value: AppModel.Tab.feed) {
                             NavigationStack {
                                 FeedView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
                             .tint(Brand.tint)
-                        }
-                        Tab("Mes suivis", systemImage: "binoculars", value: .saved) {
+                        } label: { tabLabel("Le fil", symbol: "newspaper", tab: .feed) }
+                        Tab(value: AppModel.Tab.saved) {
                             NavigationStack {
                                 SavedSearchesView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
                             .tint(Brand.tint)
-                        }
-                        Tab("Compte", systemImage: "person.circle", value: .account) {
+                        } label: { tabLabel("Mes suivis", symbol: "binoculars", tab: .saved) }
+                        Tab(value: AppModel.Tab.account) {
                             NavigationStack {
                                 AccountView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
                             .tint(Brand.tint)
-                        }
+                        } label: { tabLabel("Compte", symbol: "person.circle", tab: .account) }
                     }
                     .tint(Brand.tint)
                 }
@@ -103,6 +103,12 @@ struct RootView: View {
         .alert("InfoMétrie", isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } })) {
             Button("OK", role: .cancel) { model.notice = nil }
         } message: { Text(model.notice ?? "") }
+    }
+
+    /// Filled when active, outlined otherwise; the tab bar would otherwise fill every icon.
+    private func tabLabel(_ title: String, symbol: String, tab: AppModel.Tab) -> some View {
+        Label(title, systemImage: model.tab == tab ? "\(symbol).fill" : symbol)
+            .environment(\.symbolVariants, .none)
     }
 }
 
