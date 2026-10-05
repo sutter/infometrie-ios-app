@@ -68,8 +68,7 @@ struct TranscriptView: View {
                 AppRule()
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 12) {
-                        Text("Verbatim").font(.headline).foregroundStyle(Brand.ink)
-                            .accessibilityAddTraits(.isHeader)
+                        SectionLabel(title: "Verbatim")
                         Spacer(minLength: 0)
                         if let onExpand {
                             Button(action: onExpand) {
@@ -85,7 +84,7 @@ struct TranscriptView: View {
                     .overlay(alignment: .topLeading) { positionStatus }
                     // As tall as the text, up to the former fixed height: a short verbatim leaves no gap.
                     textScroll.frame(height: min(textContentHeight ?? textHeight, textHeight, 380))
-                }.padding(.top, 4).padding(.bottom, 8)
+                }.padding(.top, 4)
                 if showsResume || notice != nil {
                     VStack(alignment: .leading, spacing: 10) {
                         if showsResume { followButton }

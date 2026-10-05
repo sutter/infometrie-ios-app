@@ -48,7 +48,7 @@ struct SequenceView: View {
 
     private var sequenceContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
                 PassageHeading(item: displayItem, titleIdentifier: "sequence-title")
                 if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
                 if isCurrent, displayItem.canPlay, displayItem.video {
@@ -295,7 +295,7 @@ struct PodcastView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 24) {
                     if let item = model.player.current {
                         PassageHeading(item: item, titleIdentifier: "podcast-title")
                             .id(item.id).transition(.opacity)

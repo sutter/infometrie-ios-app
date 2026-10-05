@@ -61,6 +61,16 @@ struct KindTag: View {
     }
 }
 
+/// The small gray title of a passage section ("Propos", "Verbatim"): one style for every section label.
+struct SectionLabel: View {
+    let title: String
+
+    var body: some View {
+        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.secondary)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
 /// The person and their party on one line, then their role when it adds something.
 struct PassageSpeaker: View {
     let item: FeedItem
@@ -100,11 +110,14 @@ struct PassageHeading: View {
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            facts
-            PassageSpeaker(item: item, nameFont: .headline, lineLimit: nil)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Propos").font(.subheadline.weight(.semibold)).foregroundStyle(Brand.secondary)
+        // Two groups on the 8 pt grid: the context (12 inside), then what was said (8 inside), 24 apart.
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 12) {
+                facts
+                PassageSpeaker(item: item, nameFont: .headline, lineLimit: nil)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                SectionLabel(title: "Propos")
                 Text(item.title)
                     .font(.title2.weight(.bold))
                     .foregroundStyle(Brand.ink)
