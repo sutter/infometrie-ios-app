@@ -59,12 +59,14 @@ struct FeedView: View {
         }
         .refreshable { await model.refresh(reset: true) }
         .modifier(FeedScrollOverflow(overTabBar: !usesWideLayout))
-        .scrollEdgeEffectHidden(true, for: .bottom)
-        .scrollEdgeEffectStyle(.hard, for: .top)
+        // No scroll edge effect: the pinned type row already covers the cards under the bar, and on
+        // iOS 27 the hard effect drew a hairline and a different tint under the bar at rest.
+        .scrollEdgeEffectHidden(true)
         .background(Brand.background)
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbar(usesWideLayout ? .hidden : .visible, for: .navigationBar)
         .toolbarBackground(Brand.background, for: .navigationBar)
+        .toolbarBackgroundVisibility(.visible, for: .navigationBar)
         .toolbar {
             if !usesWideLayout {
                 ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme) }
@@ -101,7 +103,7 @@ struct FeedView: View {
             AppRule()
         }
         // Full width: cards scrolling under the pinned header no longer show in the side margins.
-        .background { Brand.background.containerRelativeFrame(.horizontal) }
+        .background { Brand.background.containerRelativeFrame(.horizontal).padding(.vertical, -8) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("feed-filter-bar")
     }

@@ -317,7 +317,10 @@ private struct AppNavigationTitle: ViewModifier {
                         .foregroundStyle(Brand.fixed(Brand.ink, for: colorScheme)).accessibilityAddTraits(.isHeader)
                 }
             }
+            // An opaque bar in the page color, with no scroll edge effect under it (the pages hide it):
+            // on iOS 27 the hard effect drew a hairline and a different tint under the bar at rest.
             .toolbarBackground(Brand.background, for: .navigationBar)
+            .toolbarBackgroundVisibility(.visible, for: .navigationBar)
     }
 }
 

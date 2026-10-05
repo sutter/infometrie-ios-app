@@ -74,7 +74,7 @@ struct SearchView: View {
             }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .background(Brand.background)
-        .scrollEdgeEffectHidden(true, for: .bottom).scrollEdgeEffectStyle(.hard, for: .top)
+        .scrollEdgeEffectHidden(true)
         .appNavigationTitle("Filtrer le fil")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Annuler") { model.isSearchPresented = false } }
@@ -115,7 +115,7 @@ struct SearchView: View {
                 }
                 .background(Brand.background)
                 .scrollDismissesKeyboard(.interactively)
-                .scrollEdgeEffectHidden(true, for: .bottom).scrollEdgeEffectStyle(.hard, for: .top)
+                .scrollEdgeEffectHidden(true)
                 .appNavigationTitle("Enregistrer un suivi")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Annuler") { showSave = false } } }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -195,7 +195,7 @@ struct ChoicePicker: View {
             }
         }
         .listStyle(.plain).scrollContentBackground(.hidden).background(Brand.background)
-        .scrollEdgeEffectHidden(true, for: .bottom).scrollEdgeEffectStyle(.hard, for: .top)
+        .scrollEdgeEffectHidden(true)
         .appNavigationTitle(title)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Rechercher un nom")
         .safeAreaInset(edge: .bottom, spacing: 0) {

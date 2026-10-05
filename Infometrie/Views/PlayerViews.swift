@@ -124,8 +124,7 @@ struct SequenceView: View {
                 }
             }
         }
-        .scrollEdgeEffectHidden(true, for: .bottom)
-        .scrollEdgeEffectStyle(.hard, for: .top)
+        .scrollEdgeEffectHidden(true)
         .background(Brand.background).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
         .toolbar(.hidden, for: .tabBar)
         .task(id: reload) {
