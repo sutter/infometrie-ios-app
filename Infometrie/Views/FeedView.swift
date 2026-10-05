@@ -15,8 +15,8 @@ struct FeedView: View {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: dynamicType.isAccessibilitySize ? [] : [.sectionHeaders]) {
                 Section {
                     // Period and display scroll with the list: only the types stay pinned, so the cards get the room.
-                    FeedViewOptions().padding(.top, 10)
-                    statusRow.padding(.top, 8).padding(.bottom, 4)
+                    FeedViewOptions().padding(.top, 8)
+                    statusRow.padding(.top, 16).padding(.bottom, 8)
                     if hasAudienceFilters { selectionSummary.padding(.vertical, 12) }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.refresh(reset: true) } }
@@ -263,7 +263,7 @@ private struct FeedKindPicker: View {
                         .foregroundStyle(checked ? Brand.ink : Brand.secondary)
                 } else {
                     Text(kind.title)
-                        .font(.subheadline.weight(checked ? .semibold : .regular))
+                        .font(.subheadline)
                         .foregroundStyle(checked ? Brand.ink : Brand.secondary)
                 }
             }
@@ -294,102 +294,50 @@ private struct FeedKindPicker: View {
 /// Period and display of the feed. Only Live and Liste work today: 7 j, 30 j and the chart synthesis
 /// wait for an API, so they stay visible and explain in an alert, rather than on screen, that they are coming.
 private struct FeedViewOptions: View {
-    @Environment(\.dynamicTypeSize) private var dynamicType
     @State private var comingSoon: String?
 
     var body: some View {
-        Group {
-            if dynamicType.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 8) { period; display }
-            } else {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) { period; Spacer(minLength: 0); display }
-                    VStack(alignment: .leading, spacing: 8) { period; display }
-                }
+        // One row of underlined tabs on a hairline: period on the left, display as icons on the right,
+        // so every single choice in the header shares the same selection mark.
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) { periods; Spacer(minLength: 8); displays }
+            // At the largest text sizes the display icons move under the periods.
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 8) { periods }
+                HStack(spacing: 8) { displays }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // The tabs' inner padding would push "Live" past the checkboxes' edge.
+        .padding(.leading, -4)
+        .overlay(alignment: .bottom) { AppRule() }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Période et affichage")
         .alert("Bientôt disponible", isPresented: Binding(get: { comingSoon != nil }, set: { if !$0 { comingSoon = nil } })) {
             Button("OK", role: .cancel) { comingSoon = nil }
         } message: { Text(comingSoon ?? "") }
     }
 
-    /// Underlined text tabs, like Actifs / Archivés: lighter than a gray track for choices that mostly wait.
-    private var period: some View {
-        HStack(spacing: 8) {
-            periodTab("Live", label: "Live, dernières 24 heures", id: "live", available: true)
-            periodTab("7 j", label: "7 jours", id: "7", available: false)
-            periodTab("30 j", label: "30 jours", id: "30", available: false)
-        }
-        // The tabs' inner padding would push "Live" past the checkboxes' edge.
-        .padding(.leading, -4)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Période")
+    @ViewBuilder private var periods: some View {
+        tab("Live", label: "Live, dernières 24 heures", id: "feed-period-live", selected: true)
+        tab("7 j", label: "7 jours", id: "feed-period-7", message: Self.periods)
+        tab("30 j", label: "30 jours", id: "feed-period-30", message: Self.periods)
     }
 
-    private func periodTab(_ title: String, label: String, id: String, available: Bool) -> some View {
-        AppTabButton(title: title, selected: id == "live", compact: true) {
-            if !available { comingSoon = "Les périodes de 7 et 30 jours arriveront avec une prochaine version du service." }
+    @ViewBuilder private var displays: some View {
+        tab("Liste", icon: "list.bullet", label: "Liste", id: "feed-display-list", selected: true)
+        tab("Graphique", icon: "chart.bar.xaxis", label: "Synthèse graphique", id: "feed-display-chart", message: Self.chart)
+    }
+
+    private static let periods = "Les périodes de 7 et 30 jours arriveront avec une prochaine version du service."
+    private static let chart = "La synthèse graphique arrivera avec une prochaine version du service."
+
+    /// A tab that works when `message` is nil; otherwise it is coming soon and says so when tapped.
+    private func tab(_ title: String, icon: String? = nil, label: String, id: String, selected: Bool = false, message: String? = nil) -> some View {
+        AppTabButton(title: title, selected: selected, icon: icon, iconOnly: icon != nil, compact: true) {
+            if let message { comingSoon = message }
         }
         .accessibilityLabel(label)
-        .accessibilityValue(available ? "" : "Bientôt disponible")
-        .accessibilityIdentifier("feed-period-\(id)")
-    }
-
-    /// Icons in a small capsule, so the display reads apart from the period tabs.
-    private var display: some View {
-        ChoiceGroup(label: "Affichage", selected: "list", options: [
-            .init(id: "list", title: "Liste", symbol: "list.bullet", accessibilityLabel: "Liste", isAvailable: true),
-            .init(id: "chart", title: "Graphique", symbol: "chart.bar.xaxis", accessibilityLabel: "Synthèse graphique", isAvailable: false)
-        ], identifier: "feed-display") { _ in
-            comingSoon = "La synthèse graphique arrivera avec une prochaine version du service."
-        }
-    }
-}
-
-/// Mutually exclusive choices on one capsule. An unavailable choice stays visible and explains itself when tapped.
-private struct ChoiceGroup: View {
-    struct Option: Identifiable {
-        let id: String
-        let title: String
-        var symbol: String? = nil
-        let accessibilityLabel: String
-        let isAvailable: Bool
-    }
-    let label: String
-    let selected: String
-    let options: [Option]
-    let identifier: String
-    let onUnavailable: (Option) -> Void
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(options) { option in
-                let isSelected = option.id == selected
-                Button { if !option.isAvailable { onUnavailable(option) } } label: {
-                    Group {
-                        if let symbol = option.symbol {
-                            Image(systemName: symbol).font(.subheadline.weight(.semibold)).frame(minWidth: 20)
-                        } else {
-                            Text(option.title).font(.footnote.weight(isSelected ? .semibold : .regular))
-                        }
-                    }
-                        .foregroundStyle(isSelected ? Brand.ink : Brand.secondaryOnSurface)
-                        .fixedSize()
-                        .padding(.horizontal, 12).frame(minHeight: 44)
-                        .background(isSelected ? Brand.raised : .clear, in: Capsule())
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(option.accessibilityLabel)
-                .accessibilityValue(option.isAvailable ? "" : "Bientôt disponible")
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
-                .accessibilityIdentifier("\(identifier)-\(option.id)")
-            }
-        }
-        .padding(2)
-        .background(Brand.surface, in: Capsule())
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(label)
+        .accessibilityValue(message == nil ? "" : "Bientôt disponible")
+        .accessibilityIdentifier(id)
     }
 }
