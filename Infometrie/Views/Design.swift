@@ -268,7 +268,7 @@ struct AppSection<Content: View>: View {
     var body: some View {
         // A title over its content on the plain page: whitespace separates sections, not cards or extra rules.
         VStack(alignment: .leading, spacing: 12) {
-            // The same small gray title as "Propos" and "Verbatim": one section style across the app.
+            // The same small gray title as "Verbatim": one section style across the app.
             SectionLabel(title: title).fixedSize(horizontal: false, vertical: true)
             content()
         }
