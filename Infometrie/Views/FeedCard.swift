@@ -28,28 +28,12 @@ struct FeedCard: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// The kind, how a citation was heard, and the channel logo on the right.
-    /// A mention too long for the line moves below the badge instead of squeezing beside it.
-    @ViewBuilder private var header: some View {
-        let badge = Text(item.kindLabel).font(.footnote.weight(.semibold)).foregroundStyle(item.kindColor)
-        if dynamicType.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: 6) { badge; mention; ChannelMark(item: item) }
-        } else {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) { badge; mention; Spacer(minLength: 0); ChannelMark(item: item) }
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) { badge; Spacer(minLength: 0); ChannelMark(item: item) }
-                    mention
-                }
-            }
-        }
-    }
-
-    @ViewBuilder private var mention: some View {
-        if item.isCitation {
-            Text(item.citedBy.isEmpty ? "mention à l’antenne" : "mention par \(item.citedBy)")
-                .font(.footnote).foregroundStyle(Brand.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+    /// The kind, and the channel logo on the right.
+    private var header: some View {
+        AdaptiveRow {
+            Text(item.kindLabel).font(.footnote.weight(.semibold)).foregroundStyle(item.kindColor)
+            if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
+            ChannelMark(item: item)
         }
     }
 

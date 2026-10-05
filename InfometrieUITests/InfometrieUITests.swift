@@ -101,10 +101,10 @@ final class InfometrieUITests: XCTestCase {
         app.launchArguments += ["--feed-kinds-fixture"]
         app.launch()
         submitLogin(in: app, password: "valide")
-        XCTAssertTrue(app.staticTexts["3 passages"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["3 résultats"].waitForExistence(timeout: 10))
         showKinds([3], in: app)
         XCTAssertTrue(app.buttons["feed-item-903"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["1 passage"].exists)
+        XCTAssertTrue(app.staticTexts["1 résultat"].exists)
         XCTAssertFalse(app.buttons["start-podcast"].isEnabled)
         capture("21-fil-publications-x", app: app)
         app.buttons["feed-item-903"].tap()
@@ -119,7 +119,7 @@ final class InfometrieUITests: XCTestCase {
         for (selection, id) in [(1, 901), (2, 902), (3, 903)] {
             showKinds([selection], in: app)
             XCTAssertTrue(app.buttons["feed-item-\(id)"].waitForExistence(timeout: 5))
-            XCTAssertTrue(app.staticTexts["1 passage"].exists)
+            XCTAssertTrue(app.staticTexts["1 résultat"].exists)
         }
         app.buttons["edit-filters"].tap()
         reveal(app.buttons["filter-kind-3"], in: app, down: false)
@@ -142,7 +142,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.buttons["feed-item-903"].waitForExistence(timeout: 5))
         assertKinds([3], in: app)
         showKinds([1, 2, 3], in: app)
-        XCTAssertTrue(app.staticTexts["3 passages"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["3 résultats"].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -567,7 +567,7 @@ final class InfometrieUITests: XCTestCase {
             XCTAssertFalse(app.tabBars.firstMatch.exists, "L’iPad ne doit afficher qu’une navigation principale")
         }
         showKinds([2], in: app)
-        XCTAssertTrue(app.staticTexts["2 passages"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["2 résultats"].waitForExistence(timeout: 5))
 
         let saved = navigationButton("Mes suivis", in: app)
         saved.tap()
@@ -581,7 +581,7 @@ final class InfometrieUITests: XCTestCase {
         feed.tap()
         XCTAssertTrue(citations.waitForExistence(timeout: 5))
         assertKinds([2], in: app)
-        XCTAssertTrue(app.staticTexts["2 passages"].exists)
+        XCTAssertTrue(app.staticTexts["2 résultats"].exists)
         app.buttons["feed-item-2"].tap()
         XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
@@ -598,11 +598,11 @@ final class InfometrieUITests: XCTestCase {
         let citations = app.buttons["feed-kind-2"]
         XCTAssertTrue(interventions.waitForExistence(timeout: 10))
         assertKinds([1, 2, 3], in: app)
-        XCTAssertTrue(app.staticTexts["7 passages"].exists)
+        XCTAssertTrue(app.staticTexts["7 résultats"].exists)
         capture("18-fil-tous", app: app)
 
         showKinds([2], in: app)
-        XCTAssertTrue(app.staticTexts["2 passages"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["2 résultats"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["feed-item-1"].exists)
         XCTAssertFalse(citations.isEnabled, "Le dernier type coché reste coché")
         XCTAssertFalse(app.buttons["clear-filters"].exists, "Le type seul ne doit pas ajouter un récapitulatif redondant")
@@ -620,18 +620,18 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["apply-search"].tap()
         XCTAssertTrue(interventions.waitForExistence(timeout: 5))
         assertKinds([1], in: app, "Le panneau doit actualiser les cases du fil")
-        XCTAssertTrue(app.staticTexts["3 passages"].exists)
+        XCTAssertTrue(app.staticTexts["3 résultats"].exists)
         XCTAssertFalse(app.buttons["feed-item-2"].exists)
         capture("18-fil-interventions", app: app)
 
         // Checkboxes combine types, which the former tabs could not do.
         showKinds([1, 3], in: app)
-        XCTAssertTrue(app.staticTexts["5 passages"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["5 résultats"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["feed-item-2"].exists)
         showKinds([1, 2, 3], in: app)
-        XCTAssertTrue(app.staticTexts["7 passages"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["7 résultats"].waitForExistence(timeout: 5))
         showKinds([2], in: app)
-        XCTAssertTrue(app.staticTexts["2 passages"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["2 résultats"].waitForExistence(timeout: 5))
         reveal(app.buttons["start-podcast"], in: app, down: true)
         app.buttons["start-podcast"].tap()
         XCTAssertTrue(app.staticTexts["Passage 1 sur 2"].waitForExistence(timeout: 10))

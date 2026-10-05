@@ -15,6 +15,7 @@ struct FeedView: View {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: dynamicType.isAccessibilitySize ? [] : [.sectionHeaders]) {
                 feedHeading.padding(.vertical, 12)
                 Section {
+                    FeedStatus().padding(.top, 10).padding(.bottom, 4)
                     if hasAudienceFilters { selectionSummary.padding(.vertical, 12) }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.refresh(reset: true) } }
@@ -39,11 +40,6 @@ struct FeedView: View {
                                 .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
                             }
                         }
-                    }
-                    if let date = model.lastRefresh {
-                        Text("Mis à jour à \(date.formatted(date: .omitted, time: .shortened))")
-                            .font(.footnote).foregroundStyle(Brand.secondary)
-                            .frame(maxWidth: .infinity).padding(.vertical, 20)
                     }
                 } header: { filterControls }
             }
@@ -79,16 +75,8 @@ struct FeedView: View {
 
     private var feedHeading: some View {
         AdaptiveRow {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Le fil").font(.title2.bold()).foregroundStyle(Brand.ink)
-                    .accessibilityAddTraits(.isHeader)
-                HStack(spacing: 4) {
-                    Text("24 h ·").accessibilityHint("Passages des dernières 24 heures")
-                    Text(model.visibleItems.count == 1 ? "1 passage" : "\(model.visibleItems.count) passages")
-                }
-                .font(.footnote).foregroundStyle(Brand.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            }
+            Text("Le fil").font(.title2.bold()).foregroundStyle(Brand.ink)
+                .accessibilityAddTraits(.isHeader)
             if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
             if usesWideLayout { filtersButton }
             listenButton
@@ -148,6 +136,34 @@ struct FeedView: View {
         .buttonStyle(.plain)
         .disabled(playable.isEmpty).opacity(playable.isEmpty ? 0.45 : 1)
         .accessibilityIdentifier("start-podcast")
+    }
+}
+
+/// How many results the list holds and how fresh they are, like "50 résultats · il y a moins d’une minute".
+private struct FeedStatus: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        // Re-read the age every 15 seconds; the feed itself refreshes every 30.
+        TimelineView(.periodic(from: .now, by: 15)) { context in
+            let count = model.visibleItems.count
+            HStack(spacing: 4) {
+                Text(count <= 1 ? "\(count) résultat" : "\(count) résultats")
+                    .fontWeight(.semibold).foregroundStyle(Brand.ink)
+                if let date = model.lastRefresh {
+                    Text("· \(Self.age(of: date, at: context.date))").foregroundStyle(Brand.secondary)
+                }
+            }
+            .font(.footnote.monospacedDigit())
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// The age of the last refresh as an upper bound in minutes, which reads calmer than a ticking count.
+    static func age(of date: Date, at now: Date) -> String {
+        let minutes = Int(max(0, now.timeIntervalSince(date)) / 60) + 1
+        return minutes == 1 ? "il y a moins d’une minute" : "il y a moins de \(minutes) minutes"
     }
 }
 
