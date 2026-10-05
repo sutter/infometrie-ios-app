@@ -7,13 +7,18 @@ struct FeedCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            header
-            source
-            PassageSpeaker(item: item)
-            title
+        // Two groups read faster than five evenly spaced lines: what and when, then who and what was said.
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                header
+                source
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                PassageSpeaker(item: item)
+                title
+            }
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Brand.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .contentShape(Rectangle())
@@ -31,9 +36,10 @@ struct FeedCard: View {
     /// The kind, and the channel logo on the right.
     private var header: some View {
         AdaptiveRow {
-            Text(item.kindLabel).font(.footnote.weight(.semibold)).foregroundStyle(item.kindColor)
+            KindTag(item: item)
             if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
-            ChannelMark(item: item)
+            // Logos are the only color on the card: large enough to recognize at a glance.
+            ChannelMark(item: item, size: 24)
         }
     }
 

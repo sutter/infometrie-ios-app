@@ -194,7 +194,6 @@ private struct FeedScrollOverflow: ViewModifier {
 private struct FeedKindPicker: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
-    @ScaledMetric(relativeTo: .subheadline) private var tileSize = 20.0
 
     private enum Kind: Int, CaseIterable {
         case interventions = 1, citations, tweets
@@ -221,8 +220,8 @@ private struct FeedKindPicker: View {
                 VStack(alignment: .leading, spacing: 4) { choices }
             } else {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 16) { choices }
-                    ScrollView(.horizontal) { HStack(spacing: 16) { choices } }
+                    HStack(spacing: 20) { choices }
+                    ScrollView(.horizontal) { HStack(spacing: 20) { choices } }
                         .scrollIndicators(.hidden)
                 }
             }
@@ -246,10 +245,11 @@ private struct FeedKindPicker: View {
         return Button { toggle(kind) } label: {
             HStack(spacing: 8) {
                 Image(systemName: checked ? "checkmark.square.fill" : "square")
-                    .font(.title3).foregroundStyle(checked ? Brand.tint : Brand.secondary)
-                // X is shown by its official logo alone, on an ink tile like in the feed cards.
+                    .font(.body).foregroundStyle(checked ? Brand.tint : Brand.secondary)
+                // The bare X mark: an ink tile beside a filled checkbox would read as a second box.
                 if kind == .tweets {
-                    MarkTile(image: Image("x.logo"), size: tileSize)
+                    Image("x.logo").font(.subheadline.weight(.semibold))
+                        .foregroundStyle(checked ? Brand.ink : Brand.secondary)
                 } else {
                     Text(kind.title)
                         .font(.subheadline.weight(checked ? .semibold : .regular))

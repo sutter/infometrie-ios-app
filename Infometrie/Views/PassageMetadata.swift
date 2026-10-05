@@ -20,6 +20,7 @@ struct PassageDuration: View {
     var body: some View {
         if item.canPlay && item.durationSec > 0 {
             Label(item.readableDuration, systemImage: "headphones")
+                .imageScale(.small)
                 .monospacedDigit()
                 .foregroundStyle(Brand.secondary)
                 .fixedSize()
@@ -46,6 +47,20 @@ struct ChannelSource: View {
     }
 }
 
+/// The passage kind as a quiet neutral tag, easy to spot while scrolling; color stays with the logos.
+struct KindTag: View {
+    let item: FeedItem
+
+    var body: some View {
+        Text(item.kindLabel)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Brand.ink)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .background(Brand.surface, in: Capsule())
+            .fixedSize()
+    }
+}
+
 /// The person and their party on one line, then their role when it adds something.
 struct PassageSpeaker: View {
     let item: FeedItem
@@ -57,10 +72,18 @@ struct PassageSpeaker: View {
         let role = item.role.trimmingCharacters(in: .whitespacesAndNewlines)
         let repeatsParty = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
             || party.range(of: role, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
+        let name = Text(item.person).font(nameFont.weight(.semibold)).foregroundStyle(Brand.ink)
+        let partyText = Text(party).font(nameFont).foregroundStyle(Brand.secondary)
         VStack(alignment: .leading, spacing: 1) {
-            (Text(item.person).font(nameFont.weight(.semibold)).foregroundStyle(Brand.ink)
-                + Text(party.isEmpty ? "" : " · \(party)").font(nameFont).foregroundStyle(Brand.secondary))
-                .lineLimit(lineLimit)
+            // Name · party on one line when it fits; otherwise the party moves below, never leaving a lone "·".
+            ViewThatFits(in: .horizontal) {
+                (party.isEmpty ? name : name + Text(" · ").font(nameFont).foregroundStyle(Brand.secondary) + partyText)
+                    .fixedSize(horizontal: true, vertical: false)
+                VStack(alignment: .leading, spacing: 1) {
+                    name.lineLimit(lineLimit)
+                    if !party.isEmpty { partyText.lineLimit(lineLimit) }
+                }
+            }
             if !role.isEmpty && (party.isEmpty || !repeatsParty) {
                 Text(role).font(.footnote).foregroundStyle(Brand.secondary).lineLimit(lineLimit)
             }
@@ -93,7 +116,7 @@ struct PassageHeading: View {
 
     /// One line when it fits; otherwise kind and logo, then date and duration.
     @ViewBuilder private var facts: some View {
-        let kind = Text(item.kindLabel).font(.footnote.weight(.semibold)).foregroundStyle(item.kindColor)
+        let kind = KindTag(item: item)
         Group {
             if dynamicType.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 6) {
@@ -103,10 +126,10 @@ struct PassageHeading: View {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 10) {
                         kind; PassageDate(item: item); channelName; PassageDuration(item: item)
-                        Spacer(minLength: 0); ChannelMark(item: item)
+                        Spacer(minLength: 0); ChannelMark(item: item, size: 24)
                     }
                     VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 10) { kind; Spacer(minLength: 0); ChannelMark(item: item) }
+                        HStack(spacing: 10) { kind; Spacer(minLength: 0); ChannelMark(item: item, size: 24) }
                         HStack(spacing: 10) { PassageDate(item: item); channelName; Spacer(minLength: 0); PassageDuration(item: item) }
                     }
                 }
