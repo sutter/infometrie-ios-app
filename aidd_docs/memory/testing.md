@@ -17,7 +17,7 @@ How the project is tested: the layers, the tools, and the conventions. Where tes
 ## Conventions
 
 - Core suites live in `Tests/InfometrieCoreTests`, one file per concern. UI journeys live in `InfometrieUITests/InfometrieUITests.swift`, named `test<Behavior>`.
-- UI tests find elements by `accessibilityIdentifier` (`feed-item-1`, `reading-size-M`, `login-password`). Give any new interactive element an identifier.
+- UI tests find elements by `accessibilityIdentifier` (`feed-item-1`, `reading-size-M`, `login-password`). Give any new interactive element an identifier. An identifier on a container without `.accessibilityElement(children: .contain)` replaces every child's own: the Compte appearance section hid `appearance-picker` this way until 2026-10-05, the likely cause of the `testFiltersDarkAppearanceAndMaximumText` failure (not rerun since).
 - Launch arguments, Debug builds only: `--uitesting` (no real session), `--signed-in` (starts with the test server's session), `--reset-searches` (empties its suivis), `--precise-word-timings` (serves word timings, otherwise 404), `--feed-kinds-fixture` (three-item feed for the kind tests). Login journeys start signed out with the `INFOMETRIE_LOGIN_TEST_ID` environment variable (a UUID) instead of `--signed-in`.
 - A sequence page prepares its player on opening: it shows the dock (`player-toggle`, "Écouter"), and `play-sequence` only flashes while the detail loads. Tapping a word there seeks without starting playback.
 - UI tests attach screenshots. Results go to `build/<Name>.xcresult`, which git ignores. Log a full-suite run and its counts in `Docs/VALIDATION.md`; smaller checks need no entry.
@@ -46,12 +46,15 @@ Xcode 27 has no Simulator app: the simulator screen lives in DeviceHub (`/Applic
 ```sh
 open -a /Applications/Xcode.app/Contents/Applications/DeviceHub.app
 xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/Infometrie.app
-xcrun simctl launch --terminate-running-process booted fr.yacast.infometrie.ios --uitesting --signed-in
+xcrun simctl launch --terminate-running-process booted fr.yacast.infometrie.ios
 ```
+
+- The user reviews with the real account: open the app for them with no test argument, and relaunch it that way after any capture run. `--uitesting --signed-in` points the app at the local test server, which rejects any other login (HTTP 422); it is for the agent's own captures only.
 
 - No simulator booted: `xcrun simctl boot <udid>` with the iOS 26.4 iPhone 17 Pro from `xcrun simctl list devices available`.
 - `-appearance dark` or `-appearance light` forces the theme for that launch, and also blocks the Thème picker (the launch argument outranks the stored choice): drive theme changes without it; `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL` gives the largest text.
 - A screenshot, only when asked: `xcrun simctl io booted screenshot <file>.png`, about two seconds after launch.
+- To see a screen the agent cannot tap (a pushed page, a sheet, a theme change), write a temporary XCUITest, never committed, that saves `app.screenshot()` PNGs to the scratchpad; run it with `-only-testing`, stop `xcodebuild` as soon as the log shows `Test Case … passed` or `failed` (it may hang finalizing), then delete the file and relaunch the app for the user.
 - Motion glitches never show on a screenshot. Record the simulator (`xcrun simctl io <udid> recordVideo --codec=h264 --force <file>.mp4`, stopped with SIGINT) while a temporary UI test, never committed, drives the journey. Then extract frames with `ffmpeg -i <file>.mp4 -vf "select='between(t,A,B)',crop=…,drawtext=text='%{pts\\:hms}'" -vsync vfr`: `-ss` lands on the wrong frames of these variable-frame-rate recordings, and scene detection misses thin changes such as an underline.
 - The test server's feed holds seven passages, so a bug tied to scrolling a long list may not reproduce there. Ask the user for a screen recording of the real feed and read it frame by frame the same way.
 
