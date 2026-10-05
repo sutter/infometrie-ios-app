@@ -53,10 +53,9 @@ struct FeedCard: View {
         }
     }
 
-    /// Date, channel and medium on the left, listening duration on the right.
+    /// Date and medium on the left, listening duration on the right.
     /// A channel too long for the line moves below the date instead of squeezing beside it.
     @ViewBuilder private var source: some View {
-        let channel = Text(channelLine).foregroundStyle(Brand.secondary).fixedSize(horizontal: false, vertical: true)
         Group {
             if dynamicType.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 6) { PassageDate(item: item); channel; PassageDuration(item: item) }
@@ -73,11 +72,19 @@ struct FeedCard: View {
         .font(.footnote)
     }
 
-    /// The channel and its medium, without repeating a medium the channel name already gives ("BFM TV").
+    @ViewBuilder private var channel: some View {
+        if !channelLine.isEmpty {
+            Text(channelLine).foregroundStyle(Brand.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The medium, plus the channel name only when no logo shows it at the top,
+    /// without repeating a medium the name already gives ("BFM TV").
     private var channelLine: String {
+        let name = ChannelMark.hasLogo(for: item) ? "" : item.channel
         let medium = item.mediaLabel
-        guard !medium.isEmpty, item.channel.range(of: medium, options: [.caseInsensitive, .diacriticInsensitive]) == nil else { return item.channel }
-        return "\(item.channel) · \(medium)"
+        let repeated = !medium.isEmpty && name.range(of: medium, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+        return [name, repeated ? "" : medium].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
     /// The person and their party on one line, then their role when it adds something.
