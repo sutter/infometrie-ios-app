@@ -75,8 +75,6 @@ struct FeedView: View {
 
     private var feedHeading: some View {
         AdaptiveRow {
-            Text("Le fil").font(.title2.bold()).foregroundStyle(Brand.ink)
-                .accessibilityAddTraits(.isHeader)
             if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
             if usesWideLayout { filtersButton }
             listenButton
