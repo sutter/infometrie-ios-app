@@ -54,19 +54,19 @@ struct RootView: View {
                 layout {
                     if horizontalSizeClass == .regular { MainNavigation() }
                     TabView(selection: $binding.tab) {
-                        Tab("Le fil", systemImage: "house", value: .feed) {
+                        Tab("Le fil", systemImage: "newspaper", value: .feed) {
                             NavigationStack {
                                 FeedView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
                             .tint(Brand.tint)
                         }
-                        Tab("Mes suivis", systemImage: "bookmark", value: .saved) {
+                        Tab("Mes suivis", systemImage: "binoculars", value: .saved) {
                             NavigationStack {
                                 SavedSearchesView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
                             .tint(Brand.tint)
                         }
-                        Tab("Compte", systemImage: "person.crop.circle", value: .account) {
+                        Tab("Compte", systemImage: "person.circle", value: .account) {
                             NavigationStack {
                                 AccountView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
@@ -145,9 +145,9 @@ private struct MainNavigation: View {
     }
 
     @ViewBuilder private var destinations: some View {
-        destination("Le fil", symbol: "house", tab: .feed, identifier: "navigation-feed")
-        destination("Mes suivis", symbol: "bookmark", tab: .saved, identifier: "navigation-saved")
-        destination("Compte", symbol: "person.crop.circle", tab: .account, identifier: "navigation-account")
+        destination("Le fil", symbol: "newspaper", tab: .feed, identifier: "navigation-feed")
+        destination("Mes suivis", symbol: "binoculars", tab: .saved, identifier: "navigation-saved")
+        destination("Compte", symbol: "person.circle", tab: .account, identifier: "navigation-account")
     }
 
     private func destination(_ title: String, symbol: String, tab: AppModel.Tab, identifier: String) -> some View {
