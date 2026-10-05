@@ -46,7 +46,7 @@ enum Brand {
 }
 
 /// The brand lockup: an "i" on a green speech bubble, then "info" heavy in ink
-/// and "métrie" regular in green. `size` is the text size; the tile scales with it.
+/// and "métrie" regular in ink: the weights alone set them apart, green stays in the tile. `size` is the text size; the tile scales with it.
 struct Wordmark: View {
     var size: CGFloat = 22
 
@@ -54,7 +54,7 @@ struct Wordmark: View {
         HStack(spacing: size * 0.38) {
             BrandTile(side: size * 1.45)
             (Text("info").font(.system(size: size * 1.05, weight: .heavy)).foregroundStyle(Brand.ink)
-                + Text("métrie").font(.system(size: size * 1.05, weight: .regular)).foregroundStyle(Brand.accent))
+                + Text("métrie").font(.system(size: size * 1.05, weight: .regular)).foregroundStyle(Brand.ink))
                 .tracking(-size * 0.03)
         }
         .fixedSize()
