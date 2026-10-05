@@ -99,7 +99,8 @@ struct FeedView: View {
             FeedKindPicker()
             AppRule()
         }
-        .background(Brand.background)
+        // Full width: cards scrolling under the pinned header no longer show in the side margins.
+        .background { Brand.background.containerRelativeFrame(.horizontal) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("feed-filter-bar")
     }
@@ -207,6 +208,13 @@ private struct FeedKindPicker: View {
             case .tweets: Brand.ink
             }
         }
+        var wash: Color {
+            switch self {
+            case .interventions: Brand.interventionWash
+            case .citations: Brand.citationWash
+            case .tweets: Brand.surface
+            }
+        }
         var title: String {
             switch self {
             case .interventions: "Interventions"
@@ -227,16 +235,16 @@ private struct FeedKindPicker: View {
     var body: some View {
         Group {
             if dynamicType.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 4) { choices }
+                VStack(alignment: .leading, spacing: 8) { choices }
             } else {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 20) { choices }
-                    ScrollView(.horizontal) { HStack(spacing: 20) { choices } }
-                        .scrollIndicators(.hidden)
-                }
+                // Categories will grow: one row of chips that scrolls, drawn out to the screen edges
+                // instead of being cut at the content margins.
+                ScrollView(.horizontal) { HStack(spacing: 8) { choices } }
+                    .scrollIndicators(.hidden)
+                    .scrollClipDisabled()
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sensoryFeedback(.selection, trigger: model.filters.selectedKinds)
         .accessibilityElement(children: .contain)
@@ -253,7 +261,7 @@ private struct FeedKindPicker: View {
         // Unchecking the last type would empty the feed, so it stays checked.
         let isLast = checked && model.filters.selectedKinds.count == 1
         return Button { toggle(kind) } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 // Each box takes its kind's color, matching the tags on the rows it shows.
                 Image(systemName: checked ? "checkmark.square.fill" : "square")
                     .font(.body).foregroundStyle(checked ? kind.color : Brand.secondary)
@@ -268,6 +276,10 @@ private struct FeedKindPicker: View {
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
+            // A chip: tinted with its kind when checked, outlined otherwise; 40 pt drawn, 48 pt to touch.
+            .padding(.horizontal, 12).frame(minHeight: 40)
+            .background(checked ? kind.wash : .clear, in: Capsule())
+            .overlay { Capsule().strokeBorder(checked ? .clear : Brand.rule) }
             .frame(minWidth: 44, minHeight: 48)
             .contentShape(Rectangle())
         }
