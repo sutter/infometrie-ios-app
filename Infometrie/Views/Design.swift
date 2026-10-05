@@ -22,13 +22,11 @@ enum Brand {
     static let sidebar = color(light: 0xFFFFFF, dark: 0x101113)
     static let sidebarRule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
-    /// The brand green, the color of interaction only: what can be tapped, checked or played,
-    /// plus the wordmark. Read-only labels stay neutral. A single hue, never paired like the flag.
+    /// The brand green, for listening and the wordmark only; checkboxes and chips stay in grays.
+    /// A single hue, never paired like the flag.
     static let accent = color(light: 0x17753A, dark: 0x4ADE80)
     /// Text and icons on `accent`: 5.8:1 in light, 9.9:1 in dark.
     static let onAccent = color(light: 0xFFFFFF, dark: 0x0B1F12)
-    /// The pale green behind a selected chip.
-    static let accentWash = color(light: 0xE7F5EA, dark: 0x0F2A18)
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
     static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
@@ -295,10 +293,10 @@ extension View {
         modifier(AppNavigationTitle(title: title))
     }
 
-    /// A capsule chip: pale green when selected, outlined otherwise; 40 pt drawn, 48 pt to touch.
+    /// A capsule chip, in grays: filled when selected, outlined otherwise; 40 pt drawn, 48 pt to touch.
     func chip(selected: Bool) -> some View {
         padding(.horizontal, 12).frame(minHeight: 40)
-            .background(selected ? Brand.accentWash : .clear, in: Capsule())
+            .background(selected ? Brand.surface : .clear, in: Capsule())
             .overlay { Capsule().strokeBorder(selected ? .clear : Brand.rule) }
             .frame(minWidth: 44, minHeight: 48)
             .contentShape(Rectangle())

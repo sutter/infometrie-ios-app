@@ -248,9 +248,9 @@ private struct FeedKindPicker: View {
         let isLast = checked && model.filters.selectedKinds.count == 1
         return Button { toggle(kind) } label: {
             HStack(spacing: 6) {
-                // Green, like every control: the color says "you can act", not the kind.
+                // Black and grays: green stays with listening.
                 Image(systemName: checked ? "checkmark.square.fill" : "square")
-                    .font(.body).foregroundStyle(checked ? Brand.accent : Brand.secondary)
+                    .font(.body).foregroundStyle(checked ? Brand.ink : Brand.secondary)
                 // The bare X mark: an ink tile beside a filled checkbox would read as a second box.
                 if kind == .tweets {
                     Image("x.logo").font(.subheadline.weight(.semibold))
@@ -265,7 +265,7 @@ private struct FeedKindPicker: View {
             .chip(selected: checked)
         }
         .buttonStyle(.plain)
-        .disabled(isLast)
+        // Not disabled: a dimmed last box would read as unchecked. `toggle` simply keeps it checked.
         .accessibilityLabel(kind.title)
         .accessibilityValue(checked ? "Coché" : "Non coché")
         .accessibilityHint(isLast ? "Au moins un type reste coché" : "")
