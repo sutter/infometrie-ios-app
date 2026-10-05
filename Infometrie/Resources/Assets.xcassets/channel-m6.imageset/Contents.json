@@ -1,6 +1,16 @@
 {
   "images": [
     {
+      "filename": "m6-ink.svg",
+      "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
       "filename": "m6.svg",
       "idiom": "universal"
     }

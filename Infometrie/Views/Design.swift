@@ -25,7 +25,7 @@ enum Brand {
     /// Kind colors, from the brand's navy and red: text at 5.5:1 or more on its wash, in both themes.
     static let intervention = color(light: 0x1E3A8A, dark: 0x9DB4FF)
     static let interventionWash = color(light: 0xE6ECFA, dark: 0x1B2440)
-    static let citation = color(light: 0xB4232F, dark: 0xFF8F8F)
+    static let citation = color(light: 0xB4232F, dark: 0xFF6B6B)
     static let citationWash = color(light: 0xFCE8EA, dark: 0x3A1A1D)
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).

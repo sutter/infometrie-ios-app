@@ -1,6 +1,16 @@
 {
   "images": [
     {
+      "filename": "franceinfo-ink.svg",
+      "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
       "filename": "franceinfo.svg",
       "idiom": "universal"
     }

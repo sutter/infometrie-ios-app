@@ -1,6 +1,16 @@
 {
   "images": [
     {
+      "filename": "nova-ink.svg",
+      "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
       "filename": "nova.svg",
       "idiom": "universal"
     }
