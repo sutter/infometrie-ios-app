@@ -64,7 +64,7 @@ struct KindTag: View {
     }
 }
 
-/// The small gray title of a passage section ("Propos", "Verbatim"): one style for every section label.
+/// The small gray title of a section ("Verbatim", "Apparence"…): one style for every section label.
 struct SectionLabel: View {
     let title: String
 
@@ -106,27 +106,25 @@ struct PassageSpeaker: View {
 }
 
 /// The top of a passage page, in the order of the user's reference: kind, date and duration with the
-/// channel logo on the right; the person, party and role; then what was said ("Propos").
+/// channel logo on the right; the person, party and role; then the title.
 struct PassageHeading: View {
     let item: FeedItem
     let titleIdentifier: String
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        // Two groups on the 8 pt grid: the context (12 inside), then what was said (8 inside), 24 apart.
+        // The context (12 inside), then the title, 24 apart on the 8 pt grid. The title speaks for
+        // itself: no "Propos" label above it.
         VStack(alignment: .leading, spacing: 24) {
             VStack(alignment: .leading, spacing: 12) {
                 facts
                 PassageSpeaker(item: item, nameFont: .headline, lineLimit: nil)
             }
-            VStack(alignment: .leading, spacing: 8) {
-                SectionLabel(title: "Propos")
-                Text(item.title)
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(Brand.ink)
-                    .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier(titleIdentifier)
-            }
+            Text(item.title)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(Brand.ink)
+                .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier(titleIdentifier)
         }
     }
 
