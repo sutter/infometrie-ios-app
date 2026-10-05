@@ -1015,6 +1015,10 @@ final class InfometrieUITests: XCTestCase {
                 // remains a valid tap target when it lies above the fixed footer.
                 if contentControl, element.frame.height > bottom - top,
                    element.frame.midY >= top, element.frame.midY <= bottom { return }
+                // In a sheet the list can end before a row clears the footer margin. Another drag
+                // there would not scroll and would tap the row instead; its centre in the band is enough.
+                if contentControl, filterFooter != nil,
+                   element.frame.midY >= controlTop, element.frame.midY <= bottom { return }
                 // XCTest may report cards and controls as hittable underneath
                 // navigation or the dock. Bring their tap target into the content.
                 if element.frame.minY >= controlTop && element.frame.maxY <= bottom { return }

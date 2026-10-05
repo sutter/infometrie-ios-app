@@ -1,5 +1,13 @@
 # Validation du portage
 
+## Suite complète avant le push — 5 octobre 2026, soir
+
+Après le build 5 : thème de la barre, barre opaque sur iOS 27, connexion centrée, retrait des intitulés, logo et icône.
+
+- `build/Full.xcresult`, iPhone 17 Pro, iOS 26.4 : 17 tests réussis sur 20. `testFiltersDarkAppearanceAndMaximumText` passe désormais : l’identifiant de la section Apparence masquait celui du sélecteur de thème.
+- `testSearchPersistenceSequenceAndPodcast` échouait aussi seul : la feuille de filtres, plus courte, arrivait en butée et le geste de défilement du pilote touchait « Enregistrer ce suivi ». Le pilote s’arrête désormais dès que le centre de la ligne est visible ; les assertions sont inchangées. Les cinq parcours qui font défiler des feuilles réussissent ensuite (`build/rerun.log`).
+- Restent les deux échecs connus : `testLoginFormAndEmptyFilters` (audit) et `testFullscreenTranscriptSeeksFromTextAtMaximumSize`.
+
 ## Suite complète avant TestFlight (build 4) — 5 octobre 2026
 
 Après le retrait du mode démonstration, le serveur API local des tests (`UITestServer`) et la refonte visuelle (style Medium, vert de marque, pastilles, nouveau logo et nouvelle icône).
