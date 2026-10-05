@@ -47,16 +47,16 @@ struct ChannelSource: View {
     }
 }
 
-/// The passage kind as a quiet neutral tag, easy to spot while scrolling; color stays with the logos.
+/// The passage kind as a tag in its kind color, easy to spot while scrolling.
 struct KindTag: View {
     let item: FeedItem
 
     var body: some View {
         Text(item.kindLabel)
             .font(.caption.weight(.semibold))
-            .foregroundStyle(Brand.ink)
+            .foregroundStyle(item.kindColor)
             .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(Brand.surface, in: Capsule())
+            .background(item.kindWash, in: Capsule())
             .fixedSize()
     }
 }
@@ -145,7 +145,9 @@ struct PassageHeading: View {
 }
 
 extension FeedItem {
-    var kindColor: Color { Brand.ink }
+    /// Interventions in navy, citations in red, X in ink: the color says the kind at a glance.
+    var kindColor: Color { isCitation ? Brand.citation : kind == "intervention" ? Brand.intervention : Brand.ink }
+    var kindWash: Color { isCitation ? Brand.citationWash : kind == "intervention" ? Brand.interventionWash : Brand.surface }
     var kindSymbol: String { isTweet ? "text.bubble" : isCitation ? "quote.bubble" : kind == "intervention" ? "waveform" : "doc.text" }
 
     var readableDuration: String {

@@ -5,7 +5,8 @@ The visual language: the design system, tokens, and UI conventions. What it look
 ## System
 
 - No mockups: design happens directly in the code. The visual reference is the Medium iOS app on Mobbin (<https://mobbin.com/apps/medium-ios-c0e5f243-4979-40c6-a7c8-c57cfef6658d/b22663f9-abed-4c19-97ce-e22e886a3ff9/screens>, account required, so human only), chosen by the user on 2026-10-05. Never a serif font, at the user's request.
-- A plain white page (`Brand.background`, sidebar included): no cards; feed and suivi rows sit on hairline dividers, sections (`AppSection`) are a title over content separated by whitespace, never a card or an extra rule. Color is reserved for broadcaster logos and destructive feedback.
+- A plain white page (`Brand.background`, sidebar included): no cards; feed and suivi rows sit on hairline dividers, sections (`AppSection`) are a title over content separated by whitespace, never a card or an extra rule.
+- Color carries meaning, from the brand's navy and red (the Android app's "InfoMétrie" wordmark): interventions in navy (`Brand.intervention`), citations in red (`Brand.citation`), X in ink. It colors the kind tags (text on a wash of the same hue, 5.5:1 or more in both themes), the feed's type checkboxes and the two-tone wordmark. Beyond that, color stays with broadcaster logos and destructive feedback. The user asked for more color on 2026-10-05; citation red is darker than the destructive red.
 - The previous direction, Stoic (gray page, white rounded cards), is history with the earlier ones (editorial "Revue", Nova / Indigo) in `Docs/UX/`.
 - Reading pages: bold sans-serif titles (`title3` in the feed, `title2` on the passage), airier transcript lines.
 - A small in-house design system in SwiftUI, with system fonts and native controls.

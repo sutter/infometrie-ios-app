@@ -22,6 +22,11 @@ enum Brand {
     static let sidebar = color(light: 0xFFFFFF, dark: 0x101113)
     static let sidebarRule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
+    /// Kind colors, from the brand's navy and red: text at 5.5:1 or more on its wash, in both themes.
+    static let intervention = color(light: 0x1E3A8A, dark: 0x9DB4FF)
+    static let interventionWash = color(light: 0xE6ECFA, dark: 0x1B2440)
+    static let citation = color(light: 0xB4232F, dark: 0xFF8F8F)
+    static let citationWash = color(light: 0xFCE8EA, dark: 0x3A1A1D)
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
     static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
@@ -43,10 +48,10 @@ enum Brand {
 struct Wordmark: View {
     var size: CGFloat = 22
     var body: some View {
-        Text("InfoMétrie")
+        // Two tones, as on the Android app: "Info" in navy, "Métrie" in red.
+        (Text("Info").foregroundStyle(Brand.intervention) + Text("Métrie").foregroundStyle(Brand.citation))
         .font(.system(size: size, weight: .bold))
         .tracking(-0.7)
-        .foregroundStyle(Brand.ink)
         .fixedSize(horizontal: true, vertical: false)
         .accessibilityElement(children: .ignore).accessibilityLabel("InfoMétrie")
     }
