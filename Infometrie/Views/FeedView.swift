@@ -14,7 +14,9 @@ struct FeedView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: dynamicType.isAccessibilitySize ? [] : [.sectionHeaders]) {
                 Section {
-                    statusRow.padding(.top, 6).padding(.bottom, 4)
+                    // Period and display scroll with the list: only the types stay pinned, so the cards get the room.
+                    FeedViewOptions().padding(.top, 10)
+                    statusRow.padding(.top, 8).padding(.bottom, 4)
                     if hasAudienceFilters { selectionSummary.padding(.vertical, 12) }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.refresh(reset: true) } }
@@ -95,7 +97,6 @@ struct FeedView: View {
     private var filterControls: some View {
         VStack(spacing: 0) {
             FeedKindPicker()
-            FeedViewOptions().padding(.bottom, 8)
             AppRule()
         }
         .background(Brand.background)
@@ -138,8 +139,10 @@ struct FeedView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .frame(minHeight: 48)
-                .foregroundStyle(Brand.primaryForeground)
-                .background(Brand.primary, in: Capsule())
+                // Outlined, like the secondary action buttons: it stays findable without outweighing the count.
+                .foregroundStyle(Brand.ink)
+                .background(Brand.card, in: Capsule())
+                .overlay { Capsule().strokeBorder(Brand.rule) }
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
