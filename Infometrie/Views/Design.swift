@@ -45,15 +45,48 @@ enum Brand {
     }
 }
 
+/// The brand lockup: a green tile holding a simplified wave around an "i", then "info" heavy in ink
+/// and "métrie" light in green. `size` is the text size; the tile scales with it.
 struct Wordmark: View {
     var size: CGFloat = 22
+
     var body: some View {
-        // Two tones: "Info" in ink, "Métrie" in the brand green.
-        (Text("Info").foregroundStyle(Brand.ink) + Text("Métrie").foregroundStyle(Brand.accent))
-        .font(.system(size: size, weight: .bold))
-        .tracking(-0.7)
-        .fixedSize(horizontal: true, vertical: false)
+        HStack(spacing: size * 0.38) {
+            BrandTile(side: size * 1.45)
+            (Text("info").font(.system(size: size * 1.05, weight: .heavy)).foregroundStyle(Brand.ink)
+                + Text("métrie").font(.system(size: size * 1.05, weight: .light)).foregroundStyle(Brand.accent))
+                .tracking(-size * 0.03)
+        }
+        .fixedSize()
         .accessibilityElement(children: .ignore).accessibilityLabel("InfoMétrie")
+    }
+}
+
+/// The brand pictogram: an "i" (stem and dot) between two shorter wave bars, on a green tile.
+struct BrandTile: View {
+    let side: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: side * 0.26, style: .continuous)
+            .fill(Brand.accent)
+            .frame(width: side, height: side)
+            .overlay {
+                HStack(alignment: .center, spacing: side * 0.09) {
+                    bar
+                    VStack(spacing: side * 0.07) {
+                        Circle().frame(width: side * 0.18, height: side * 0.18)
+                        Capsule().frame(width: side * 0.145, height: side * 0.41)
+                    }
+                    bar
+                }
+                .foregroundStyle(Brand.onAccent)
+                .offset(y: side * 0.03)
+            }
+            .accessibilityHidden(true)
+    }
+
+    private var bar: some View {
+        Capsule().fill(Brand.onAccent.opacity(0.75)).frame(width: side * 0.12, height: side * 0.30)
     }
 }
 
