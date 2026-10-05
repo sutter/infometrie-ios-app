@@ -18,7 +18,7 @@ The visual language: the design system, tokens, and UI conventions. What it look
 
 ## Components
 
-- Shared in `Design.swift`: `ActionButtonStyle` (capsule, prominent or outlined), `AppSection`, `AppEmptyState`, `ErrorNotice`, `KindBadge`, `ChannelMark`, `PersonAvatar`, `PageHeading`, `AdaptiveRow` (turns into a column at accessibility sizes), `DemoBanner`.
+- Shared in `Design.swift`: `ActionButtonStyle` (capsule, prominent or outlined), `AppSection`, `AppEmptyState`, `ErrorNotice`, `KindBadge`, `ChannelMark`, `PersonAvatar`, `PageHeading`, `AdaptiveRow` (turns into a column at accessibility sizes).
 - Passage pages stay minimal: listening follows the text silently, and "Reprendre le suivi" appears below the text only after manual scrolling suspended it. The fullscreen text has no header line either; the listening position exists only for VoiceOver (`transcript-position`). No technical sync explanations (estimated or precise timings, retry); only feedback to a tapped word (`transcriptNotice`) is shown.
 - `PlaybackDock` puts two buttons beside play: ±10 s on a single passage; in "Tout écouter" (`queue: true`), previous and next lead as prominent labelled buttons around a discreet round play button, stack past the XL text size so "Précédent" never splits, and stay beside "Réessayer l’écoute" so a failing passage never blocks the queue.
 - Icon-only toolbar actions (the cross closing "Tout écouter") use the regular glass circle of the system back button: a plain `Button` with an SF Symbol in `.topBarTrailing`, default shared background. Labelled actions like "Filtrer" hide the background (`.sharedBackgroundVisibility(.hidden)`). Avoid `.confirmationAction` and `role: .close`: iOS 26 draws them as prominent white buttons.

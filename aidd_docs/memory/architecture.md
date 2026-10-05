@@ -31,11 +31,12 @@ flowchart LR
 - Word timings are milliseconds from `origin`, not from `speech_start`, mapped to player time through the HLS `EXT-X-PROGRAM-DATE-TIME` clock (`MediaClock` in `Infometrie/Core/TranscriptTimeline.swift`).
 - Publications X are never playable (`FeedItem.canPlay`), even when `has_media` says otherwise: no player, no duration, no timings, not in the podcast.
 - The Swagger does not describe response bodies. Models come from the APK and decode leniently: defaults for missing fields, unknown fields ignored.
-- Demo mode never touches the network. It still exercises the real relay through a local transport that requires a demo Bearer header (`DemoMediaProtocol`).
+- No demo mode: the app always needs an account. UI tests never touch the network either: a Debug-only local server (`UITestServer` in `Infometrie/Fixtures`) answers the API and HLS routes, so the real API client, relay and Keychain run.
 
 ## Gotchas
 
 - The app target uses file-system synchronized groups: a new file under `Infometrie/` joins the app with no `project.pbxproj` edit. A new file under `Infometrie/Core` also joins the macOS package, so it must stay Foundation-only.
-- `scripts/create_project.py` must reproduce the committed `project.pbxproj`, scheme, `Info.plist`, asset catalog roots, `AccentColor` and `demo.wav` byte for byte. Change project settings in the script, or mirror a change made in Xcode there. Afterwards, `python3 scripts/create_project.py && git status --short` must show nothing new.
+- `scripts/create_project.py` must reproduce the committed `project.pbxproj`, scheme, `Info.plist`, asset catalog roots and `AccentColor` byte for byte. Change project settings in the script, or mirror a change made in Xcode there. Afterwards, `python3 scripts/create_project.py && git status --short` must show nothing new.
+- `Infometrie/Fixtures` is test-only and must stay out of Release: wrap its Swift in `#if DEBUG`, and name its media `fixture-audio-*.ts`, the pattern Release excludes (`EXCLUDED_SOURCE_FILE_NAMES` in `scripts/create_project.py`).
 - Saved searches written before API 0.6 have no `tweets` field. It decodes to `false` on purpose, so an old suivi never silently widens to X.
 - The login response `expires` has no documented unit: the client does not check it and lets the server reject a stale token.

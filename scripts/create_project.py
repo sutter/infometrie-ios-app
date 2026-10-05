@@ -1,5 +1,5 @@
 from pathlib import Path
-import plistlib, json, wave, math, re, struct
+import plistlib, json, re
 root=Path(__file__).resolve().parents[1]
 project=root/'Infometrie.xcodeproj';project.mkdir(exist_ok=True)
 # Signing team and build number set in Xcode after the first generation; kept here so a rerun matches the committed project.
@@ -29,7 +29,7 @@ def fmt(v,level=0,inline=False):
 obj('project','Project object','PBXProject',attributes={'BuildIndependentTargetsInParallel':'YES','LastUpgradeCheck':'2700','TargetAttributes':{ref('app'):{'CreatedOnToolsVersion':'27.0'},ref('test'):{'CreatedOnToolsVersion':'27.0','TestTargetID':ref('app')}}},buildConfigurationList=R('projectconfig'),compatibilityVersion='Xcode 16.0',developmentRegion='fr',hasScannedForEncodings='0',knownRegions=['fr','en','Base'],mainGroup=R('main'),productRefGroup=R('products'),projectDirPath='',projectRoot='',targets=[R('app'),R('test')])
 obj('main',None,'PBXGroup',children=[R('appgroup'),R('testgroup'),R('products')],sourceTree='<group>')
 obj('products','Products','PBXGroup',children=[R('appproduct'),R('testproduct')],name='Products',sourceTree='<group>')
-obj('appgroup','Infometrie','PBXFileSystemSynchronizedRootGroup',exceptions=[R('exception')],explicitFileTypes={f'Resources/demo-segment-{i:02}.ts':'video.mpeg' for i in range(7)},explicitFolders=[],path='Infometrie',sourceTree='<group>')
+obj('appgroup','Infometrie','PBXFileSystemSynchronizedRootGroup',exceptions=[R('exception')],explicitFileTypes={f'Fixtures/fixture-audio-{i:02}.ts':'video.mpeg' for i in range(7)},explicitFolders=[],path='Infometrie',sourceTree='<group>')
 obj('testgroup','InfometrieUITests','PBXFileSystemSynchronizedRootGroup',explicitFileTypes={},explicitFolders=[],path='InfometrieUITests',sourceTree='<group>')
 obj('exception','PBXFileSystemSynchronizedBuildFileExceptionSet','PBXFileSystemSynchronizedBuildFileExceptionSet',membershipExceptions=['Resources/Info.plist'],target=R('app'))
 for target,name,group,product,kind in [('app','Infometrie','appgroup','appproduct','application'),('test','InfometrieUITests','testgroup','testproduct','bundle.ui-testing')]:
@@ -47,7 +47,10 @@ for prefix,owner in [('project','PBXProject "Infometrie"'),('app','PBXNativeTarg
    settings=common|{'SWIFT_OPTIMIZATION_LEVEL':'-Onone' if mode=='debug' else '-O','DEBUG_INFORMATION_FORMAT':'dwarf' if mode=='debug' else 'dwarf-with-dsym','SWIFT_ACTIVE_COMPILATION_CONDITIONS':'DEBUG $(inherited)' if mode=='debug' else '$(inherited)'}
   else:
    settings={'PRODUCT_NAME':'$(TARGET_NAME)','PRODUCT_BUNDLE_IDENTIFIER':'fr.yacast.infometrie.ios'+('.uitests' if prefix=='test' else ''),'TARGETED_DEVICE_FAMILY':'1,2','CODE_SIGN_STYLE':'Automatic','CURRENT_PROJECT_VERSION':'1','MARKETING_VERSION':'0.4.0','GENERATE_INFOPLIST_FILE':'YES' if prefix=='test' else 'NO','SUPPORTED_PLATFORMS':'iphoneos iphonesimulator','SUPPORTS_MACCATALYST':'NO','SWIFT_EMIT_LOC_STRINGS':'YES'}
-   if prefix=='app':settings|={'INFOPLIST_FILE':'Infometrie/Resources/Info.plist','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME':'AccentColor','LD_RUNPATH_SEARCH_PATHS':['$(inherited)','@executable_path/Frameworks'],'CURRENT_PROJECT_VERSION':APP_BUILD,'DEVELOPMENT_TEAM':TEAM}
+   if prefix=='app':
+    settings|={'INFOPLIST_FILE':'Infometrie/Resources/Info.plist','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME':'AccentColor','LD_RUNPATH_SEARCH_PATHS':['$(inherited)','@executable_path/Frameworks'],'CURRENT_PROJECT_VERSION':APP_BUILD,'DEVELOPMENT_TEAM':TEAM}
+    # The UI-test media only serves the Debug test server; a release ships without it.
+    if mode=='release':settings['EXCLUDED_SOURCE_FILE_NAMES']='fixture-audio-*.ts'
    else:settings|={'TEST_TARGET_NAME':'Infometrie','LD_RUNPATH_SEARCH_PATHS':['$(inherited)','@executable_path/Frameworks','@loader_path/Frameworks']}
   obj(prefix+mode,mode.capitalize(),'XCBuildConfiguration',buildSettings=settings,name=mode.capitalize())
 def line(k):
@@ -76,14 +79,4 @@ def appicon(file,appearance=None):return ({'appearances':[{'appearance':'luminos
 accent=assets/'AccentColor.colorset';accent.mkdir(exist_ok=True)
 def srgb(red,green,blue):return {'color-space':'srgb','components':{'red':red,'green':green,'blue':blue,'alpha':'1.0'}}
 (accent/'Contents.json').write_text(json.dumps({'colors':[{'idiom':'universal','color':srgb('0x29','0x2B','0x2E')},{'idiom':'universal','color':srgb('0xE6','0xE6','0xE4'),'appearances':[{'appearance':'luminosity','value':'dark'}]}],'info':{'author':'xcode','version':1}},indent=2)+'\n')
-with wave.open(str(root/'Infometrie/Resources/demo.wav'),'wb') as w:
- w.setnchannels(1);w.setsampwidth(2);w.setframerate(22050)
- notes=[261.63,329.63,392,523.25,392,329.63]
- data=bytearray()
- for i in range(22050*18):
-  t=i/22050;phase=t%1.5;frequency=notes[int(t/1.5)%len(notes)]
-  envelope=min(1,phase/0.04)*math.exp(-phase*2.4)*min(1,(18-t)/0.3)
-  value=int(3200*envelope*(math.sin(2*math.pi*frequency*t)+0.22*math.sin(4*math.pi*frequency*t)))
-  data.extend(struct.pack('<h',value))
- w.writeframes(data)
 print('Projet Xcode et ressources créés.')

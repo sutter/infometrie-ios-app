@@ -214,24 +214,6 @@ struct PersonAvatar: View {
     }
 }
 
-struct DemoBanner: View {
-    @Environment(\.dynamicTypeSize) private var dynamicType
-    var body: some View {
-        Group {
-            if dynamicType.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Mode démo").fontWeight(.semibold)
-                    Text("Données fictives")
-                }.frame(maxWidth: .infinity, alignment: .leading)
-            } else { Text("Démonstration · données fictives") }
-        }
-            .font(.footnote).foregroundStyle(Brand.secondary)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityIdentifier("demo-banner")
-    }
-}
-
 enum AppLayout {
     static let maximumWidth: CGFloat = 1100
     static let readingWidth: CGFloat = 760

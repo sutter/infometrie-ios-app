@@ -51,13 +51,9 @@ struct LoginView: View {
                         .accessibilityIdentifier("login-submit")
                     }
 
-                    VStack(spacing: 18) {
-                        Button { password = ""; focused = nil; model.enterDemo() } label: {
-                            Label("Essayer la démonstration", systemImage: "play.circle")
-                        }.buttonStyle(ActionButtonStyle()).disabled(model.isLoggingIn).accessibilityIdentifier("enter-demo")
-                        Text("L’abonnement et la gestion du compte se font sur le portail web InfoMétrie.")
-                            .font(.footnote).foregroundStyle(Brand.secondary).multilineTextAlignment(.center).lineSpacing(3)
-                    }.frame(maxWidth: .infinity)
+                    Text("L’abonnement et la gestion du compte se font sur le portail web InfoMétrie.")
+                        .font(.footnote).foregroundStyle(Brand.secondary).multilineTextAlignment(.center).lineSpacing(3)
+                        .frame(maxWidth: .infinity)
                 }.padding(.horizontal, 24).padding(.bottom, 35).frame(maxWidth: 520)
                     .frame(maxWidth: .infinity)
             }

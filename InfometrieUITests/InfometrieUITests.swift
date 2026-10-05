@@ -5,7 +5,7 @@ final class InfometrieUITests: XCTestCase {
     func testReadingComfortUpdatesTextImmediatelyAndPersists() {
         let app = XCUIApplication()
         // A system already set to XL is common among the app's readers: S, M and L must still differ.
-        app.launchArguments = ["--uitesting", "--demo", "-appearance", "light",
+        app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light",
                                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryXL"]
         app.launch()
         XCTAssertTrue(navigationButton("Compte", in: app).waitForExistence(timeout: 10))
@@ -61,7 +61,7 @@ final class InfometrieUITests: XCTestCase {
     func testReadingSizesRespectSystemAccessibilityAndDarkAppearance() {
         let app = XCUIApplication()
         for accessible in [false, true] {
-            app.launchArguments = ["--uitesting", "--demo", "-appearance", accessible ? "light" : "dark",
+            app.launchArguments = ["--uitesting", "--signed-in", "-appearance", accessible ? "light" : "dark",
                                    "-UIPreferredContentSizeCategoryName", accessible ? "UICTContentSizeCategoryAccessibilityXXXL" : "UICTContentSizeCategoryL"]
             app.launch()
             XCTAssertTrue(navigationButton("Compte", in: app).waitForExistence(timeout: 10))
@@ -150,15 +150,14 @@ final class InfometrieUITests: XCTestCase {
         let app = loginTestApp()
         app.launch()
         submitLogin(in: app, password: "valide")
-        XCTAssertTrue(app.buttons["feed-item-901"].waitForExistence(timeout: 10), app.debugDescription)
-        XCTAssertFalse(app.staticTexts["demo-banner"].exists)
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10), app.debugDescription)
         navigationButton("Compte", in: app).tap()
         XCTAssertTrue(app.staticTexts["Compte de test API"].exists)
         XCTAssertTrue(app.staticTexts["connexion@example.invalid"].exists)
         capture("12-compte-connecte-api", app: app)
 
         app.terminate(); app.launch()
-        XCTAssertTrue(app.buttons["feed-item-901"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.textFields["login-email"].exists)
         navigationButton("Compte", in: app).tap()
         reveal(app.buttons["logout"], in: app, down: false)
@@ -185,7 +184,7 @@ final class InfometrieUITests: XCTestCase {
         submitLogin(in: app, password: "hors-ligne", replacing: "inactif")
         XCTAssertTrue(app.staticTexts["Serveur injoignable. Vérifiez votre connexion puis réessayez."].waitForExistence(timeout: 5))
         submitLogin(in: app, password: "valide", replacing: "hors-ligne")
-        XCTAssertTrue(app.buttons["feed-item-901"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
     }
 
     @MainActor
@@ -199,7 +198,7 @@ final class InfometrieUITests: XCTestCase {
         app.buttons.containing(.staticText, identifier: "Ancien iPhone").firstMatch.tap()
         XCTAssertTrue(app.buttons["Remplacer cet appareil"].waitForExistence(timeout: 5))
         app.buttons["Remplacer cet appareil"].tap()
-        XCTAssertTrue(app.buttons["feed-item-901"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
     }
 
     @MainActor private func loginTestApp() -> XCUIApplication {
@@ -234,15 +233,11 @@ final class InfometrieUITests: XCTestCase {
     }
 
     @MainActor
-    func testDemoSearchPersistenceSequenceAndPodcast() throws {
+    func testSearchPersistenceSequenceAndPodcast() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--reset-demo", "-appearance", "light"]
+        app.launchArguments = ["--uitesting", "--signed-in", "--reset-searches", "-appearance", "light"]
         app.launch()
-        let demo = app.buttons["enter-demo"]
-        XCTAssertTrue(demo.waitForExistence(timeout: 10))
-        if !demo.isHittable { app.swipeUp() }
-        demo.tap()
-        XCTAssertTrue(app.staticTexts["demo-banner"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         capture("01-fil", app: app)
 
         app.buttons["edit-filters"].tap()
@@ -273,7 +268,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.buttons["apply-search"].isHittable)
         app.navigationBars["Filtrer le fil"].buttons["Annuler"].tap()
 
-        app.terminate(); app.launchArguments = ["--uitesting", "--demo", "-appearance", "light"]; app.launch()
+        app.terminate(); app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light"]; app.launch()
         navigationButton("Mes suivis", in: app).tap()
         XCTAssertTrue(app.staticTexts[String(name)].waitForExistence(timeout: 5))
         app.buttons["saved-actions-\(name)"].tap()
@@ -291,12 +286,13 @@ final class InfometrieUITests: XCTestCase {
         let first = app.buttons["feed-item-1"]
         XCTAssertTrue(first.waitForExistence(timeout: 3))
         first.tap()
-        XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
+        let toggle = app.buttons["player-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
         capture("03-sequence-avant-lecture", app: app)
         let summary = app.buttons["sequence-summary"]
         reveal(summary, in: app, down: false)
         summary.tap()
-        XCTAssertTrue(app.buttons["play-sequence"].exists, "Déplier le résumé ne doit pas démarrer l’écoute")
+        XCTAssertEqual(toggle.label, "Écouter", "Déplier le résumé ne doit pas démarrer l’écoute")
         XCTAssertTrue(app.staticTexts["Exemple fictif pour découvrir la consultation d’une séquence. Aucun propos réel ni passage à l’antenne n’est représenté ici."].waitForExistence(timeout: 3))
         capture("03-sequence-resume", app: app)
         reveal(summary, in: app, down: false)
@@ -304,7 +300,7 @@ final class InfometrieUITests: XCTestCase {
         let context = app.buttons["sequence-context"]
         reveal(context, in: app, down: false)
         context.tap()
-        XCTAssertTrue(app.buttons["play-sequence"].exists, "Le contexte s’ouvre indépendamment du lecteur")
+        XCTAssertEqual(toggle.label, "Écouter", "Le contexte s’ouvre indépendamment du lecteur")
         XCTAssertTrue(app.staticTexts["Personnalité fictive"].waitForExistence(timeout: 3))
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.75))
             .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.45)))
@@ -312,9 +308,7 @@ final class InfometrieUITests: XCTestCase {
         reveal(context, in: app, down: false)
         context.tap()
         reveal(app.staticTexts["sequence-title"], in: app, down: true)
-        app.buttons["play-sequence"].tap()
-        XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.buttons["Pause"].waitForExistence(timeout: 10))
+        listen(toggle)
         capture("03-sequence", app: app)
         reveal(app.buttons["player-toggle"], in: app, down: true)
         app.buttons["player-toggle"].tap()
@@ -335,31 +329,31 @@ final class InfometrieUITests: XCTestCase {
             app.swipeUp()
         }
         app.buttons["logout"].tap()
-        XCTAssertTrue(app.buttons["enter-demo"].waitForExistence(timeout: 5))
+        app.sheets["Se déconnecter ?"].buttons["Se déconnecter"].tap()
+        XCTAssertTrue(app.textFields["login-email"].waitForExistence(timeout: 5))
     }
 
     @MainActor
     func testDarkAppearanceAndLargeText() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--demo", "-appearance", "dark"]
+        app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "dark"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["demo-banner"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         capture("05-fil-sombre", app: app)
         reveal(app.buttons["feed-item-2"], in: app, down: false)
         app.buttons["feed-item-2"].tap()
-        XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
         capture("17-citation-sombre", app: app)
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
         app.buttons["feed-item-1"].tap()
-        XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
         capture("05-sequence-sombre", app: app)
-        app.buttons["play-sequence"].tap()
-        wait(app.buttons["player-toggle"], key: "label", equals: "Pause")
+        listen(app.buttons["player-toggle"])
         app.buttons["player-toggle"].tap()
         wait(app.buttons["player-toggle"], key: "label", equals: "Écouter")
         capture("05-sequence-ecoute-sombre", app: app)
         app.terminate()
-        app.launchArguments = ["--uitesting", "--demo", "-appearance", "light", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
         XCTAssertTrue(app.buttons["start-podcast"].waitForExistence(timeout: 10))
         capture("06-texte-accessible", app: app)
@@ -375,13 +369,11 @@ final class InfometrieUITests: XCTestCase {
         reveal(first, in: app, down: true)
         XCTAssertTrue(first.isHittable)
         first.tap()
-        let play = app.buttons["play-sequence"]
-        XCTAssertTrue(play.waitForExistence(timeout: 5))
-        XCTAssertTrue(play.isHittable)
-        XCTAssertGreaterThanOrEqual(play.frame.height, 52)
-        play.tap()
         let toggle = app.buttons["player-toggle"]
-        wait(toggle, key: "label", equals: "Pause")
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
+        XCTAssertTrue(toggle.isHittable)
+        XCTAssertGreaterThanOrEqual(toggle.frame.height, 52)
+        listen(toggle)
         toggle.tap()
         let word = app.links["Cette"]
         reveal(word, in: app, down: false)
@@ -399,12 +391,12 @@ final class InfometrieUITests: XCTestCase {
 
     @MainActor
     func testLoginFormAndEmptyFilters() throws {
-        let app = XCUIApplication(); app.launchArguments = ["--uitesting", "-appearance", "light"]; app.launch()
+        let app = loginTestApp(); app.launch()
         XCTAssertTrue(app.textFields["login-email"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["login-submit"].isEnabled)
         capture("00-connexion", app: app)
-        if !app.buttons["enter-demo"].isHittable { app.swipeUp() }
-        app.buttons["enter-demo"].tap()
+        submitLogin(in: app, password: "valide")
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         XCTAssertTrue(["Le fil", "Mes suivis", "Compte"].allSatisfy { navigationButton($0, in: app).exists })
         XCTAssertTrue(app.buttons["feed-item-1"].isHittable)
         // UIKit may report 43.99999999999999 for a 44pt toolbar target.
@@ -420,7 +412,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertFalse(app.buttons["feed-item-1"].exists)
         capture("18-fil-citations", app: app)
         app.buttons["feed-item-2"].tap()
-        XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
         capture("17-citation-claire", app: app)
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
         app.buttons["feed-kind-0"].tap()
@@ -442,7 +434,7 @@ final class InfometrieUITests: XCTestCase {
     @MainActor
     func testFilterSearchMultipleSelectionIntersectionAndReset() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--demo", "--reset-demo", "-appearance", "light"]
+        app.launchArguments = ["--uitesting", "--signed-in", "--reset-searches", "-appearance", "light"]
         app.launch()
         XCTAssertTrue(app.buttons["edit-filters"].waitForExistence(timeout: 10))
         app.buttons["edit-filters"].tap()
@@ -466,7 +458,7 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["confirm-choices"].tap()
         XCTAssertTrue(app.buttons["pick-parties"].waitForExistence(timeout: 5))
         app.buttons["pick-parties"].tap()
-        app.buttons["choice-DEMO-A"].tap()
+        app.buttons["choice-TEST-A"].tap()
         app.buttons["confirm-choices"].tap()
         XCTAssertTrue(app.staticTexts["Seules les personnalités choisies appartenant aux partis sélectionnés seront affichées."].waitForExistence(timeout: 5))
         capture("15-filtres-combines", app: app)
@@ -511,7 +503,7 @@ final class InfometrieUITests: XCTestCase {
     func testFiltersDarkAppearanceAndMaximumText() {
         let app = XCUIApplication()
         for largeText in [false, true] {
-            app.launchArguments = ["--uitesting", "--demo", "-appearance", largeText ? "light" : "dark"]
+            app.launchArguments = ["--uitesting", "--signed-in", "-appearance", largeText ? "light" : "dark"]
             if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
             app.launch()
             XCTAssertTrue(app.buttons["edit-filters"].waitForExistence(timeout: 10))
@@ -566,7 +558,7 @@ final class InfometrieUITests: XCTestCase {
     @MainActor
     func testMainNavigationPreservesFeedSelection() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--demo", "--reset-demo", "-appearance", "light"]
+        app.launchArguments = ["--uitesting", "--signed-in", "--reset-searches", "-appearance", "light"]
         app.launch()
         let citations = app.buttons["feed-kind-2"]
         XCTAssertTrue(citations.waitForExistence(timeout: 10))
@@ -591,7 +583,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(citations.isSelected)
         XCTAssertTrue(app.staticTexts["2 passages"].exists)
         app.buttons["feed-item-2"].tap()
-        XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
         XCTAssertTrue(citations.isSelected)
         capture("19-navigation-principale", app: app)
@@ -600,7 +592,7 @@ final class InfometrieUITests: XCTestCase {
     @MainActor
     func testFeedKindSelectionSyncNavigationAndPodcast() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--demo", "--reset-demo", "-appearance", "light"]
+        app.launchArguments = ["--uitesting", "--signed-in", "--reset-searches", "-appearance", "light"]
         app.launch()
         let all = app.buttons["feed-kind-0"]
         let interventions = app.buttons["feed-kind-1"]
@@ -618,7 +610,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertFalse(app.buttons["clear-filters"].exists, "Le type seul ne doit pas ajouter un récapitulatif redondant")
         capture("18-fil-citations", app: app)
         app.buttons["feed-item-2"].tap()
-        XCTAssertTrue(app.buttons["play-sequence"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
         XCTAssertTrue(citations.isSelected, "Le retour au fil conserve le type choisi")
 
@@ -658,7 +650,7 @@ final class InfometrieUITests: XCTestCase {
     func testFeedKindsDarkAppearanceAndMaximumText() {
         let app = XCUIApplication()
         for largeText in [false, true] {
-            app.launchArguments = ["--uitesting", "--demo", "-appearance", largeText ? "light" : "dark"]
+            app.launchArguments = ["--uitesting", "--signed-in", "-appearance", largeText ? "light" : "dark"]
             if largeText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
             app.launch()
             let suffix = largeText ? "grand-texte" : "sombre"
@@ -692,14 +684,13 @@ final class InfometrieUITests: XCTestCase {
     @MainActor
     func testFullscreenTranscriptKeepsPreciseSeekingAndPlayback() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--demo", "--precise-word-timings", "-appearance", "dark",
+        app.launchArguments = ["--uitesting", "--signed-in", "--precise-word-timings", "-appearance", "dark",
                                "-readingSize", "M", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
         app.launch()
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         app.buttons["feed-item-1"].tap()
-        app.buttons["play-sequence"].tap()
         let toggle = app.buttons["player-toggle"]
-        wait(toggle, key: "label", equals: "Pause")
+        listen(toggle)
         toggle.tap()
         reveal(app.links["retrouverez"], in: app, down: false)
         app.links["retrouverez"].tap()
@@ -771,9 +762,9 @@ final class InfometrieUITests: XCTestCase {
     }
 
     @MainActor
-    func testFullscreenTranscriptStartsFromTextAtMaximumSize() {
+    func testFullscreenTranscriptSeeksFromTextAtMaximumSize() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--demo", "-appearance", "light", "-readingSize", "M",
+        app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light", "-readingSize", "M",
                                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
@@ -784,12 +775,13 @@ final class InfometrieUITests: XCTestCase {
         let fullscreen = app.descendants(matching: .any).matching(identifier: "fullscreen-transcript").firstMatch
         let close = fullscreen.buttons["collapse-transcript"]
         XCTAssertTrue(close.waitForExistence(timeout: 5))
-        XCTAssertTrue(fullscreen.buttons["play-sequence"].exists, "Agrandir ne démarre pas l’écoute")
-        XCTAssertTrue(fullscreen.links["Cette"].isHittable)
-        fullscreen.links["Cette"].tap()
         let toggle = fullscreen.buttons["player-toggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 10))
-        wait(toggle, key: "label", equals: "Pause")
+        XCTAssertEqual(toggle.label, "Écouter", "Agrandir ne démarre pas l’écoute")
+        XCTAssertTrue(fullscreen.links["Cette"].isHittable)
+        fullscreen.links["Cette"].tap()
+        wait(fullscreen.staticTexts["player-elapsed"], key: "label", equals: "0:00")
+        listen(toggle)
         toggle.tap()
         XCTAssertEqual(toggle.label, "Écouter")
         let scroll = fullscreen.scrollViews["transcript-scroll"]
@@ -816,21 +808,20 @@ final class InfometrieUITests: XCTestCase {
     @MainActor
     func testTranscriptSeeksPlayerAndFollowsScrubbingWhilePaused() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--demo", "--reset-demo"]
+        app.launchArguments = ["--uitesting", "--signed-in", "--reset-searches"]
         app.launch()
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         app.buttons["feed-item-1"].tap()
         reveal(app.links["passage"], in: app, down: false)
         XCTAssertTrue(app.links["passage"].isHittable, app.debugDescription)
-        // Starting from the text must preserve the requested word through HLS loading.
+        // A word tapped while HLS loads is kept until the player is ready, without starting it.
         app.links["passage"].tap()
         let toggle = app.buttons["player-toggle"]
-        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
-        wait(toggle, key: "label", equals: "Pause")
-        toggle.tap()
-        wait(toggle, key: "label", equals: "Écouter")
-        app.links["retrouverez"].tap()
         let status = app.staticTexts["transcript-position"]
+        wait(status, key: "value", equals: "Mot 9 sur 41")
+        XCTAssertEqual(app.staticTexts["player-elapsed"].label, "0:03")
+        XCTAssertEqual(toggle.label, "Écouter", "Toucher un mot place l’écoute sans la démarrer")
+        app.links["retrouverez"].tap()
         wait(status, key: "value", equals: "Mot 19 sur 41")
         XCTAssertEqual(app.staticTexts["player-elapsed"].label, "0:07")
         XCTAssertEqual(toggle.label, "Écouter")
@@ -858,7 +849,7 @@ final class InfometrieUITests: XCTestCase {
         let changed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value != %@", before), object: status)
         XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 4), .completed)
         toggle.tap()
-        // The demo text fits its frame, so it cannot be scrolled to suspend following here;
+        // The fixture text fits its frame, so it cannot be scrolled to suspend following here;
         // the fullscreen journeys cover suspending and resuming.
         XCTAssertFalse(app.buttons["transcript-follow"].exists, "Le suivi actif n’affiche aucune commande")
         capture("08-verbatim-suivi-lecteur", app: app)
@@ -867,7 +858,7 @@ final class InfometrieUITests: XCTestCase {
     @MainActor
     func testPodcastTranscriptUsesCurrentSequenceAndResetsOnNext() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--demo", "--reset-demo"]
+        app.launchArguments = ["--uitesting", "--signed-in", "--reset-searches"]
         app.launch()
         XCTAssertTrue(app.buttons["start-podcast"].waitForExistence(timeout: 10))
         app.buttons["start-podcast"].tap()
@@ -894,6 +885,14 @@ final class InfometrieUITests: XCTestCase {
         return editorial.exists ? editorial : app.tabBars.buttons[title]
     }
 
+    /// A sequence page prepares its player on opening: wait until it can play, then start listening.
+    @MainActor private func listen(_ toggle: XCUIElement) {
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
+        wait(toggle, key: "enabled", equals: true)
+        toggle.tap()
+        wait(toggle, key: "label", equals: "Pause")
+    }
+
     @MainActor private func wait(_ element: XCUIElement, key: String, equals value: String) {
         let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "%K == %@", key, value), object: element)
         XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 8), .completed)
@@ -907,12 +906,11 @@ final class InfometrieUITests: XCTestCase {
     @MainActor
     func testPreciseAPITimingsSeekToTwelveSecondsAndLeaveSilencesUnhighlighted() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--demo", "--precise-word-timings", "-appearance", "light"]
+        app.launchArguments = ["--uitesting", "--signed-in", "--precise-word-timings", "-appearance", "light"]
         app.launch()
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         app.buttons["feed-item-1"].tap()
-        app.buttons["play-sequence"].tap()
-        XCTAssertTrue(app.buttons["Pause"].waitForExistence(timeout: 10))
+        listen(app.buttons["player-toggle"])
         app.buttons["player-toggle"].tap()
         reveal(app.links["retrouverez"], in: app, down: false)
         app.links["retrouverez"].tap()
@@ -935,7 +933,7 @@ final class InfometrieUITests: XCTestCase {
     @MainActor
     func testPodcastUsesPreciseAPITimingsAfterChangingSequence() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--demo", "--precise-word-timings", "-appearance", "light"]
+        app.launchArguments = ["--uitesting", "--signed-in", "--precise-word-timings", "-appearance", "light"]
         app.launch()
         XCTAssertTrue(app.buttons["start-podcast"].waitForExistence(timeout: 10))
         app.buttons["start-podcast"].tap()

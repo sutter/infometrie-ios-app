@@ -5,9 +5,10 @@ The macro layout: the top-level areas and what each holds. A map to navigate, no
 ```mermaid
 flowchart TD
     App["Infometrie/ · app target"] --> Core["Core · Foundation-only logic"]
-    App --> Services["Services · state, Keychain, playback, relay, fixtures"]
+    App --> Services["Services · state, Keychain, playback, relay"]
     App --> Views["Views · SwiftUI screens and design system"]
-    App --> Resources["Resources · Info.plist, assets, demo media"]
+    App --> Resources["Resources · Info.plist, assets"]
+    App --> Fixtures["Fixtures · Debug-only test server"]
     Tests["Tests/InfometrieCoreTests"] --> Core
     UITests["InfometrieUITests"] --> App
 ```
@@ -15,9 +16,10 @@ flowchart TD
 ## Areas
 
 - `Infometrie/Core`: Codable models, `APIClient`, filters and feed merge, saved-search storage, HLS manifest parsing, word-timing alignment.
-- `Infometrie/Services`: `AppModel`, `PlaybackModel`, `SessionStore` (Keychain), `HLSRelay`, demo content and the Debug-only test transports.
+- `Infometrie/Services`: `AppModel`, `PlaybackModel`, `SessionStore` (Keychain), `HLSRelay`.
+- `Infometrie/Fixtures`: Debug-only `UITestServer` (local API and HLS for UI tests), its fictional content and instrumental audio segments.
 - `Infometrie/Views`: screens, plus `Design.swift` for tokens and shared components.
-- `Infometrie/Resources`: `Info.plist`, `Assets.xcassets` (app icon, `channel-*` logos), demo HLS playlist, segments and audio.
+- `Infometrie/Resources`: `Info.plist`, `Assets.xcassets` (app icon, `channel-*` logos), `PrivacyInfo.xcprivacy`.
 - `Tests/InfometrieCoreTests`: Swift Testing suites for Core, including the Swagger contract.
 - `InfometrieUITests`: XCUITest journeys on the simulator.
 - `Docs`: APK analysis, API contract and local `openapi.yaml`, dated validation log (`VALIDATION.md`), UX iterations with before/after screenshots.

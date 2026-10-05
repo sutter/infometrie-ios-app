@@ -30,6 +30,8 @@ final class APIClient: @unchecked Sendable {
         config.urlCache = nil
         self.session = session ?? URLSession(configuration: config, delegate: SameOriginRedirectDelegate(), delegateQueue: nil)
     }
+    /// A copy of the JSON transport, so media requests reach the same server as the API.
+    var transportConfiguration: URLSessionConfiguration { session.configuration }
     func request(path: String, token: String? = nil, query: [URLQueryItem] = []) -> URLRequest {
         var parts = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
         if !query.isEmpty { parts.queryItems = query }

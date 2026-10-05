@@ -24,4 +24,3 @@ flowchart LR
 - The session and the device id live in the Keychain (`SessionStore`, service `fr.yacast.infometrie.ios`, `WhenUnlockedThisDeviceOnly`). The password is never stored. The last email sits in `UserDefaults`.
 - On launch the saved session is restored as is. `expires` has no documented unit, so the server decides.
 - Logout is local: it clears the Keychain session and in-memory content, with no server call. The device id survives logout, so the server keeps seeing the same device.
-- Demo mode has no session: its account id is `local-demo`, with separate suivis.

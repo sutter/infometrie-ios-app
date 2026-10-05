@@ -82,7 +82,7 @@ struct CoreTests {
         #expect(decoded.isArchived)
     }
 
-    @Test func savedSearchesRemainIsolatedBetweenAccountsAndDemo() throws {
+    @Test func savedSearchesRemainIsolatedBetweenAccounts() throws {
         let suite = "infometrie.tests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -91,8 +91,7 @@ struct CoreTests {
         try store.save([saved], account: " A@example.invalid ")
         #expect(try store.load(account: "a@example.invalid") == [saved])
         #expect(try store.load(account: "b@example.invalid").isEmpty)
-        #expect(try store.load(account: "local-demo").isEmpty)
-        store.clear(account: "local-demo")
+        store.clear(account: "b@example.invalid")
         #expect(try store.load(account: "a@example.invalid").count == 1)
     }
 

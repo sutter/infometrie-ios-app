@@ -45,7 +45,7 @@ SwiftUI et contrôles système Liquid Glass, navigation et onglets natifs, Dynam
 
 Le lecteur AVPlayer utilise un relais HTTP lié exclusivement à `127.0.0.1`, avec route aléatoire par session. URLSession authentifie les manifestes, variantes, clés et segments. Les liens de manifeste sont réécrits ; les ranges et les dates HLS sont conservés. Les URL et redirections hors de l’origine du serveur sont refusées afin de ne pas transmettre le jeton à une autre origine. Si le serveur utilise ultérieurement un CDN distinct, ses règles d’autorisation devront être définies explicitement. Aucun média n’est écrit sur disque. La lecture externe/AirPlay est désactivée car les URL de boucle locale ne sont pas accessibles à un récepteur distant.
 
-Les jetons et l’identifiant d’appareil sont stockés dans Keychain. Le mot de passe n’est pas persisté. Le mode démonstration utilise uniquement des personnalités, médias et textes fictifs, une composition instrumentale locale et un espace de recherches séparé.
+Les jetons et l’identifiant d’appareil sont stockés dans Keychain. Le mot de passe n’est pas persisté.
 
 ## Vérification du serveur
 

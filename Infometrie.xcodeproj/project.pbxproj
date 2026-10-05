@@ -32,7 +32,7 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		000000000000000000000004 /* Infometrie */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (000000000000000000000019 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {"Resources/demo-segment-00.ts" = video.mpeg; "Resources/demo-segment-01.ts" = video.mpeg; "Resources/demo-segment-02.ts" = video.mpeg; "Resources/demo-segment-03.ts" = video.mpeg; "Resources/demo-segment-04.ts" = video.mpeg; "Resources/demo-segment-05.ts" = video.mpeg; "Resources/demo-segment-06.ts" = video.mpeg; }; explicitFolders = (); path = Infometrie; sourceTree = "<group>"; };
+		000000000000000000000004 /* Infometrie */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (000000000000000000000019 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {"Fixtures/fixture-audio-00.ts" = video.mpeg; "Fixtures/fixture-audio-01.ts" = video.mpeg; "Fixtures/fixture-audio-02.ts" = video.mpeg; "Fixtures/fixture-audio-03.ts" = video.mpeg; "Fixtures/fixture-audio-04.ts" = video.mpeg; "Fixtures/fixture-audio-05.ts" = video.mpeg; "Fixtures/fixture-audio-06.ts" = video.mpeg; }; explicitFolders = (); path = Infometrie; sourceTree = "<group>"; };
 		000000000000000000000005 /* InfometrieUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = InfometrieUITests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -259,6 +259,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Q37972BSB3;
+				EXCLUDED_SOURCE_FILE_NAMES = "fixture-audio-*.ts";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Infometrie/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

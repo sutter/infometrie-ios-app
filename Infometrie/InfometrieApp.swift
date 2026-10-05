@@ -27,7 +27,7 @@ struct InfometrieApp: App {
 @MainActor
 private func makeAppModel() -> AppModel {
     #if DEBUG
-    if let fixture = LoginTestProtocol.appModel() { return fixture }
+    if let fixture = UITestServer.appModel() { return fixture }
     if ProcessInfo.processInfo.arguments.contains("--uitesting") {
         return AppModel(remembersEmail: false, restoresSession: false)
     }
@@ -40,7 +40,7 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicType
-    private var activityKey: String { "\(model.isAuthenticated)-\(model.isDemo)-\(scenePhase == .active)" }
+    private var activityKey: String { "\(model.isAuthenticated)-\(scenePhase == .active)" }
     var body: some View {
         @Bindable var binding = model
         Group {

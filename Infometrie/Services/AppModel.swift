@@ -7,7 +7,6 @@ final class AppModel {
     var tab: Tab = .feed
     var isSearchPresented = false
     var session: Session?
-    var isDemo = false
     var isRestoring = true
     var isLoggingIn = false
     var loginError: String?
@@ -27,9 +26,9 @@ final class AppModel {
     enum WordTimingState { case loading, available, unavailable, failed }
     private(set) var wordTimings: [Int64: SequenceWordTimings] = [:]
     private(set) var wordTimingStates: [Int64: WordTimingState] = [:]
-    var isAuthenticated: Bool { isDemo || session != nil }
+    var isAuthenticated: Bool { session != nil }
     var visibleItems: [FeedItem] { items.filter(filters.accepts) }
-    var accountID: String { isDemo ? "local-demo" : session?.email.lowercased() ?? "" }
+    var accountID: String { session?.email.lowercased() ?? "" }
     let api: APIClient
     private let sessionStore: SessionStore
     private let remembersEmail: Bool
@@ -65,7 +64,6 @@ final class AppModel {
             } else { sessionStore.clearSession() }
         }
         isRestoring = false
-        if ProcessInfo.processInfo.arguments.contains("--demo") { enterDemo() }
     }
 
     func login(password: String, replaceDevice: Int64? = nil) async {
@@ -78,7 +76,7 @@ final class AppModel {
                                        deviceName: UIDevice.current.model, deviceModel: "Apple \(UIDevice.current.model)", replaceDeviceId: replaceDevice)
             let result = try await api.login(request)
             try sessionStore.save(result, account: "session")
-            session = result; email = result.email; isDemo = false
+            session = result; email = result.email
             if remembersEmail { UserDefaults.standard.set(result.email, forKey: "last-email") }
             loadSearches()
         } catch APIError.deviceQuota(let max, let devices) {
@@ -86,24 +84,9 @@ final class AppModel {
         } catch { loginError = message(for: error) }
     }
 
-    func enterDemo() {
-        resetContent()
-        isDemo = true; session = nil; isRestoring = false
-        items = DemoContent.feed(); persons = DemoContent.persons; parties = DemoContent.parties
-        #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--uitesting"), ProcessInfo.processInfo.arguments.contains("--precise-word-timings") {
-            for item in items where item.canPlay { wordTimings[item.id] = DemoContent.wordTimingFixture(item); wordTimingStates[item.id] = .available }
-        }
-        #endif
-        if ProcessInfo.processInfo.arguments.contains("--uitesting") && ProcessInfo.processInfo.arguments.contains("--reset-demo") {
-            searches.clear(account: "local-demo")
-        }
-        lastRefresh = Date(); loadSearches()
-    }
-
     func logout(reason: String? = nil) {
-        if !isDemo { sessionStore.clearSession() }
-        session = nil; isDemo = false; resetContent(); loginError = reason
+        sessionStore.clearSession()
+        session = nil; resetContent(); loginError = reason
     }
     private func resetContent() {
         wordTimingGeneration = UUID()
@@ -117,7 +100,6 @@ final class AppModel {
     }
 
     func refresh(reset: Bool = false) async {
-        if isDemo { lastRefresh = Date(); return }
         guard let session else { return }
         let id = UUID(); requestID = id
         let criteria = filters
@@ -136,7 +118,7 @@ final class AppModel {
         }
     }
     func loadChoices() async {
-        guard !isDemo, let token = session?.token else { return }
+        guard let token = session?.token else { return }
         do {
             async let people = api.persons(token: token)
             async let groups = api.parties(token: token)
@@ -157,8 +139,7 @@ final class AppModel {
         }
         persistSearches()
         if changed {
-            requestID = UUID(); lastSeq = 0
-            if !isDemo { items = [] }
+            requestID = UUID(); lastSeq = 0; items = []
             await refresh(reset: true)
         }
     }
@@ -189,7 +170,6 @@ final class AppModel {
         catch { notice = "Impossible d’enregistrer vos suivis sur cet appareil." }
     }
     func sequence(_ item: FeedItem) async throws -> SequenceDetail {
-        if isDemo { return DemoContent.detail(item) }
         guard let token = session?.token else { throw APIError.sessionExpired }
         do {
             let value = try await api.sequence(id: item.id, token: token)
@@ -202,7 +182,7 @@ final class AppModel {
         }
     }
     func loadWordTimings(for sequenceID: Int64, retry: Bool = false) {
-        guard !isDemo, let token = session?.token, wordTimingTasks[sequenceID] == nil,
+        guard let token = session?.token, wordTimingTasks[sequenceID] == nil,
               retry || wordTimingStates[sequenceID] == nil else { return }
         let generation = wordTimingGeneration
         wordTimingStates[sequenceID] = .loading

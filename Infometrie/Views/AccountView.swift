@@ -13,14 +13,14 @@ struct AccountView: View {
             VStack(alignment: .leading, spacing: 24) {
                 PageHeading(title: "Compte")
                 HStack(alignment: .top, spacing: 16) {
-                    Image(systemName: model.isDemo ? "sparkles" : "person")
+                    Image(systemName: "person")
                         .font(.title2).foregroundStyle(Brand.tint)
                         .frame(width: 56, height: 56).background(Brand.surface, in: Circle())
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(model.isDemo ? "Mode démonstration" : (model.session?.fullname?.isEmpty == false ? model.session!.fullname! : "Votre compte"))
+                        Text(model.session?.fullname?.isEmpty == false ? model.session!.fullname! : "Votre compte")
                             .font(.headline)
-                        Text(model.isDemo ? "Découvrez InfoMétrie" : model.session?.email ?? "")
+                        Text(model.session?.email ?? "")
                             .font(.subheadline).foregroundStyle(Brand.secondary)
                         if let organisation = model.session?.organisation, !organisation.isEmpty {
                             Text(organisation).font(.subheadline).foregroundStyle(Brand.secondary)
@@ -39,15 +39,9 @@ struct AccountView: View {
                     Label("Consultation seule", systemImage: "lock.shield")
                     Text("Les séquences ne peuvent être ni exportées, ni copiées, ni partagées.")
                         .font(.subheadline).foregroundStyle(Brand.secondary)
-                    if model.isDemo {
-                        Text("Les personnalités, médias et contenus affichés dans cette démonstration sont fictifs.")
-                            .font(.footnote).foregroundStyle(Brand.secondary)
-                    }
                 }
                 AppRule()
-                Button(model.isDemo ? "Quitter la démonstration" : "Se déconnecter", role: .destructive) {
-                    if model.isDemo { model.logout() } else { showLogout = true }
-                }
+                Button("Se déconnecter", role: .destructive) { showLogout = true }
                 .font(.body.weight(.medium)).foregroundStyle(Brand.destructive)
                 .frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle())
                 .accessibilityIdentifier("logout")

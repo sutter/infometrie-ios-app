@@ -16,7 +16,6 @@ struct FeedView: View {
                 feedHeading.padding(.vertical, 12)
                 Section {
                     if hasAudienceFilters { selectionSummary.padding(.vertical, 12) }
-                    if model.isDemo { DemoBanner() }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.refresh(reset: true) } }
                             .padding(.vertical, 12)

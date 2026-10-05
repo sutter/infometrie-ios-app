@@ -134,7 +134,7 @@ final class PlaybackModel {
         }
         pendingWord = nil
         seek(target, userInitiated: true)
-        wordAwaitingHLSClock = !didCorrectStart && app?.isDemo == false ? (date, target) : nil
+        wordAwaitingHLSClock = !didCorrectStart ? (date, target) : nil
         wordAwaitingTimings = !timeline.hasPreciseTimings ? PendingWordSeek(index: index, position: target) : nil
     }
     func wordTimingsDidLoad(sequenceID: Int64) {
@@ -148,7 +148,7 @@ final class PlaybackModel {
         guard target >= 0, target < duration else { return }
         // Reconcile a tap made before the word metadata arrived, preserving pause
         // and any progress made since that tap. Manual scrubbing cancels this intent.
-        wordAwaitingHLSClock = !didCorrectStart && app?.isDemo == false ? (date, base) : nil
+        wordAwaitingHLSClock = !didCorrectStart ? (date, base) : nil
         seek(target, userInitiated: false)
     }
     private func seek(_ seconds: Double, userInitiated: Bool) {
@@ -197,30 +197,19 @@ final class PlaybackModel {
                 }
                 guard self.generation == id, !Task.isCancelled else { return }
                 self.detail = detail
-                self.mediaClock = MediaClock(playFrom: detail.playFrom, margin: self.isPodcast || app.isDemo ? 0 : 10)
-                let url: URL
-                if app.isDemo {
-                    let configuration = URLSessionConfiguration.ephemeral
-                    configuration.protocolClasses = [DemoMediaProtocol.self]
-                    let relay = HLSRelay(origin: DemoMediaProtocol.origin, token: DemoMediaProtocol.token, configuration: configuration)
-                    self.relay = relay
-                    try await relay.start()
-                    guard self.generation == id, !Task.isCancelled else { relay.stop(); return }
-                    url = try relay.localURL(for: DemoMediaProtocol.origin.appendingPathComponent("demo.m3u8"))
-                } else {
-                    guard let token = app.session?.token else { throw APIError.sessionExpired }
-                    let relay = HLSRelay(origin: app.api.baseURL, token: token)
-                    self.relay = relay
-                    relay.onUnauthorized = { [weak app] in
-                        Task { @MainActor in
-                            guard app?.session?.token == token else { return }
-                            app?.handleSessionError(APIError.sessionExpired)
-                        }
+                self.mediaClock = MediaClock(playFrom: detail.playFrom, margin: self.isPodcast ? 0 : 10)
+                guard let token = app.session?.token else { throw APIError.sessionExpired }
+                let relay = HLSRelay(origin: app.api.baseURL, token: token, configuration: app.api.transportConfiguration)
+                self.relay = relay
+                relay.onUnauthorized = { [weak app] in
+                    Task { @MainActor in
+                        guard app?.session?.token == token else { return }
+                        app?.handleSessionError(APIError.sessionExpired)
                     }
-                    try await relay.start()
-                    guard self.generation == id, !Task.isCancelled else { relay.stop(); return }
-                    url = try relay.localURL(for: app.api.playlistURL(for: detail, margin: self.isPodcast ? 0 : 10))
                 }
+                try await relay.start()
+                guard self.generation == id, !Task.isCancelled else { relay.stop(); return }
+                let url = try relay.localURL(for: app.api.playlistURL(for: detail, margin: self.isPodcast ? 0 : 10))
                 try AVAudioSession.sharedInstance().setCategory(.playback, mode: current.video ? .moviePlayback : .spokenAudio)
                 try AVAudioSession.sharedInstance().setActive(true)
                 let item = AVPlayerItem(url: url)
@@ -238,7 +227,7 @@ final class PlaybackModel {
                             }
                             if let word = self.pendingWord {
                                 self.seekToWord(word, sequenceID: detail.id)
-                            } else if !app.isDemo && !self.isPodcast {
+                            } else if !self.isPodcast {
                                 let offset = APIDate.parse(detail.playFrom).flatMap { self.mediaClock?.position(at: $0) } ?? 10
                                 self.seek(offset, userInitiated: false)
                             }
@@ -287,7 +276,7 @@ final class PlaybackModel {
                         seek(target, userInitiated: false)
                         return
                     }
-                } else if !hasUserSought, !isPodcast, app?.isDemo == false,
+                } else if !hasUserSought, !isPodcast,
                    let detail, let passage = APIDate.parse(detail.playFrom) {
                     let target = max(0, clock.position(at: passage))
                     if abs(target - 10) > 1.5 && position < target {

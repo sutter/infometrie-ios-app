@@ -18,8 +18,7 @@ The user reviews the result in the simulator themselves: after any change that s
 
 | Change | Check |
 | ------ | ----- |
-| Visual only (layout, color, icon, copy) | Open the updated app in the simulator for the user. No UI test, no screenshot unless asked |
-| Behavior, navigation or interaction | The one or two UI tests of the touched area (`testing.md`), on iPhone, then open the updated app in the simulator. Add iPad only when the regular-width layout changed |
+| Any change on screen (layout, copy, behavior, navigation) | Open the updated app in the simulator for the user. No UI test and no screenshot unless asked: the user iterates fast and checks the result themselves. UI tests run only on request or before a push |
 
 ## Before push
 

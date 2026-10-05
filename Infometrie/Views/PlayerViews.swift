@@ -51,7 +51,7 @@ struct SequenceView: View {
             VStack(alignment: .leading, spacing: 20) {
                 PassageHeading(item: displayItem, titleIdentifier: "sequence-title")
                 if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
-                if isCurrent, displayItem.canPlay, displayItem.video, !model.isDemo {
+                if isCurrent, displayItem.canPlay, displayItem.video {
                     NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
@@ -67,7 +67,7 @@ struct SequenceView: View {
                             }
                         }
                         if displayItem.publicationURL == nil {
-                            Text(model.isDemo ? "Publication fictive de démonstration." : "Le lien vers cette publication n’est pas disponible.")
+                            Text("Le lien vers cette publication n’est pas disponible.")
                                 .font(.subheadline).foregroundStyle(Brand.secondary)
                         }
                     } else if !detail.verbatim.isEmpty {
@@ -94,7 +94,6 @@ struct SequenceView: View {
                         if item.isCitation && !item.citedBy.isEmpty { Label("Mention par \(item.citedBy)", systemImage: "quote.bubble") }
                     }.font(.subheadline).foregroundStyle(Brand.secondary)
                 }.accessibilityIdentifier("sequence-context")
-                if model.isDemo { DemoBanner() }
             }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                 .motion(value: displayDetail?.id)
         }
@@ -137,7 +136,7 @@ struct SequenceView: View {
                 detail = value
                 // Prepare the detail player without autoplay so the passage opens
                 // with its video frame and an explicit play control.
-                if value.item.canPlay, !model.isDemo, model.player.current == nil {
+                if value.item.canPlay, model.player.current == nil {
                     model.player.prepare(item: value.item, detail: value, app: model)
                 }
             }
@@ -302,7 +301,7 @@ struct PodcastView: View {
                             .id(item.id).transition(.opacity)
                     }
                     if let error = model.player.error { ErrorNotice(message: error) }
-                    if model.player.current?.video == true, !model.isDemo {
+                    if model.player.current?.video == true {
                         NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                     if let detail = model.player.detail, !detail.verbatim.isEmpty {
@@ -310,7 +309,6 @@ struct PodcastView: View {
                             model.player.seekToWord(word, sequenceID: detail.id)
                         }.id(detail.id).transition(.opacity)
                     }
-                    if model.isDemo { DemoBanner() }
                 }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                     .motion(value: model.player.current?.id)
                     .motion(value: model.player.detail?.id)

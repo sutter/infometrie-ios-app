@@ -25,7 +25,6 @@ What this project is, the problem it solves, and its domain language. The non-de
 | Podcast | Chronological queue of the playable results, with previous / next and auto-advance |
 | Synchronisation par mot / Calage estimé | Word highlighting from the API word timings, or its uniform estimate fallback |
 | Quota d'appareils | Device limit per account; login answers HTTP 409 and the user picks a device to replace |
-| Mode démonstration | Offline mode with fictional people, texts and a local instrumental audio |
 | `channel_key` | Broadcaster key that selects the bundled `channel-<key>` logo |
 
 ## Key features

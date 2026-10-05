@@ -18,7 +18,7 @@ The mobile app: platform, navigation, native access, and release.
 
 - Two `@MainActor @Observable` models passed through the environment: `AppModel` (session, feed, filters, suivis, word timings) and `PlaybackModel` (queue, player, transcript position).
 - `UserDefaults`: saved searches keyed per account (`SearchStore`), last email. `@AppStorage`: `appearance`, `readingSize`.
-- Word timings are cached in memory for the session only. No media is written to disk and nothing works offline except demo mode.
+- Word timings are cached in memory for the session only. No media is written to disk and nothing works offline.
 
 ## Build and release
 
