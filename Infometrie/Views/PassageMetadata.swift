@@ -95,34 +95,39 @@ struct PassageMetadataRow: View {
         .fixedSize(horizontal: true, vertical: false)
     }
 
-    @ViewBuilder private var duration: some View {
+    private var duration: some View { PassageDuration(item: item) }
+
+    private var source: some View { ChannelSource(item: item) }
+
+    private var date: some View { PassageDate(item: item).fixedSize(horizontal: false, vertical: true) }
+
+    private var compactDate: some View { PassageDate(item: item).fixedSize(horizontal: true, vertical: false) }
+}
+
+/// The passage date as every variant writes it: `25/09 14:39`.
+struct PassageDate: View {
+    let item: FeedItem
+
+    var body: some View {
+        if let date = item.date {
+            Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) \(date, style: .time)")
+                .foregroundStyle(Brand.secondary).monospacedDigit()
+                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
+        }
+    }
+}
+
+/// The listening duration, shown only for a playable passage.
+struct PassageDuration: View {
+    let item: FeedItem
+
+    var body: some View {
         if item.canPlay && item.durationSec > 0 {
             Label(item.readableDuration, systemImage: "headphones")
                 .monospacedDigit()
                 .foregroundStyle(Brand.secondary)
                 .fixedSize()
                 .accessibilityLabel("Durée d’écoute : \(item.readableDuration)")
-        }
-    }
-
-    private var source: some View { ChannelSource(item: item) }
-
-    @ViewBuilder private var date: some View {
-        if let date = item.date {
-            Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) \(date, style: .time)")
-                .foregroundStyle(Brand.secondary).monospacedDigit()
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
-        }
-    }
-
-    @ViewBuilder private var compactDate: some View {
-        if let date = item.date {
-            Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) \(date, style: .time)")
-                .foregroundStyle(Brand.secondary)
-                .monospacedDigit()
-                .fixedSize(horizontal: true, vertical: false)
-                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
         }
     }
 }
@@ -183,6 +188,14 @@ struct PassageHeading: View {
 
 extension FeedItem {
     var kindColor: Color { Brand.ink }
+    /// The broadcast medium as readers name it, empty when unknown.
+    var mediaLabel: String {
+        switch media.lowercased() {
+        case "tv": "TV"
+        case "radio": "Radio"
+        default: ""
+        }
+    }
     var kindSymbol: String { isTweet ? "text.bubble" : isCitation ? "quote.bubble" : kind == "intervention" ? "waveform" : "doc.text" }
 
     var readableDuration: String {

@@ -7,12 +7,16 @@ struct FeedCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
-            byline
-            Text(displayTitle)
-                .font(.body).foregroundStyle(Brand.ink)
-                .lineLimit(dynamicType.isAccessibilitySize ? nil : 4)
-                .fixedSize(horizontal: false, vertical: true)
-            PassageMetadataRow(item: item)
+            if item.isCitation {
+                citationHeader
+                citationSource
+                citationSpeaker
+                title
+            } else {
+                byline
+                title
+                PassageMetadataRow(item: item)
+            }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -20,6 +24,57 @@ struct FeedCard: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityHint(item.canPlay ? "Ouvre le texte et le lecteur de ce passage" : "Ouvre le texte de cette publication")
+    }
+
+    private var title: some View {
+        Text(displayTitle)
+            .font(.body).foregroundStyle(Brand.ink)
+            .lineLimit(dynamicType.isAccessibilitySize ? nil : 4)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// A citation leads with what it is and where it was heard, then who is mentioned, then the passage.
+    private var citationHeader: some View {
+        AdaptiveRow {
+            HStack(spacing: 8) {
+                KindBadge(item: item)
+                Text(item.citedBy.isEmpty ? "mention à l’antenne" : "mention par \(item.citedBy)")
+                    .font(.footnote).foregroundStyle(Brand.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
+            ChannelMark(item: item)
+        }
+    }
+
+    private var citationSource: some View {
+        AdaptiveRow {
+            HStack(spacing: 8) {
+                PassageDate(item: item)
+                Text([item.channel, item.mediaLabel].filter { !$0.isEmpty }.joined(separator: " · "))
+                    .foregroundStyle(Brand.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
+            PassageDuration(item: item)
+        }
+        .font(.footnote)
+    }
+
+    private var citationSpeaker: some View {
+        let party = item.party.trimmingCharacters(in: .whitespacesAndNewlines)
+        let role = item.role.trimmingCharacters(in: .whitespacesAndNewlines)
+        let repeatsParty = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
+            || party.range(of: role, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
+        return VStack(alignment: .leading, spacing: 1) {
+            (Text(item.person).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink)
+                + Text(party.isEmpty ? "" : " · \(party)").font(.subheadline).foregroundStyle(Brand.secondary))
+                .lineLimit(2)
+            if !role.isEmpty && (party.isEmpty || !repeatsParty) {
+                Text(role).font(.footnote).foregroundStyle(Brand.secondary).lineLimit(2)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var byline: some View {
