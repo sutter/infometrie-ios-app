@@ -10,7 +10,7 @@ struct AccountView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 32) {
                 PageHeading(title: "Compte")
                 HStack(alignment: .top, spacing: 16) {
                     Image(systemName: "person")
@@ -68,7 +68,7 @@ struct AccountView: View {
 
     private var appearanceSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Apparence").font(.headline).accessibilityAddTraits(.isHeader)
+            SectionLabel(title: "Apparence")
             VStack(spacing: 12) {
                 AdaptiveRow {
                     Text("Thème").font(.body)

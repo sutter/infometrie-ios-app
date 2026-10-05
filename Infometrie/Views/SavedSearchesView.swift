@@ -15,7 +15,8 @@ struct SavedSearchesView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     PageHeading(title: "Mes suivis", subtitle: "Vos sujets, au fil de l’actualité.")
                     Button { model.newSearch() } label: { Label("Créer un suivi", systemImage: "plus") }
-                        .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("new-search")
+                        // Prominent only while the list is empty; afterwards the suivis themselves lead.
+                        .buttonStyle(ActionButtonStyle(prominent: model.savedSearches.isEmpty)).accessibilityIdentifier("new-search")
                     HStack(spacing: 12) {
                         category("Actifs", archived: false)
                         category("Archivés", archived: true)

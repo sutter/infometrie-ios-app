@@ -10,7 +10,7 @@ struct SearchView: View {
     var body: some View {
         @Bindable var model = model
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 32) {
                 PageHeading(title: "Filtrer", subtitle: "Composez le fil qui vous intéresse.")
                 AppSection(title: "Qui suivre ?") {
                     VStack(spacing: 0) {
@@ -21,7 +21,7 @@ struct SearchView: View {
                         } label: {
                             FilterSelectionRow(title: "Personnalités", icon: "person.2", summary: model.draft.persons.isEmpty ? "Toutes" : model.draft.persons.sorted().joined(separator: ", "), isSelected: !model.draft.persons.isEmpty)
                         }.accessibilityIdentifier("pick-persons")
-                        AppRule().padding(.horizontal, 20)
+                        AppRule()
                         NavigationLink {
                             ChoicePicker(title: "Partis politiques", allTitle: "Tous les partis", choices: model.parties.map {
                                 .init(value: $0.code, title: $0.name, subtitle: $0.code)
@@ -44,10 +44,10 @@ struct SearchView: View {
                         if kind == nil {
                             FilterChoiceRow(title: model.draft.kindSummary, subtitle: "Types conservés dans ce suivi", selected: true, multiple: false)
                                 .accessibilityAddTraits(.isSelected)
-                            AppRule().padding(.horizontal, 20)
+                            AppRule()
                         }
                         ForEach(Array(passageKinds.enumerated()), id: \.offset) { index, option in
-                            if index > 0 { AppRule().padding(.horizontal, 20) }
+                            if index > 0 { AppRule() }
                             Button {
                                 model.draft.selectKind(index)
                             } label: {
@@ -90,11 +90,10 @@ struct SearchView: View {
         }) {
             NavigationStack {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 32) {
                         PageHeading(title: "Nouveau suivi")
                         AppSection(title: "Donnez-lui un nom") {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Nom du suivi").font(.headline)
                                 TextField("Nom du suivi", text: $name, prompt: Text("Ex. Ma veille politique").foregroundStyle(Brand.secondaryOnSurface))
                                     .font(.body).autocorrectionDisabled().submitLabel(.done)
                                     .onSubmit { save() }.accessibilityIdentifier("search-name")
@@ -234,13 +233,12 @@ private struct FilterSelectionRow: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
                 Text(title).font(.body.weight(.semibold)).foregroundStyle(Brand.ink)
-                Text(summary).font(.subheadline).foregroundStyle(isSelected ? Brand.selectionForeground : Brand.secondary)
+                Text(summary).font(.subheadline).foregroundStyle(isSelected ? Brand.ink : Brand.secondary)
             }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Brand.secondary).accessibilityHidden(true)
         }
-        .padding(16).frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .background(isSelected ? Brand.selection : .clear)
+        .padding(.vertical, 14).frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
         .contentShape(Rectangle())
     }
 }
@@ -255,13 +253,12 @@ private struct FilterChoiceRow: View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.body.weight(.semibold)).foregroundStyle(Brand.ink)
-                if !subtitle.isEmpty { Text(subtitle).font(.subheadline).foregroundStyle(selected ? Brand.secondaryOnSurface : Brand.secondary) }
+                if !subtitle.isEmpty { Text(subtitle).font(.subheadline).foregroundStyle(Brand.secondary) }
             }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: selected ? (multiple ? "checkmark.square.fill" : "checkmark.circle.fill") : (multiple ? "square" : "circle"))
                 .font(.title3).foregroundStyle(accent).accessibilityHidden(true)
         }
-        .padding(16).frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .background(selected ? Brand.selection : .clear)
+        .padding(.vertical, 14).frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
         .contentShape(Rectangle())
     }
 }
