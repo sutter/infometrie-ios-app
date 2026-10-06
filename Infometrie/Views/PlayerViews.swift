@@ -127,6 +127,7 @@ struct SequenceView: View {
         .scrollEdgeEffectHidden(true)
         .background(Brand.background).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
         .toolbar(.hidden, for: .tabBar)
+        .onAppear { model.markSeen(item) }
         .task(id: reload) {
             do {
                 let value = try await model.sequence(item)
@@ -314,6 +315,10 @@ struct PodcastView: View {
             }
             .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock(queue: true) }
             .background(Brand.background).appNavigationTitle("Tout écouter")
+            // Each passage the queue plays counts as seen, like an opened page.
+            .onChange(of: model.player.current?.id, initial: true) {
+                if let item = model.player.current { model.markSeen(item) }
+            }
             .toolbar {
                 // The position shares the title line to leave the height to the passage.
                 ToolbarItem(placement: .topBarLeading) {

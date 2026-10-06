@@ -18,6 +18,8 @@ final class AppModel {
     var filters = SearchFilters()
     var draft = SearchFilters()
     var savedSearches: [SavedSearch] = []
+    /// Passages already opened or listened to, with the time they were seen (stored on the device).
+    private(set) var seen: [Int64: Date] = [:]
     var isRefreshing = false
     var feedError: String?
     var choicesError: String?
@@ -37,6 +39,7 @@ final class AppModel {
     private var lastSeq: Int64 = 0
     private var requestID = UUID()
     private let searches = SearchStore()
+    private let seenStore = SeenStore()
     @ObservationIgnored private var wordTimingTasks: [Int64: Task<Void, Never>] = [:]
     @ObservationIgnored private var wordTimingGeneration = UUID()
 
@@ -93,7 +96,7 @@ final class AppModel {
         for task in wordTimingTasks.values { task.cancel() }
         wordTimingTasks = [:]; wordTimings = [:]; wordTimingStates = [:]
         requestID = UUID(); player.stop()
-        items = []; persons = []; parties = []; savedSearches = []
+        items = []; persons = []; parties = []; savedSearches = []; seen = [:]
         filters = SearchFilters(); draft = SearchFilters(); tab = .feed; isSearchPresented = false
         lastSeq = 0; lastRefresh = nil; feedError = nil; choicesError = nil
         isRefreshing = false; quota = nil; notice = nil
@@ -164,6 +167,19 @@ final class AppModel {
     private func loadSearches() {
         do { savedSearches = try searches.load(account: accountID) }
         catch { savedSearches = []; notice = "Les suivis enregistrés n’ont pas pu être lus." }
+        seen = seenStore.load(account: accountID)
+    }
+    func isSeen(_ item: FeedItem) -> Bool { seen[item.id] != nil }
+    /// Called when a passage page opens or a passage plays in "Tout écouter".
+    func markSeen(_ item: FeedItem) {
+        guard seen[item.id] == nil, !accountID.isEmpty else { return }
+        seen[item.id] = Date()
+        seenStore.save(seen, account: accountID)
+    }
+    func toggleSeen(_ item: FeedItem) {
+        guard !accountID.isEmpty else { return }
+        seen[item.id] = isSeen(item) ? nil : Date()
+        seenStore.save(seen, account: accountID)
     }
     private func persistSearches() {
         do { try searches.save(savedSearches, account: accountID) }

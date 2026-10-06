@@ -4,6 +4,8 @@ import SwiftUI
 /// Every kind shares one order: what it is and where it was heard, then who, then the passage.
 struct FeedCard: View {
     let item: FeedItem
+    /// Seen passages step back: name and title turn secondary and "✓ Vu" follows the date.
+    var seen = false
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
@@ -14,7 +16,7 @@ struct FeedCard: View {
                 source
             }
             VStack(alignment: .leading, spacing: 4) {
-                PassageSpeaker(item: item)
+                PassageSpeaker(item: item, dimmed: seen)
                 title
             }
         }
@@ -24,12 +26,13 @@ struct FeedCard: View {
         .overlay(alignment: .bottom) { AppRule() }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+        .accessibilityValue(seen ? "Déjà vu" : "")
         .accessibilityHint(item.canPlay ? "Ouvre le texte et le lecteur de ce passage" : "Ouvre le texte de cette publication")
     }
 
     private var title: some View {
         Text(displayTitle)
-            .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
+            .font(.title3.weight(seen ? .semibold : .bold)).foregroundStyle(seen ? Brand.secondary : Brand.ink)
             .lineLimit(dynamicType.isAccessibilitySize ? nil : 4)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -49,18 +52,31 @@ struct FeedCard: View {
     @ViewBuilder private var source: some View {
         Group {
             if dynamicType.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 6) { PassageDate(item: item); channel; PassageDuration(item: item) }
+                VStack(alignment: .leading, spacing: 6) { PassageDate(item: item); channel; seenMark; PassageDuration(item: item) }
             } else {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) { PassageDate(item: item); channel; Spacer(minLength: 0); PassageDuration(item: item) }
+                    HStack(spacing: 8) { PassageDate(item: item); channel; seenMark; Spacer(minLength: 0); PassageDuration(item: item) }
                     VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) { PassageDate(item: item); Spacer(minLength: 0); PassageDuration(item: item) }
+                        HStack(spacing: 8) { PassageDate(item: item); seenMark; Spacer(minLength: 0); PassageDuration(item: item) }
                         channel
                     }
                 }
             }
         }
         .font(.footnote)
+    }
+
+    /// "· ✓ Vu" after the date (and the channel name when no logo shows it): the state never rests on color alone. VoiceOver reads the row's value instead.
+    @ViewBuilder private var seenMark: some View {
+        if seen {
+            HStack(spacing: 8) {
+                Text("·")
+                Label("Vu", systemImage: "checkmark").fontWeight(.semibold)
+            }
+            .foregroundStyle(Brand.secondary)
+            .fixedSize()
+            .accessibilityHidden(true)
+        }
     }
 
     @ViewBuilder private var channel: some View {

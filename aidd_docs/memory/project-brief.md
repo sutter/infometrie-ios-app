@@ -32,6 +32,7 @@ What this project is, the problem it solves, and its domain language. The non-de
 
 - Login, Keychain session restore, device quota replacement after confirmation, logout.
 - Feed with 30-second refresh, kind checkboxes (Interventions / Citations / X, combinable), person and party filters.
+- Seen passages: opened or listened passages step back in the feed ("✓ Vu"), stored on the device.
 - Mes suivis: save, reuse, archive, restore and delete filter sets.
 - Sequence page: text before résumé, word-tap seeking, persistent player (play/pause, scrubber, ±10 s), fullscreen transcript.
 - Podcast of the current results.

@@ -36,10 +36,15 @@ struct FeedView: View {
                         } else {
                             ForEach(model.visibleItems) { item in
                                 NavigationLink { SequenceView(item: item) } label: {
-                                    FeedCard(item: item)
+                                    FeedCard(item: item, seen: model.isSeen(item))
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
+                                // A long press, or VoiceOver's actions, can undo or set the state by hand.
+                                .contextMenu { seenToggle(item) }
+                                .accessibilityAction(named: model.isSeen(item) ? "Marquer comme non vu" : "Marquer comme vu") {
+                                    model.toggleSeen(item)
+                                }
                             }
                         }
                     }
@@ -120,6 +125,12 @@ struct FeedView: View {
             .accessibilityIdentifier("clear-filters")
             AppRule()
         }
+    }
+
+    private func seenToggle(_ item: FeedItem) -> some View {
+        let seen = model.isSeen(item)
+        return Button(seen ? "Marquer comme non vu" : "Marquer comme vu",
+                      systemImage: seen ? "circle" : "checkmark.circle") { model.toggleSeen(item) }
     }
 
     /// `scheme` is set in the navigation bar, which may not follow a theme change (`Brand.fixed`).

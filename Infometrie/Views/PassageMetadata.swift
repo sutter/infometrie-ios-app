@@ -79,13 +79,15 @@ struct PassageSpeaker: View {
     let item: FeedItem
     var nameFont: Font = .subheadline
     var lineLimit: Int? = 2
+    /// A seen passage steps back: the name turns secondary like the title.
+    var dimmed = false
 
     var body: some View {
         let party = item.party.trimmingCharacters(in: .whitespacesAndNewlines)
         let role = item.role.trimmingCharacters(in: .whitespacesAndNewlines)
         let repeatsParty = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
             || party.range(of: role, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
-        let name = Text(item.person).font(nameFont.weight(.semibold)).foregroundStyle(Brand.ink)
+        let name = Text(item.person).font(nameFont.weight(.semibold)).foregroundStyle(dimmed ? Brand.secondary : Brand.ink)
         let partyText = Text(party).font(nameFont).foregroundStyle(Brand.secondary)
         VStack(alignment: .leading, spacing: 1) {
             // Name · party on one line when it fits; otherwise the party moves below, never leaving a lone "·".
