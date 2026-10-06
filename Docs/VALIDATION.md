@@ -1,5 +1,11 @@
 # Validation du portage
 
+## Suite complète avant le push de l’état « Vu » — 6 octobre 2026
+
+- `build/Full.xcresult`, iPhone 17 Pro, iOS 26.4 : **18 tests réussis sur 20**. Restent les deux échecs connus : `testLoginFormAndEmptyFilters` (audit d’accessibilité) et `testFullscreenTranscriptSeeksFromTextAtMaximumSize`.
+- L’état « Vu » du compte de test se conservait d’un test à l’autre et grisait des lignes dans les tests suivants. Le serveur de test le vide désormais à chaque lancement ; `testLoginFormAndEmptyFilters`, relancé seul, échoue toujours sur l’audit, comme avant.
+- `swift test` : 44 tests réussis.
+
 ## Suite complète avant le push — 5 octobre 2026, soir
 
 Après le build 5 : thème de la barre, barre opaque sur iOS 27, connexion centrée, retrait des intitulés, logo et icône.
