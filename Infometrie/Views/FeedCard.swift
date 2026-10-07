@@ -21,11 +21,13 @@ struct FeedCard: View {
             }
         }
         // Rows on a plain page, separated by a hairline, rather than cards: the Medium reading list.
-        // A bar in the kind's color runs down the left edge, so the type reads while scrolling.
+        // A bar in the kind's color runs down the left edge, so the type reads while scrolling. It sits in the
+        // page margin, 8 pt from the screen edge, clear of the text: hugging the text it read as part of it.
         .padding(.vertical, 16).padding(.leading, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .leading) {
-            Capsule().fill(item.kindColor).frame(width: 6).padding(.vertical, 12).accessibilityHidden(true)
+            Capsule().fill(item.kindColor).frame(width: 6).padding(.vertical, 12)
+                .offset(x: -8).accessibilityHidden(true)
         }
         .overlay(alignment: .bottom) { AppRule() }
         .contentShape(Rectangle())
