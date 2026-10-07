@@ -47,22 +47,36 @@ struct ChannelSource: View {
     }
 }
 
-/// The passage kind as a tag in its kind color, on a pale wash of the same hue.
+/// The passage kind: a pale tile with its pictogram, then its name in small spaced capitals, both in the
+/// kind's color, like a newspaper section heading.
 struct KindTag: View {
     let label: String
     let kind: String
+    @ScaledMetric(relativeTo: .caption) private var tile = 22.0
 
     init(item: FeedItem) { label = item.kindLabel; kind = item.kind }
     /// A kind named on its own, as in a suivi: `kind` is an API kind (`intervention`, `citation`, `tweet`).
     init(kind: String, label: String) { self.kind = kind; self.label = label }
 
     var body: some View {
-        Text(label)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(FeedItem.color(ofKind: kind))
-            .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(FeedItem.wash(ofKind: kind), in: Capsule())
-            .fixedSize()
+        let color = FeedItem.color(ofKind: kind)
+        HStack(spacing: 7) {
+            RoundedRectangle(cornerRadius: tile * 0.27, style: .continuous)
+                .fill(FeedItem.wash(ofKind: kind))
+                .frame(width: tile, height: tile)
+                .overlay { pictogram.font(.caption2.weight(.semibold)).foregroundStyle(color) }
+            Text(label.uppercased())
+                .font(.caption.weight(.bold)).tracking(1)
+                .foregroundStyle(color)
+        }
+        .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+    }
+
+    /// X uses its own mark; the other kinds an SF Symbol.
+    @ViewBuilder private var pictogram: some View {
+        if kind == "tweet" { Image("x.logo") } else { Image(systemName: FeedItem.symbol(ofKind: kind)) }
     }
 }
 
@@ -171,7 +185,10 @@ extension FeedItem {
         kind == "intervention" ? Brand.interventionWash : kind == "citation" ? Brand.citationWash : Brand.surface
     }
     var kindColor: Color { Self.color(ofKind: kind) }
-    var kindSymbol: String { isTweet ? "text.bubble" : isCitation ? "quote.bubble" : kind == "intervention" ? "waveform" : "doc.text" }
+    static func symbol(ofKind kind: String) -> String {
+        kind == "tweet" ? "text.bubble" : kind == "citation" ? "quote.bubble" : kind == "intervention" ? "waveform" : "doc.text"
+    }
+    var kindSymbol: String { Self.symbol(ofKind: kind) }
 
     var readableDuration: String {
         let seconds = max(0, durationSec)

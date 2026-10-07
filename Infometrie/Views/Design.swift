@@ -30,13 +30,13 @@ enum Brand {
         return Color(uiColor: UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style)))
     }
 
-    /// Color tells the passage kind: teal interventions, slate citations, ink for X. The logo and the calls
+    /// Color tells the passage kind: cobalt interventions, lilac citations, ink for X. The logo and the calls
     /// to action stay ink. Hues no major French party owns, never paired like the flag; the coming Instagram
-    /// type will take a flat violet (0x7B3FB0 / 0xC9A2F0). Text reaches 5.3:1 or more on its wash.
-    static let intervention = color(light: 0x0A6E70, dark: 0x34D3C4)
-    static let interventionWash = color(light: 0xE3F4F3, dark: 0x0E2D2B)
-    static let citation = color(light: 0x4A5A78, dark: 0xA9B7D0)
-    static let citationWash = color(light: 0xECEFF4, dark: 0x232A36)
+    /// type will take raspberry (0xB3326F / 0xF28DBE on 0xFBEAF2 / 0x3A1A2C). Text reaches 5.2:1 or more on its wash.
+    static let intervention = color(light: 0x2959C9, dark: 0x8DB0FF)
+    static let interventionWash = color(light: 0xEAF0FC, dark: 0x16264A)
+    static let citation = color(light: 0x6E4DBF, dark: 0xB9A2F5)
+    static let citationWash = color(light: 0xF1ECFB, dark: 0x272042)
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
     static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
