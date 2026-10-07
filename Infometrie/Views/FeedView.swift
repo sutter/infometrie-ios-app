@@ -216,6 +216,14 @@ private struct FeedKindPicker: View {
 
     private enum Kind: Int, CaseIterable {
         case interventions = 1, citations, tweets
+        /// The API kind, which carries the color shared with the rows' tags and left border.
+        var apiKind: String {
+            switch self {
+            case .interventions: "intervention"
+            case .citations: "citation"
+            case .tweets: "tweet"
+            }
+        }
         var title: String {
             switch self {
             case .interventions: "Interventions"
@@ -265,9 +273,9 @@ private struct FeedKindPicker: View {
         let isLast = checked && model.filters.selectedKinds.count == 1
         return Button { toggle(kind) } label: {
             HStack(spacing: 6) {
-                // Black and grays: green stays with listening.
+                // The kind's color, matching the tags and left border of the rows it shows.
                 Image(systemName: checked ? "checkmark.square.fill" : "square")
-                    .font(.body).foregroundStyle(checked ? Brand.ink : Brand.secondary)
+                    .font(.body).foregroundStyle(checked ? FeedItem.color(ofKind: kind.apiKind) : Brand.secondary)
                 // The bare X mark: an ink tile beside a filled checkbox would read as a second box.
                 if kind == .tweets {
                     Image("x.logo").font(.subheadline.weight(.semibold))
@@ -279,7 +287,7 @@ private struct FeedKindPicker: View {
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
-            .chip(selected: checked)
+            .chip(selected: checked, wash: FeedItem.wash(ofKind: kind.apiKind))
         }
         .buttonStyle(.plain)
         // Not disabled: a dimmed last box would read as unchecked. `toggle` simply keeps it checked.

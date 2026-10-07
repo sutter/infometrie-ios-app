@@ -1,4 +1,4 @@
-// Draws the InfoMétrie app icon: the wordmark's pictogram, a white "i" on a green speech bubble whose
+// Draws the InfoMétrie app icon: the wordmark's pictogram, a white "i" on an ink speech bubble whose
 // bottom-left corner is sharp, centred on a paper background.
 // Writes the light, dark and tinted 1024 px variants into the asset catalog.
 // Run: swift scripts/make_app_icon.swift
@@ -17,12 +17,12 @@ struct Variant {
     let letter: UInt32
 }
 
-// Light: green bubble on paper, like the wordmark. Dark: the app's dark green on ink.
+// Light: ink bubble on paper, like the wordmark. Dark: paper bubble on ink.
 // Tinted: grayscale that iOS colours, the letter cut out of a white bubble.
-// A full green background with a white bubble was avoided: it reads like a messaging app.
+// A full-color background with a white bubble was avoided: it reads like a messaging app.
 let variants = [
-    Variant(file: "AppIcon.png", top: 0xFFFFFF, bottom: 0xEEF0F1, bubble: 0x17753A, letter: 0xFFFFFF),
-    Variant(file: "AppIcon-dark.png", top: 0x1D1F22, bottom: 0x08090A, bubble: 0x4ADE80, letter: 0x0B1F12),
+    Variant(file: "AppIcon.png", top: 0xFFFFFF, bottom: 0xEEF0F1, bubble: 0x111214, letter: 0xFFFFFF),
+    Variant(file: "AppIcon-dark.png", top: 0x1D1F22, bottom: 0x08090A, bubble: 0xF5F5F4, letter: 0x111214),
     Variant(file: "AppIcon-tinted.png", top: 0x000000, bottom: 0x000000, bubble: 0xFFFFFF, letter: 0x000000),
 ]
 

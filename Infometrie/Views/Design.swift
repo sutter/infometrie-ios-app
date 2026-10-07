@@ -30,11 +30,13 @@ enum Brand {
         return Color(uiColor: UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style)))
     }
 
-    /// The brand green: primary calls to action, listening and the wordmark; checkboxes and chips stay in grays.
-    /// A single hue, never paired like the flag.
-    static let accent = color(light: 0x17753A, dark: 0x4ADE80)
-    /// Text and icons on `accent`: 5.8:1 in light, 9.9:1 in dark.
-    static let onAccent = color(light: 0xFFFFFF, dark: 0x0B1F12)
+    /// Color tells the passage kind: teal interventions, slate citations, ink for X. The logo and the calls
+    /// to action stay ink. Hues no major French party owns, never paired like the flag; the coming Instagram
+    /// type will take a flat violet (0x7B3FB0 / 0xC9A2F0). Text reaches 5.3:1 or more on its wash.
+    static let intervention = color(light: 0x0A6E70, dark: 0x34D3C4)
+    static let interventionWash = color(light: 0xE3F4F3, dark: 0x0E2D2B)
+    static let citation = color(light: 0x4A5A78, dark: 0xA9B7D0)
+    static let citationWash = color(light: 0xECEFF4, dark: 0x232A36)
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
     static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
@@ -81,14 +83,14 @@ struct BrandTile: View {
     var body: some View {
         UnevenRoundedRectangle(topLeadingRadius: side * 0.3, bottomLeadingRadius: side * 0.04,
                                bottomTrailingRadius: side * 0.3, topTrailingRadius: side * 0.3, style: .continuous)
-            .fill(Brand.fixed(Brand.accent, for: scheme))
+            .fill(Brand.fixed(Brand.primary, for: scheme))
             .frame(width: side, height: side)
             .overlay {
                 VStack(spacing: side * 0.064) {
                     Circle().frame(width: side * 0.157, height: side * 0.157)
                     Capsule().frame(width: side * 0.128, height: side * 0.36)
                 }
-                .foregroundStyle(Brand.fixed(Brand.onAccent, for: scheme))
+                .foregroundStyle(Brand.fixed(Brand.primaryForeground, for: scheme))
             }
             .accessibilityHidden(true)
     }
@@ -98,9 +100,9 @@ struct BrandTile: View {
 struct ActionButtonStyle: ButtonStyle {
     var prominent = false
     var horizontalPadding: CGFloat = 16
-    /// Every primary call to action is green, the brand color; secondary ones are outlined in ink.
-    var fill = Brand.accent
-    var foreground = Brand.onAccent
+    /// Primary calls to action are filled ink; secondary ones are outlined in ink.
+    var fill = Brand.primary
+    var foreground = Brand.primaryForeground
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func makeBody(configuration: Configuration) -> some View {
@@ -329,10 +331,11 @@ extension View {
         modifier(AppNavigationTitle(title: title))
     }
 
-    /// A capsule chip, in grays: filled when selected, outlined otherwise; 40 pt drawn, 48 pt to touch.
-    func chip(selected: Bool) -> some View {
+    /// A capsule chip: filled when selected (`wash`, the kind's color for a passage type), outlined
+    /// otherwise; 40 pt drawn, 48 pt to touch.
+    func chip(selected: Bool, wash: Color = Brand.surface) -> some View {
         padding(.horizontal, 12).frame(minHeight: 40)
-            .background(selected ? Brand.surface : .clear, in: Capsule())
+            .background(selected ? wash : .clear, in: Capsule())
             .overlay { Capsule().strokeBorder(selected ? .clear : Brand.rule) }
             .frame(minWidth: 44, minHeight: 48)
             .contentShape(Rectangle())

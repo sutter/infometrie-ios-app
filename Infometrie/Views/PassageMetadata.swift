@@ -47,19 +47,21 @@ struct ChannelSource: View {
     }
 }
 
-/// The passage kind as a quiet neutral tag: it cannot be tapped, so it takes no green.
+/// The passage kind as a tag in its kind color, on a pale wash of the same hue.
 struct KindTag: View {
     let label: String
+    let kind: String
 
-    init(item: FeedItem) { label = item.kindLabel }
-    init(label: String) { self.label = label }
+    init(item: FeedItem) { label = item.kindLabel; kind = item.kind }
+    /// A kind named on its own, as in a suivi: `kind` is an API kind (`intervention`, `citation`, `tweet`).
+    init(kind: String, label: String) { self.kind = kind; self.label = label }
 
     var body: some View {
         Text(label)
             .font(.caption.weight(.semibold))
-            .foregroundStyle(Brand.ink)
+            .foregroundStyle(FeedItem.color(ofKind: kind))
             .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(Brand.surface, in: Capsule())
+            .background(FeedItem.wash(ofKind: kind), in: Capsule())
             .fixedSize()
     }
 }
@@ -161,6 +163,14 @@ struct PassageHeading: View {
 }
 
 extension FeedItem {
+    /// Teal for interventions, slate for citations, ink otherwise (X).
+    static func color(ofKind kind: String) -> Color {
+        kind == "intervention" ? Brand.intervention : kind == "citation" ? Brand.citation : Brand.ink
+    }
+    static func wash(ofKind kind: String) -> Color {
+        kind == "intervention" ? Brand.interventionWash : kind == "citation" ? Brand.citationWash : Brand.surface
+    }
+    var kindColor: Color { Self.color(ofKind: kind) }
     var kindSymbol: String { isTweet ? "text.bubble" : isCitation ? "quote.bubble" : kind == "intervention" ? "waveform" : "doc.text" }
 
     var readableDuration: String {

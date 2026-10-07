@@ -195,7 +195,7 @@ struct PlaybackDock: View {
                         if editing { playback.beginScrubbing() } else { playback.endScrubbing() }
                     })
                         .frame(minHeight: 44)
-                        .tint(Brand.accent)
+                        .tint(Brand.tint)
                         .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
                         .accessibilityLabel("Position dans le passage")
                         .accessibilityHint(playback.isLoading ? "Préparation de l’écoute" : "")
@@ -256,7 +256,7 @@ struct PlaybackDock: View {
                 .frame(width: playCircleSize, height: playCircleSize)
                 .overlay { Circle().strokeBorder(Brand.rule) }
                 .contentShape(Circle())
-        }.buttonStyle(PressableStyle()).foregroundStyle(Brand.accent)
+        }.buttonStyle(PressableStyle()).foregroundStyle(Brand.tint)
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityLabel(playLabel)
             .accessibilityIdentifier("player-toggle")
@@ -280,7 +280,7 @@ struct PlaybackDock: View {
                 .font(.title2).frame(minWidth: 52, maxWidth: dynamicType.isAccessibilitySize ? .infinity : 60, minHeight: 56)
                 .overlay { Capsule().strokeBorder(Brand.rule) }
                 .contentShape(Rectangle())
-        }.buttonStyle(PressableStyle()).foregroundStyle(Brand.accent)
+        }.buttonStyle(PressableStyle()).foregroundStyle(Brand.tint)
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityLabel(forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes")
     }
