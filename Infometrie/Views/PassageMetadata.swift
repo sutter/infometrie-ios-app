@@ -77,16 +77,17 @@ struct KindTag: View {
     }
 }
 
-/// The three kinds as pale tiles fanned out, intervention, citation and X: the app's illustration, on the
-/// empty journal and the login screen. A ring of the page color sets each tile apart where they overlap.
+/// The three kinds as pale tiles fanned out, citation, intervention and X: the app's illustration, on the
+/// empty journal and the login screen. The vermillon intervention leads, in front at the center.
+/// A ring of the page color sets each tile apart where they overlap.
 struct KindFan: View {
     @ScaledMetric(relativeTo: .title) private var tile = 56.0
 
     var body: some View {
         ZStack {
-            kindTile("intervention", angle: -10).offset(x: -tile * 0.72, y: tile * 0.08)
+            kindTile("citation", angle: -10).offset(x: -tile * 0.72, y: tile * 0.08)
             kindTile("tweet", angle: 10).offset(x: tile * 0.72, y: tile * 0.08)
-            kindTile("citation", angle: 0)
+            kindTile("intervention", angle: 0)
         }
         .frame(height: tile * 1.35)
         .accessibilityHidden(true)
