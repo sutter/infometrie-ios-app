@@ -30,7 +30,7 @@ struct FeedView: View {
                         } else if model.visibleItems.isEmpty && model.feedError == nil {
                             VStack(alignment: .leading, spacing: 12) {
                                 AppEmptyState(title: "Aucun passage pour le moment", icon: "text.magnifyingglass", message: "Aucun résultat sur les dernières 24 heures avec ces critères.")
-                                Button("Modifier les filtres") { model.openSearch(model.filters) }
+                                Button("Modifier la recherche") { model.openSearch(model.filters) }
                                     .buttonStyle(ActionButtonStyle())
                             }
                         } else {
@@ -136,7 +136,7 @@ struct FeedView: View {
     /// `scheme` is set in the navigation bar, which may not follow a theme change (`Brand.fixed`).
     private func filtersButton(scheme: ColorScheme? = nil) -> some View {
         Button { model.openSearch(model.filters) } label: {
-            Label("Filtrer", systemImage: hasAudienceFilters ? "line.3.horizontal.decrease.circle.fill" : "slider.horizontal.3")
+            Label("Rechercher", systemImage: hasAudienceFilters ? "magnifyingglass.circle.fill" : "magnifyingglass")
                 .labelStyle(.titleAndIcon)
                 .font(.subheadline.weight(.semibold))
                 .fixedSize(horizontal: false, vertical: true)
@@ -145,7 +145,7 @@ struct FeedView: View {
         }
         .buttonStyle(.plain).foregroundStyle(Brand.fixed(Brand.tint, for: scheme))
         .accessibilityIdentifier("edit-filters")
-        .accessibilityValue(hasAudienceFilters ? "Filtres actifs" : "")
+        .accessibilityValue(hasAudienceFilters ? "Recherche active" : "")
     }
 
     private var listenButton: some View {

@@ -11,7 +11,7 @@ struct SearchView: View {
         @Bindable var model = model
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
-                PageHeading(title: "Filtrer", subtitle: "Composez le journal qui vous intéresse.")
+                PageHeading(title: "Rechercher", subtitle: "Composez le journal qui vous intéresse.")
                 AppSection(title: "Qui suivre ?") {
                     VStack(spacing: 0) {
                         NavigationLink {
@@ -64,10 +64,10 @@ struct SearchView: View {
                     ErrorNotice(message: error) { Task { await model.loadChoices() } }
                 }
                 Button { name = ""; saved = false; showSave = true } label: {
-                    FilterSelectionRow(title: "Enregistrer ce suivi", icon: "bookmark", summary: "Retrouvez ces filtres dans « Mes suivis ».", isSelected: false)
+                    FilterSelectionRow(title: "Enregistrer ce suivi", icon: "bookmark", summary: "Retrouvez cette recherche dans « Mes suivis ».", isSelected: false)
                 }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }.accessibilityIdentifier("save-search")
                 Button { model.draft = SearchFilters() } label: {
-                    Label("Réinitialiser les filtres", systemImage: "arrow.counterclockwise")
+                    Label("Réinitialiser la recherche", systemImage: "arrow.counterclockwise")
                         .font(.body.weight(.medium)).frame(maxWidth: .infinity, minHeight: 52)
                         .fixedSize(horizontal: false, vertical: true).contentShape(Rectangle())
                 }.buttonStyle(.plain).foregroundStyle(Brand.tint).accessibilityIdentifier("reset-search")
@@ -75,7 +75,7 @@ struct SearchView: View {
         }
         .background(Brand.background)
         .scrollEdgeEffectHidden(true)
-        .appNavigationTitle("Filtrer le journal")
+        .appNavigationTitle("Recherche")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Annuler") { model.isSearchPresented = false } }
         }
@@ -102,7 +102,7 @@ struct SearchView: View {
                                     .font(.subheadline).foregroundStyle(Brand.secondary)
                             }
                         }
-                        AppSection(title: "Les filtres de ce suivi") {
+                        AppSection(title: "La recherche de ce suivi") {
                             VStack(alignment: .leading, spacing: 16) {
                                 recap("Personnalités", value: model.draft.persons.isEmpty ? "Toutes" : model.draft.persons.sorted().joined(separator: ", "))
                                 AppRule()

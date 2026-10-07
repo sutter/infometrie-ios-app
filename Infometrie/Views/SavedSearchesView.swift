@@ -30,7 +30,7 @@ struct SavedSearchesView: View {
                     AppEmptyState(
                         title: archived ? "Aucun suivi archivé" : "Retrouvez vos sujets de veille",
                         icon: archived ? "archivebox" : "bookmark",
-                        message: archived ? "Un suivi archivé peut être restauré à tout moment." : "Choisissez des personnalités ou des partis, puis enregistrez vos filtres pour les retrouver ici."
+                        message: archived ? "Un suivi archivé peut être restauré à tout moment." : "Choisissez des personnalités ou des partis, puis enregistrez votre recherche pour la retrouver ici."
                     )
                 }
                 ForEach(searches) { search in
@@ -56,7 +56,7 @@ struct SavedSearchesView: View {
                             }
                             Menu {
                                 if !archived {
-                                    Button("Ajuster les filtres", systemImage: "slider.horizontal.3") { model.openSearch(search.filters) }
+                                    Button("Modifier la recherche", systemImage: "magnifyingglass") { model.openSearch(search.filters) }
                                 }
                                 Button(archived ? "Restaurer" : "Archiver", systemImage: archived ? "arrow.uturn.backward" : "archivebox") { model.archive(search) }
                                 Button("Supprimer", systemImage: "trash", role: .destructive) { deleting = search }
