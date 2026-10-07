@@ -54,24 +54,17 @@ struct RootView: View {
                 layout {
                     if horizontalSizeClass == .regular { MainNavigation() }
                     TabView(selection: $binding.tab) {
-                        Tab(value: AppModel.Tab.feed) {
-                            NavigationStack {
-                                FeedView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
-                            }
-                            .tint(Brand.tint)
-                        } label: { tabLabel("Le journal", symbol: "house", tab: .feed) }
-                        Tab(value: AppModel.Tab.saved) {
-                            NavigationStack {
-                                SavedSearchesView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
-                            }
-                            .tint(Brand.tint)
-                        } label: { tabLabel("Mes suivis", symbol: "bookmark", tab: .saved) }
-                        Tab(value: AppModel.Tab.account) {
-                            NavigationStack {
-                                AccountView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
-                            }
-                            .tint(Brand.tint)
-                        } label: { tabLabel("Compte", symbol: "person", tab: .account) }
+                        // The system tab bar stays hidden: the iPhone shows `MainTabBar` under each root page,
+                        // the iPad the sidebar.
+                        Tab("Le journal", systemImage: "house", value: AppModel.Tab.feed) {
+                            NavigationStack { FeedView().withMainTabBar() }.tint(Brand.tint)
+                        }
+                        Tab("Mes suivis", systemImage: "bookmark", value: AppModel.Tab.saved) {
+                            NavigationStack { SavedSearchesView().withMainTabBar() }.tint(Brand.tint)
+                        }
+                        Tab("Compte", systemImage: "person", value: AppModel.Tab.account) {
+                            NavigationStack { AccountView().withMainTabBar() }.tint(Brand.tint)
+                        }
                     }
                     .tint(Brand.tint)
                 }
@@ -104,11 +97,68 @@ struct RootView: View {
             Button("OK", role: .cancel) { model.notice = nil }
         } message: { Text(model.notice ?? "") }
     }
+}
 
-    /// Filled when active, outlined otherwise; the tab bar would otherwise fill every icon.
-    private func tabLabel(_ title: String, symbol: String, tab: AppModel.Tab) -> some View {
-        Label(title, systemImage: model.tab == tab ? "\(symbol).fill" : symbol)
-            .environment(\.symbolVariants, .none)
+extension View {
+    /// Hides the system tab bar and docks `MainTabBar` under a root page at compact width. Pushed pages have no
+    /// bar, like the passage page, which needs the room for its player.
+    func withMainTabBar() -> some View { modifier(MainTabBarDock()) }
+}
+
+private struct MainTabBarDock: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    func body(content: Content) -> some View {
+        content
+            .toolbar(.hidden, for: .tabBar)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if horizontalSizeClass != .regular { MainTabBar() }
+            }
+    }
+}
+
+/// The iPhone's main navigation: a noir chaud capsule docked at the bottom, the active destination in vermillon
+/// on a lighter pill (the user's pick on 2026-10-07). Drawn by hand: the system tab bar takes no fill color.
+private struct MainTabBar: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        HStack(spacing: 0) {
+            item("Le journal", symbol: "house", tab: .feed, identifier: "navigation-feed")
+            item("Mes suivis", symbol: "bookmark", tab: .saved, identifier: "navigation-saved")
+            item("Compte", symbol: "person", tab: .account, identifier: "navigation-account")
+        }
+        .padding(4)
+        .background(Brand.dock, in: Capsule())
+        .shadow(color: .black.opacity(0.25), radius: 14, y: 6)
+        // Like the system tab bar, the labels stop growing at the largest standard size; a long press on an item
+        // shows it enlarged at accessibility sizes.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .padding(.bottom, 4)
+        .sensoryFeedback(.selection, trigger: model.tab)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Navigation principale")
+        .accessibilityIdentifier("main-tab-bar")
+    }
+
+    /// Filled when active, outlined otherwise.
+    private func item(_ title: String, symbol: String, tab: AppModel.Tab, identifier: String) -> some View {
+        let selected = model.tab == tab
+        return Button { model.tab = tab } label: {
+            VStack(spacing: 3) {
+                Image(systemName: selected ? "\(symbol).fill" : symbol).font(.title3.weight(.medium))
+                Text(title).font(.caption2.weight(selected ? .semibold : .medium)).lineLimit(1)
+            }
+            .foregroundStyle(selected ? Brand.dockActive : Color.white.opacity(0.72))
+            .frame(width: 92).frame(minHeight: 54)
+            .background { if selected { Capsule().fill(Color.white.opacity(0.1)) } }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityShowsLargeContentViewer { Label(title, systemImage: symbol) }
+        .accessibilityIdentifier(identifier)
     }
 }
 

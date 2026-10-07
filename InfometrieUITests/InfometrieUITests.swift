@@ -1051,7 +1051,7 @@ final class InfometrieUITests: XCTestCase {
 
     @MainActor private func auditVisibleFeed(_ app: XCUIApplication) throws {
         var covered: [String] = []
-        let tabBar = app.tabBars.firstMatch
+        let tabBar = app.otherElements["main-tab-bar"]
         let navigationBar = app.navigationBars.firstMatch
         let mainNavigation = app.otherElements["primary-navigation"]
         let sidebar = mainNavigation.exists && mainNavigation.frame.height > mainNavigation.frame.width

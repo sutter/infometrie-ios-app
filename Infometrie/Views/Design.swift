@@ -35,6 +35,10 @@ enum Brand {
     static let accent = color(light: 0xE74732, dark: 0xF05A49)
     /// Mineral taupe: interface marks such as the account avatar.
     static let taupe = color(light: 0x91857B, dark: 0xA2958C)
+    /// The iPhone's main navigation: a noir chaud capsule (gris chaud in dark, so it stands off the page), its active
+    /// destination in vermillon, lighter in dark for 4.5:1 on the bar.
+    static let dock = color(light: 0x121110, dark: 0x2A2725)
+    static let dockActive = color(light: 0xF05A49, dark: 0xFF7A66)
 
     /// Color tells the passage kind at a glance: vermillon interventions, taupe citations, noir chaud for X.
     /// `intervention` and `citation` draw the bars and the tags' light tint (3:1 or more); `…Label` the tags' small
