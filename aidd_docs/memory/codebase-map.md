@@ -19,7 +19,7 @@ flowchart TD
 - `Infometrie/Services`: `AppModel`, `PlaybackModel`, `SessionStore` (Keychain), `HLSRelay`.
 - `Infometrie/Fixtures`: Debug-only `UITestServer` (local API and HLS for UI tests), its fictional content and instrumental audio segments.
 - `Infometrie/Views`: screens, plus `Design.swift` for tokens and shared components.
-- `Infometrie/Resources`: `Info.plist`, `Assets.xcassets` (app icon, `channel-*` logos), `PrivacyInfo.xcprivacy`.
+- `Infometrie/Resources`: `Info.plist`, `AppIcon.icon` (Icon Composer app icon), `Assets.xcassets` (`channel-*` logos), `PrivacyInfo.xcprivacy`.
 - `Tests/InfometrieCoreTests`: Swift Testing suites for Core, including the Swagger contract.
 - `InfometrieUITests`: XCUITest journeys on the simulator.
 - `Docs`: APK analysis, API contract and local `openapi.yaml`, dated validation log (`VALIDATION.md`), UX iterations with before/after screenshots.

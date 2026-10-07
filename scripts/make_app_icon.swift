@@ -1,30 +1,16 @@
-// Draws the InfoMétrie app icon: the wordmark's pictogram, a white "i" on an ink speech bubble whose
-// bottom-left corner is sharp, centred on a paper background.
-// Writes the light, dark and tinted 1024 px variants into the asset catalog.
+// Writes the InfoMétrie app icon as an Icon Composer document (AppIcon.icon): the wordmark's pictogram, an "i"
+// on a speech bubble whose bottom-left corner is sharp, in white Liquid Glass on a cobalt-to-lilac field,
+// the colors of interventions and citations. iOS renders the glass and the light, dark, tinted and clear
+// appearances from these layers; only the light and dark colors are set here.
 // Run: swift scripts/make_app_icon.swift
-import AppKit
+// Preview: Icon Composer's ictool, e.g. `ictool Infometrie/Resources/AppIcon.icon --export-image --output-file icon.png
+//   --platform iOS --rendition Dark --width 1024 --height 1024 --scale 1`.
+import Foundation
 
-let side = 1024
+let side: CGFloat = 1024
 let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-let folder = root.appendingPathComponent("Infometrie/Resources/Assets.xcassets/AppIcon.appiconset")
-
-/// One appearance: a vertical background gradient, the bubble and the letter inside it.
-struct Variant {
-    let file: String
-    let top: UInt32
-    let bottom: UInt32
-    let bubble: UInt32
-    let letter: UInt32
-}
-
-// Light: ink bubble on paper, like the wordmark. Dark: paper bubble on ink.
-// Tinted: grayscale that iOS colours, the letter cut out of a white bubble.
-// A full-color background with a white bubble was avoided: it reads like a messaging app.
-let variants = [
-    Variant(file: "AppIcon.png", top: 0xFFFFFF, bottom: 0xEEF0F1, bubble: 0x111214, letter: 0xFFFFFF),
-    Variant(file: "AppIcon-dark.png", top: 0x1D1F22, bottom: 0x08090A, bubble: 0xF5F5F4, letter: 0x111214),
-    Variant(file: "AppIcon-tinted.png", top: 0x000000, bottom: 0x000000, bubble: 0xFFFFFF, letter: 0x000000),
-]
+let document = root.appendingPathComponent("Infometrie/Resources/AppIcon.icon")
+let assets = document.appendingPathComponent("Assets")
 
 // Proportions shared with `BrandTile` in Design.swift, scaled to the bubble's side.
 let bubbleSide: CGFloat = 600
@@ -35,53 +21,76 @@ let dotGap = bubbleSide * 0.064
 let stemWidth = bubbleSide * 0.128
 let stemHeight = bubbleSide * 0.36
 
-func color(_ hex: UInt32, alpha: CGFloat = 1) -> CGColor {
-    CGColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
-            blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
+/// A number short enough for the SVG source.
+func n(_ value: CGFloat) -> String { String(format: "%g", Double(value)) }
+
+/// An Icon Composer sRGB color from a 0xRRGGBB value.
+func color(_ hex: UInt32) -> String {
+    let parts = [16, 8, 0].map { String(format: "%.5f", Double((hex >> UInt32($0)) & 0xFF) / 255) }
+    return "srgb:" + parts.joined(separator: ",") + ",1.00000"
 }
 
-func render(_ variant: Variant) throws {
-    let space = CGColorSpace(name: CGColorSpace.sRGB)!
-    // Opaque RGB: App Store icons must not carry transparency.
-    guard let context = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
-                                  space: space, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else {
-        throw CocoaError(.fileWriteUnknown)
-    }
-    // Work in a top-left origin so the geometry reads like the design.
-    context.translateBy(x: 0, y: CGFloat(side)); context.scaleBy(x: 1, y: -1)
-    let gradient = CGGradient(colorsSpace: space, colors: [color(variant.top), color(variant.bottom)] as CFArray,
-                              locations: [0, 1])!
-    context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: 0, y: side), options: [])
-
-    // The bubble: rounded corners except the bottom-left one, which points like a speech bubble.
-    let origin = (CGFloat(side) - bubbleSide) / 2
-    let bubble = CGRect(x: origin, y: origin, width: bubbleSide, height: bubbleSide)
-    let path = CGMutablePath()
-    path.move(to: CGPoint(x: bubble.minX + roundRadius, y: bubble.minY))
-    path.addArc(tangent1End: CGPoint(x: bubble.maxX, y: bubble.minY), tangent2End: CGPoint(x: bubble.maxX, y: bubble.maxY), radius: roundRadius)
-    path.addArc(tangent1End: CGPoint(x: bubble.maxX, y: bubble.maxY), tangent2End: CGPoint(x: bubble.minX, y: bubble.maxY), radius: roundRadius)
-    path.addArc(tangent1End: CGPoint(x: bubble.minX, y: bubble.maxY), tangent2End: CGPoint(x: bubble.minX, y: bubble.minY), radius: sharpRadius)
-    path.addArc(tangent1End: CGPoint(x: bubble.minX, y: bubble.minY), tangent2End: CGPoint(x: bubble.maxX, y: bubble.minY), radius: roundRadius)
-    path.closeSubpath()
-    context.setFillColor(color(variant.bubble))
-    context.addPath(path)
-    context.fillPath()
-
-    // The "i": a dot over a rounded stem, centred in the bubble.
-    let centerX = CGFloat(side) / 2
-    let letterTop = CGFloat(side) / 2 - (dotDiameter + dotGap + stemHeight) / 2
-    context.setFillColor(color(variant.letter))
-    context.fillEllipse(in: CGRect(x: centerX - dotDiameter / 2, y: letterTop, width: dotDiameter, height: dotDiameter))
-    let stem = CGRect(x: centerX - stemWidth / 2, y: letterTop + dotDiameter + dotGap, width: stemWidth, height: stemHeight)
-    context.addPath(CGPath(roundedRect: stem, cornerWidth: stemWidth / 2, cornerHeight: stemWidth / 2, transform: nil))
-    context.fillPath()
-
-    guard let image = context.makeImage(),
-          let data = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else {
-        throw CocoaError(.fileWriteUnknown)
-    }
-    try data.write(to: folder.appendingPathComponent(variant.file))
+/// A 1024-point canvas holding one black shape; the document gives each layer its color.
+func svg(_ body: String) -> String {
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"\(n(side))\" height=\"\(n(side))\" viewBox=\"0 0 \(n(side)) \(n(side))\">\(body)</svg>\n"
 }
 
-for variant in variants { try render(variant) }
-print("App icon written: \(variants.map(\.file).joined(separator: ", "))")
+/// The bubble: rounded corners except the bottom-left one, which points like a speech bubble.
+func bubble() -> String {
+    let (x, y) = ((side - bubbleSide) / 2, (side - bubbleSide) / 2)
+    let (right, bottom, r, k) = (x + bubbleSide, y + bubbleSide, roundRadius, sharpRadius)
+    let path = "M\(n(x + r)),\(n(y)) L\(n(right - r)),\(n(y)) A\(n(r)),\(n(r)) 0 0 1 \(n(right)),\(n(y + r)) "
+        + "L\(n(right)),\(n(bottom - r)) A\(n(r)),\(n(r)) 0 0 1 \(n(right - r)),\(n(bottom)) "
+        + "L\(n(x + k)),\(n(bottom)) A\(n(k)),\(n(k)) 0 0 1 \(n(x)),\(n(bottom - k)) "
+        + "L\(n(x)),\(n(y + r)) A\(n(r)),\(n(r)) 0 0 1 \(n(x + r)),\(n(y)) Z"
+    return svg("<path d=\"\(path)\" fill=\"#000\"/>")
+}
+
+/// The "i": a dot over a rounded stem, centred in the bubble.
+func letter() -> String {
+    let center = side / 2
+    let top = center - (dotDiameter + dotGap + stemHeight) / 2
+    return svg("<circle cx=\"\(n(center))\" cy=\"\(n(top + dotDiameter / 2))\" r=\"\(n(dotDiameter / 2))\" fill=\"#000\"/>"
+        + "<rect x=\"\(n(center - stemWidth / 2))\" y=\"\(n(top + dotDiameter + dotGap))\" width=\"\(n(stemWidth))\" "
+        + "height=\"\(n(stemHeight))\" rx=\"\(n(stemWidth / 2))\" fill=\"#000\"/>")
+}
+
+/// A layer filled with one color per appearance.
+func layer(_ name: String, light: UInt32, dark: UInt32, glass: Bool) -> [String: Any] {
+    ["image-name": "\(name).svg", "name": name, "glass": glass,
+     "fill-specializations": [["value": ["solid": color(light)]],
+                              ["appearance": "dark", "value": ["solid": color(dark)]]]]
+}
+
+/// A decimal written as is: a Double would print 0.15 as 0.14999999999999999.
+func d(_ value: String) -> Decimal { Decimal(string: value)! }
+
+/// The field runs diagonally from cobalt to lilac, deeper in dark appearance.
+func field(_ start: UInt32, _ stop: UInt32) -> [String: Any] {
+    ["linear-gradient": [color(start), color(stop)],
+     "orientation": ["start": ["x": d("0.15"), "y": 0], "stop": ["x": d("0.85"), "y": 1]]]
+}
+
+let icon: [String: Any] = [
+    "fill-specializations": [["value": field(0x3A63D8, 0x7A55C8)],
+                             ["appearance": "dark", "value": field(0x14204A, 0x2A1D4E)]],
+    // The first layer sits on top: a plain letter over the glass bubble.
+    "groups": [[
+        "layers": [layer("letter", light: 0x4A5BD0, dark: 0xC9D6FF, glass: false),
+                   layer("bubble", light: 0xFFFFFF, dark: 0x2E2A52, glass: true)],
+        "lighting": "individual",
+        "shadow": ["kind": "layer-color", "opacity": d("0.5")],
+        "specular": true,
+        "translucency": ["enabled": true, "value": d("0.4")],
+    ]],
+    "supported-platforms": ["squares": "shared"],
+]
+
+try? FileManager.default.removeItem(at: document)
+try FileManager.default.createDirectory(at: assets, withIntermediateDirectories: true)
+try bubble().write(to: assets.appendingPathComponent("bubble.svg"), atomically: true, encoding: .utf8)
+try letter().write(to: assets.appendingPathComponent("letter.svg"), atomically: true, encoding: .utf8)
+var json = try JSONSerialization.data(withJSONObject: icon, options: [.prettyPrinted, .sortedKeys])
+json.append(0x0A)
+try json.write(to: document.appendingPathComponent("icon.json"))
+print("App icon written: \(document.path)")
