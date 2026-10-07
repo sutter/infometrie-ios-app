@@ -385,7 +385,7 @@ struct AppTabButton: View {
                             MarkTile(image: image, size: tileSize)
                         } else {
                             // One step above the label, with a heavier stroke, so the icons read at a glance.
-                            image.font((compact ? Font.subheadline : .title3).weight(.semibold))
+                            image.font((compact ? Font.body : .title3).weight(.semibold))
                         }
                     }
                     .accessibilityLabel(title)
@@ -393,10 +393,12 @@ struct AppTabButton: View {
                 }
                 if !iconOnly || image == nil { Text(title) }
             }
-            .font((compact ? Font.footnote : .body).weight(selected ? .semibold : .regular))
+            // Compact tabs (the feed's period row) read at 15 pt, medium even when unselected:
+            // 13 pt regular was too faint for the app's older readers.
+            .font((compact ? Font.subheadline : .body).weight(selected ? .semibold : (compact ? .medium : .regular)))
             .foregroundStyle(selected ? Brand.ink : Brand.secondary)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, compact ? 4 : 12).padding(.vertical, 12)
+            .padding(.horizontal, compact ? 6 : 12).padding(.vertical, 12)
             .frame(minWidth: 44, minHeight: 48)
             .overlay(alignment: .bottom) {
                 if selected { Capsule().fill(accent).frame(height: 3) }
