@@ -1,4 +1,4 @@
-// Writes the InfoMétrie app icon as an Icon Composer document (AppIcon.icon): the wordmark's pictogram, an "i"
+// Writes the InfoMétrie app icon as an Icon Composer document (AppIcon.icon): the brand pictogram, an "i"
 // on a speech bubble whose bottom-left corner is sharp: white Liquid Glass on a vermillon field in light, vermillon
 // glass on noir chaud in dark, the brand colors. iOS renders the glass and the light, dark, tinted and clear
 // appearances from these layers; only the light and dark colors are set here.
@@ -12,7 +12,7 @@ let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingL
 let document = root.appendingPathComponent("Infometrie/Resources/AppIcon.icon")
 let assets = document.appendingPathComponent("Assets")
 
-// Proportions shared with `BrandTile` in Design.swift, scaled to the bubble's side.
+// The pictogram's proportions, scaled to the bubble's side.
 let bubbleSide: CGFloat = 600
 let roundRadius = bubbleSide * 0.3
 let sharpRadius = bubbleSide * 0.04

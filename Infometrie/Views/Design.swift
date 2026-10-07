@@ -69,8 +69,9 @@ enum Brand {
     }
 }
 
-/// The brand lockup: an "i" on a vermillon speech bubble, then "info" heavy in ink
-/// and "métrie" regular in ink: the weights alone set them apart. `size` is the text size; the tile scales with it.
+/// The brand lockup: "info" heavy and "métrie" regular in noir chaud, the weights alone setting them apart, with the
+/// acute accent of "métrie" in vermillon, a small mark of measure. No pictogram: a vermillon tile beside the name read
+/// as one more type checkbox above the journal's chips. `size` is the text size.
 struct Wordmark: View {
     var size: CGFloat = 22
     /// Set in navigation bars, which may not follow a theme change (`Brand.fixed`).
@@ -78,34 +79,30 @@ struct Wordmark: View {
 
     var body: some View {
         let ink = Brand.fixed(Brand.ink, for: scheme)
-        HStack(spacing: size * 0.38) {
-            BrandTile(side: size * 1.45)
-            (Text("info").font(.system(size: size * 1.05, weight: .heavy)).foregroundStyle(ink)
-                + Text("métrie").font(.system(size: size * 1.05, weight: .regular)).foregroundStyle(ink))
-                .tracking(-size * 0.03)
-        }
-        .fixedSize()
-        .accessibilityElement(children: .ignore).accessibilityLabel("InfoMétrie")
-    }
-}
-
-/// The brand pictogram: a white "i" (stem and dot) on a vermillon speech bubble, its sharp corner bottom left.
-struct BrandTile: View {
-    let side: CGFloat
-
-    var body: some View {
-        UnevenRoundedRectangle(topLeadingRadius: side * 0.3, bottomLeadingRadius: side * 0.04,
-                               bottomTrailingRadius: side * 0.3, topTrailingRadius: side * 0.3, style: .continuous)
-            .fill(Brand.accent)
-            .frame(width: side, height: side)
-            .overlay {
-                VStack(spacing: side * 0.064) {
-                    Circle().frame(width: side * 0.157, height: side * 0.157)
-                    Capsule().frame(width: side * 0.128, height: side * 0.36)
-                }
-                .foregroundStyle(.white)
+        // Two identical layouts: the name in ink, and over it the same name with only the "é" in vermillon, masked
+        // to the band above the lowercase letters, so the accent alone takes the color.
+        name(ink: ink, accent: ink)
+            .overlay(alignment: .top) {
+                name(ink: .clear, accent: Brand.fixed(Brand.accent, for: scheme))
+                    .mask(alignment: .top) { Rectangle().frame(height: accentBand) }
             }
-            .accessibilityHidden(true)
+            .fixedSize()
+            .accessibilityElement(children: .ignore).accessibilityLabel("InfoMétrie")
+    }
+
+    private func name(ink: Color, accent: Color) -> some View {
+        let regular = Font.system(size: size * 1.05, weight: .regular)
+        return (Text("info").font(.system(size: size * 1.05, weight: .heavy)).foregroundStyle(ink)
+            + Text("m").font(regular).foregroundStyle(ink)
+            + Text("é").font(regular).foregroundStyle(accent)
+            + Text("trie").font(regular).foregroundStyle(ink))
+            .tracking(-size * 0.03)
+    }
+
+    /// From the top of the line to just above the lowercase letters: where the accent sits.
+    private var accentBand: CGFloat {
+        let font = UIFont.systemFont(ofSize: size * 1.05, weight: .regular)
+        return font.ascender - font.xHeight - size * 0.02
     }
 }
 
