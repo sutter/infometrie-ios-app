@@ -28,9 +28,12 @@ struct FeedView: View {
                         if model.isRefreshing && model.items.isEmpty {
                             FeedSkeleton().padding(.vertical, 5)
                         } else if !model.filters.hasKinds {
-                            // Every type unchecked: say why the journal is empty and how to fill it again.
-                            AppEmptyState(title: "Aucun type sélectionné", icon: "square.dashed",
-                                          message: "Cochez Interventions, Citations ou X pour afficher des passages.")
+                            // Every type unchecked: say why the journal is empty and offer to fill it again.
+                            NoKindState {
+                                var filters = model.filters
+                                filters.selectKind(0)
+                                Task { await model.apply(filters) }
+                            }
                         } else if model.visibleItems.isEmpty && model.feedError == nil {
                             VStack(alignment: .leading, spacing: 12) {
                                 AppEmptyState(title: "Aucun passage pour le moment", icon: "text.magnifyingglass", message: "Aucun résultat sur les dernières 24 heures avec ces critères.")
@@ -195,6 +198,54 @@ private struct FeedStatus: View {
         if seconds < 60 { return "à l’instant" }
         if seconds < 3_600 { return "il y a \(Int(seconds / 60)) min" }
         return "il y a \(Int(seconds / 3_600)) h"
+    }
+}
+
+/// The journal with every type unchecked: the three kind tiles fanned out, a short explanation and one
+/// action that checks them all again, so the empty screen reads as a choice to make, not a dead end.
+private struct NoKindState: View {
+    let showAll: () -> Void
+    @ScaledMetric(relativeTo: .title) private var tile = 56.0
+
+    var body: some View {
+        VStack(spacing: 20) {
+            ZStack {
+                kindTile("intervention", angle: -10).offset(x: -tile * 0.72, y: tile * 0.08)
+                kindTile("tweet", angle: 10).offset(x: tile * 0.72, y: tile * 0.08)
+                kindTile("citation", angle: 0)
+            }
+            .frame(height: tile * 1.35)
+            .accessibilityHidden(true)
+            VStack(spacing: 8) {
+                Text("Aucun type sélectionné")
+                    .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
+                    .accessibilityAddTraits(.isHeader)
+                Text("Choisissez ce que vous voulez suivre : interventions, citations ou publications X.")
+                    .font(.body).foregroundStyle(Brand.secondary)
+            }
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            Button("Tout afficher", systemImage: "checkmark.square", action: showAll)
+                .buttonStyle(ActionButtonStyle(prominent: true))
+                .frame(maxWidth: 280)
+                .accessibilityIdentifier("show-all-kinds")
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 48).padding(.bottom, 24)
+    }
+
+    /// One kind as a pale tile with its pictogram, ringed with the page color where tiles overlap.
+    private func kindTile(_ kind: String, angle: Double) -> some View {
+        RoundedRectangle(cornerRadius: tile * 0.27, style: .continuous)
+            .fill(FeedItem.wash(ofKind: kind))
+            .frame(width: tile, height: tile)
+            .overlay {
+                Group { if kind == "tweet" { Image("x.logo") } else { Image(systemName: FeedItem.symbol(ofKind: kind)) } }
+                    .font(.title2.weight(.semibold)).foregroundStyle(FeedItem.color(ofKind: kind))
+            }
+            .padding(3)
+            .background(Brand.background, in: RoundedRectangle(cornerRadius: tile * 0.3, style: .continuous))
+            .rotationEffect(.degrees(angle))
     }
 }
 
