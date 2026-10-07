@@ -669,8 +669,9 @@ final class InfometrieUITests: XCTestCase {
                 let choice = app.buttons["feed-kind-\(index)"]
                 reveal(choice, in: app, down: false)
                 XCTAssertGreaterThanOrEqual(choice.frame.height, 48)
-                XCTAssertGreaterThanOrEqual(choice.frame.minX, app.frame.minX + 20)
-                XCTAssertLessThanOrEqual(choice.frame.maxX, app.frame.maxX - 20)
+                // The iPhone page margin (AppLayout.margin), 16 pt since 2026-10-07.
+                XCTAssertGreaterThanOrEqual(choice.frame.minX, app.frame.minX + 16)
+                XCTAssertLessThanOrEqual(choice.frame.maxX, app.frame.maxX - 16)
             }
             showKinds([1], in: app)
             assertKinds([1], in: app)

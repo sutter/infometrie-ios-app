@@ -1,5 +1,14 @@
 # Validation du portage
 
+## Suite complète avant le push du build 7 — 7 octobre 2026
+
+Après les couleurs par type, le « journal », la recherche, la nouvelle icône, la connexion et le style des actions en dégradé.
+
+- `build/FullSuite-20261007-0910.xcresult`, iPhone 17 Pro, iOS 26.4 : 17 tests réussis sur 20. Restent les deux échecs connus : `testLoginFormAndEmptyFilters` (audit d’accessibilité) et `testFullscreenTranscriptSeeksFromTextAtMaximumSize`.
+- `testFeedKindsDarkAppearanceAndMaximumText` attendait encore 20 pt de marge autour des cases de types ; les marges iPhone sont de 16 pt depuis le 7 octobre. L’attente suit désormais la marge, et le test réussit seul (`build/FeedKinds-0936.xcresult`) : **18 sur 20**.
+- La barre de lecture reste le curseur système (dégradé dessiné dessous) : les parcours qui le font glisser réussissent.
+- `swift test` : 45 tests réussis.
+
 ## Suite complète avant le push de l’état « Vu » — 6 octobre 2026
 
 - `build/Full.xcresult`, iPhone 17 Pro, iOS 26.4 : **18 tests réussis sur 20**. Restent les deux échecs connus : `testLoginFormAndEmptyFilters` (audit d’accessibilité) et `testFullscreenTranscriptSeeksFromTextAtMaximumSize`.
