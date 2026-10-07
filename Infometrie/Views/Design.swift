@@ -7,8 +7,6 @@ enum Brand {
     /// A plain white page, after Medium: sections and rows sit on dividers rather than cards.
     static let background = color(light: 0xFFFFFF, dark: 0x101113)
     static let card = color(light: 0xFFFFFF, dark: 0x151719)
-    /// A gentle panel on the white page, lighter than `surface`: the login screen's showcase.
-    static let softSurface = color(light: 0xF3F4F6, dark: 0x17191C)
     static let ink = color(light: 0x111214, dark: 0xF5F5F4)
     static let primary = color(light: 0x151618, dark: 0xF1F1EF)
     static let primaryForeground = color(light: 0xFFFFFF, dark: 0x111214)
@@ -32,13 +30,19 @@ enum Brand {
         return Color(uiColor: UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style)))
     }
 
-    /// Color tells the passage kind: cobalt interventions, lilac citations, ink for X. The logo and the calls
-    /// to action stay ink. Hues no major French party owns, never paired like the flag; the coming Instagram
+    /// Color tells the passage kind: cobalt interventions, lilac citations, ink for X. The logo's name and the
+    /// calls to action stay ink. Hues no major French party owns, never paired like the flag; the coming Instagram
     /// type will take raspberry (0xB3326F / 0xF28DBE on 0xFBEAF2 / 0x3A1A2C). Text reaches 5.2:1 or more on its wash.
     static let intervention = color(light: 0x2959C9, dark: 0x8DB0FF)
     static let interventionWash = color(light: 0xEAF0FC, dark: 0x16264A)
     static let citation = color(light: 0x6E4DBF, dark: 0xB9A2F5)
     static let citationWash = color(light: 0xF1ECFB, dark: 0x272042)
+
+    /// The app icon's field, from cobalt to lilac, the same in both themes: the logo's tile and the login screen's dawn.
+    static let iconStart = color(light: 0x3A63D8, dark: 0x3A63D8)
+    static let iconStop = color(light: 0x7A55C8, dark: 0x7A55C8)
+    static let iconGradient = LinearGradient(colors: [iconStart, iconStop],
+                                             startPoint: UnitPoint(x: 0.15, y: 0), endPoint: UnitPoint(x: 0.85, y: 1))
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
     static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
@@ -57,20 +61,20 @@ enum Brand {
     }
 }
 
-/// The brand lockup: an "i" on a green speech bubble, then "info" heavy in ink
-/// and "métrie" regular in ink: the weights alone set them apart, green stays in the tile. `size` is the text size; the tile scales with it.
+/// The brand lockup: an "i" on a speech bubble in the app icon's gradient, then "info" heavy in ink
+/// and "métrie" regular in ink: the weights alone set them apart. `size` is the text size; the tile scales with it.
 struct Wordmark: View {
     var size: CGFloat = 22
     /// Set in navigation bars, which may not follow a theme change (`Brand.fixed`).
     var scheme: ColorScheme? = nil
-    /// The ink tile leads the name on the login and launch screens only. In the navigation chrome it was
-    /// the darkest block on screen and echoed the X logo tiles, so the name stands alone there.
+    /// The tile leads the name on the login and launch screens only. In the navigation chrome, as an ink tile,
+    /// it was the darkest block on screen and echoed the X logo tiles, so the name stands alone there.
     var showsTile = true
 
     var body: some View {
         let ink = Brand.fixed(Brand.ink, for: scheme)
         HStack(spacing: size * 0.38) {
-            if showsTile { BrandTile(side: size * 1.45, scheme: scheme) }
+            if showsTile { BrandTile(side: size * 1.45) }
             (Text("info").font(.system(size: size * 1.05, weight: .heavy)).foregroundStyle(ink)
                 + Text("métrie").font(.system(size: size * 1.05, weight: .regular)).foregroundStyle(ink))
                 .tracking(-size * 0.03)
@@ -80,22 +84,22 @@ struct Wordmark: View {
     }
 }
 
-/// The brand pictogram: an "i" (stem and dot) on a green speech bubble, its sharp corner bottom left.
+/// The brand pictogram: a white "i" (stem and dot) on a speech bubble in the app icon's gradient, its sharp
+/// corner bottom left. Its colors stay the same in both themes, like the icon.
 struct BrandTile: View {
     let side: CGFloat
-    var scheme: ColorScheme? = nil
 
     var body: some View {
         UnevenRoundedRectangle(topLeadingRadius: side * 0.3, bottomLeadingRadius: side * 0.04,
                                bottomTrailingRadius: side * 0.3, topTrailingRadius: side * 0.3, style: .continuous)
-            .fill(Brand.fixed(Brand.primary, for: scheme))
+            .fill(Brand.iconGradient)
             .frame(width: side, height: side)
             .overlay {
                 VStack(spacing: side * 0.064) {
                     Circle().frame(width: side * 0.157, height: side * 0.157)
                     Capsule().frame(width: side * 0.128, height: side * 0.36)
                 }
-                .foregroundStyle(Brand.fixed(Brand.primaryForeground, for: scheme))
+                .foregroundStyle(.white)
             }
             .accessibilityHidden(true)
     }

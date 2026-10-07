@@ -9,18 +9,17 @@ struct LoginView: View {
     @FocusState private var focused: Field?
     private enum Field { case email, password }
 
-    /// A gentle panel that says what the app is: the wordmark, the three kinds and the promise.
+    /// What the app is, on the dawn of the icon's colors: the wordmark, the three kinds and the promise.
     private var showcase: some View {
         VStack(spacing: 18) {
             Wordmark(size: 26)
-            KindFan(background: Brand.softSurface)
+            KindFan()
             Text("Ce que disent les personnalités politiques, à la radio, à la télévision et sur\u{00A0}X.")
                 .font(.subheadline).foregroundStyle(Brand.secondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 26).padding(.horizontal, 20)
-        .background(Brand.softSurface, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     var body: some View {
@@ -75,6 +74,7 @@ struct LoginView: View {
                     .frame(minHeight: viewportHeight)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
+            .background(alignment: .top) { LoginDawn().frame(height: max(430, viewportHeight * 0.55)).ignoresSafeArea() }
             .background(Brand.background).scrollDismissesKeyboard(.interactively)
             .sheet(item: $model.quota) { quota in
                 NavigationStack {
@@ -119,5 +119,20 @@ struct LoginView: View {
         guard !password.isEmpty, !model.email.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         focused = nil
         Task { await model.login(password: password); if model.isAuthenticated { password = "" } }
+    }
+}
+
+/// A soft dawn of the app icon's colors behind the top of the login screen, stronger in dark so it still shows.
+private struct LoginDawn: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let dark = colorScheme == .dark
+        LinearGradient(colors: [Brand.iconStart.opacity(dark ? 0.32 : 0.16), Brand.iconStop.opacity(dark ? 0.22 : 0.1),
+                                Brand.iconStop.opacity(0)],
+                       startPoint: .topLeading, endPoint: UnitPoint(x: 0.6, y: 1))
+            // The diagonal alone left a faint edge at the bottom left; this fade ends it at nothing.
+            .mask { LinearGradient(colors: [.black, .clear], startPoint: UnitPoint(x: 0.5, y: 0.4), endPoint: .bottom) }
+            .accessibilityHidden(true)
     }
 }

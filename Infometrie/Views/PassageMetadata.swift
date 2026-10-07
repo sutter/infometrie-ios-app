@@ -81,9 +81,8 @@ struct KindTag: View {
 }
 
 /// The three kinds as pale tiles fanned out, intervention, citation and X: the app's illustration, on the
-/// empty journal and the login screen. `background` rings each tile where they overlap.
+/// empty journal and the login screen. A ring of the page color sets each tile apart where they overlap.
 struct KindFan: View {
-    var background: Color = Brand.background
     @ScaledMetric(relativeTo: .title) private var tile = 56.0
 
     var body: some View {
@@ -105,7 +104,7 @@ struct KindFan: View {
                     .font(.title2.weight(.semibold)).foregroundStyle(FeedItem.color(ofKind: kind))
             }
             .padding(3)
-            .background(background, in: RoundedRectangle(cornerRadius: tile * 0.3, style: .continuous))
+            .background(Brand.background, in: RoundedRectangle(cornerRadius: tile * 0.3, style: .continuous))
             .rotationEffect(.degrees(angle))
     }
 }
