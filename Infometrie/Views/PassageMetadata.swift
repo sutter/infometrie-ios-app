@@ -48,11 +48,10 @@ struct ChannelSource: View {
 }
 
 /// The passage kind as a ghost tag: its pictogram and its name in small spaced capitals, in the kind's color,
-/// inside a thin outline of it. The solid bar beside each row already carries the color; the tag stays light.
+/// with no fill and no outline. The solid bar beside each row already carries the color; the tag stays light.
 struct KindTag: View {
     let label: String
     let kind: String
-    @ScaledMetric(relativeTo: .caption) private var height = 24.0
 
     init(item: FeedItem) { label = item.kindLabel; kind = item.kind }
     /// A kind named on its own, as in a suivi: `kind` is an API kind (`intervention`, `citation`, `tweet`).
@@ -64,8 +63,6 @@ struct KindTag: View {
             Text(label.uppercased()).font(.caption.weight(.bold)).tracking(1)
         }
         .foregroundStyle(FeedItem.labelColor(ofKind: kind))
-        .padding(.horizontal, 9).frame(minHeight: height)
-        .overlay { Capsule().strokeBorder(FeedItem.color(ofKind: kind), lineWidth: 1) }
         .fixedSize()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
