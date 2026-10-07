@@ -14,10 +14,7 @@ struct AccountView: View {
             VStack(alignment: .leading, spacing: 32) {
                 PageHeading(title: "Compte")
                 HStack(alignment: .top, spacing: 16) {
-                    Image(systemName: "person")
-                        .font(.title2).foregroundStyle(Brand.tint)
-                        .frame(width: 56, height: 56).background(Brand.surface, in: Circle())
-                        .accessibilityHidden(true)
+                    AccountAvatar(name: model.session?.fullname)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(model.session?.fullname?.isEmpty == false ? model.session!.fullname! : "Votre compte")
                             .font(.headline)
@@ -91,7 +88,7 @@ struct AccountView: View {
                         Button { readingSize = size } label: {
                             Text(size.rawValue)
                                 .font(.body.weight(readingSize == size ? .semibold : .regular))
-                                .foregroundStyle(Brand.ink)
+                                .foregroundStyle(readingSize == size ? AnyShapeStyle(Brand.actionText) : AnyShapeStyle(Brand.ink))
                                 .padding(.vertical, 8)
                                 .frame(maxWidth: .infinity, minHeight: 44)
                                 .background {
@@ -121,5 +118,27 @@ struct AccountView: View {
                 .font(.footnote).foregroundStyle(Brand.secondary)
                 .accessibilityIdentifier("reading-size-description")
         }
+    }
+}
+
+/// The account's initials on the app icon's gradient, under a glass sheen; a person when the name is unknown.
+private struct AccountAvatar: View {
+    let name: String?
+
+    var body: some View {
+        Group {
+            if let initials { Text(initials).font(.system(size: 20, weight: .bold)) } else { Image(systemName: "person").font(.title2) }
+        }
+        .foregroundStyle(.white)
+        .frame(width: 56, height: 56)
+        .background(Brand.iconGradient, in: Circle())
+        .overlay { GlassSheen(shape: Circle()) }
+        .shadow(color: Brand.iconStart.opacity(0.3), radius: 8, y: 4)
+        .accessibilityHidden(true)
+    }
+
+    private var initials: String? {
+        let letters = (name ?? "").split(separator: " ").prefix(2).compactMap(\.first).map { String($0).uppercased() }
+        return letters.isEmpty ? nil : letters.joined()
     }
 }

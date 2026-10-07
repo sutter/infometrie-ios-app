@@ -162,10 +162,9 @@ struct FeedView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 14).padding(.vertical, 8)
                 .frame(minHeight: 44)
-                // Outlined, like the secondary action buttons: it stays findable without outweighing the count.
-                .foregroundStyle(Brand.ink)
-                .background(Brand.card, in: Capsule())
-                .overlay { Capsule().strokeBorder(Brand.rule) }
+                // On the pale wash, like the secondary action buttons: it stays findable without outweighing the count.
+                .foregroundStyle(Brand.actionText)
+                .background(Brand.actionWash, in: Capsule())
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)

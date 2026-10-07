@@ -51,7 +51,7 @@ struct SearchView: View {
                             Button {
                                 model.draft.selectKind(index)
                             } label: {
-                                FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false, accent: Brand.tint)
+                                FilterChoiceRow(title: option.title, subtitle: option.subtitle, selected: kind == index, multiple: false)
                             }
                             .buttonStyle(.plain)
                             .accessibilityAddTraits(kind == index ? .isSelected : [])
@@ -248,18 +248,42 @@ private struct FilterChoiceRow: View {
     let subtitle: String
     let selected: Bool
     let multiple: Bool
-    var accent: Color = Brand.tint
     var body: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.body.weight(.semibold)).foregroundStyle(Brand.ink)
                 if !subtitle.isEmpty { Text(subtitle).font(.subheadline).foregroundStyle(Brand.secondary) }
             }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
-            Image(systemName: selected ? (multiple ? "checkmark.square.fill" : "checkmark.circle.fill") : (multiple ? "square" : "circle"))
-                .font(.title3).foregroundStyle(accent).accessibilityHidden(true)
+            ChoiceMark(selected: selected, multiple: multiple)
         }
         .padding(.vertical, 14).frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
         .contentShape(Rectangle())
+    }
+}
+
+/// A radio (one choice) or checkbox (several) in the app icon’s gradient: a ring holding a dot, or a box holding a check.
+/// Unchecked, a plain secondary ring, at more than 3:1 on the page.
+private struct ChoiceMark: View {
+    let selected: Bool
+    let multiple: Bool
+    @ScaledMetric(relativeTo: .title3) private var side = 26.0
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: multiple ? side * 0.3 : side / 2, style: .continuous)
+        ZStack {
+            if selected {
+                shape.strokeBorder(Brand.iconGradient, lineWidth: 2)
+                if multiple {
+                    Image(systemName: "checkmark").font(.system(size: side * 0.5, weight: .bold)).foregroundStyle(Brand.actionText)
+                } else {
+                    Circle().fill(Brand.iconGradient).frame(width: side * 0.46, height: side * 0.46)
+                }
+            } else {
+                shape.strokeBorder(Brand.secondary, lineWidth: 1.5)
+            }
+        }
+        .frame(width: side, height: side)
+        .accessibilityHidden(true)
     }
 }
 

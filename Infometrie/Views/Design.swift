@@ -43,6 +43,11 @@ enum Brand {
     static let iconStop = color(light: 0x7A55C8, dark: 0x7A55C8)
     static let iconGradient = LinearGradient(colors: [iconStart, iconStop],
                                              startPoint: UnitPoint(x: 0.15, y: 0), endPoint: UnitPoint(x: 0.85, y: 1))
+    /// Secondary actions: a pale wash of the icon's two colors, under text in a deeper pair, lighter in dark (5.3:1 or more).
+    static let actionWash = LinearGradient(colors: [color(light: 0xE8EEFC, dark: 0x1A2A55), color(light: 0xF0EAFB, dark: 0x2A2250)],
+                                           startPoint: .leading, endPoint: .trailing)
+    static let actionText = LinearGradient(colors: [color(light: 0x2F57CC, dark: 0x9DB8FF), color(light: 0x6E4DBF, dark: 0xC4B0F7)],
+                                           startPoint: .leading, endPoint: .trailing)
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
     static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
@@ -102,30 +107,56 @@ struct BrandTile: View {
     }
 }
 
+/// The specular light of Liquid Glass on a filled shape: a soft glow on its top half and a bright rim.
+struct GlassSheen<S: InsettableShape>: View {
+    let shape: S
+
+    var body: some View {
+        ZStack {
+            shape.fill(LinearGradient(colors: [.white.opacity(0.3), .white.opacity(0)], startPoint: .top, endPoint: .center))
+            shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.75), .white.opacity(0.08)], startPoint: .top, endPoint: .bottom),
+                               lineWidth: 1.2)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 /// Shared controls grow with Dynamic Type and retain a generous hit area.
+/// Primary calls to action fill with the app icon's gradient under a glass sheen; secondary ones sit on its pale wash.
 struct ActionButtonStyle: ButtonStyle {
     var prominent = false
     var horizontalPadding: CGFloat = 16
-    /// Primary calls to action are filled ink; secondary ones are outlined in ink.
-    var fill = Brand.primary
-    var foreground = Brand.primaryForeground
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func makeBody(configuration: Configuration) -> some View {
+        let glowing = prominent && isEnabled
         configuration.label
             .font(.body.weight(.semibold))
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, horizontalPadding).padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 52)
-            .foregroundStyle(prominent ? foreground : Brand.ink)
-            .background(prominent ? fill : Brand.card, in: Capsule())
-            .overlay { if !prominent { Capsule().strokeBorder(Brand.rule) } }
+            .foregroundStyle(foreground)
+            .background(background, in: Capsule())
+            .overlay { if glowing { GlassSheen(shape: Capsule()) } }
+            .shadow(color: glowing ? Brand.iconStart.opacity(0.3) : .clear, radius: 12, y: 6)
             .contentShape(Capsule())
-            .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.45)
+            .opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : (prominent ? 1 : 0.45))
             // The button sinks slightly under the finger and springs back.
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
             .animation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+
+    /// A disabled primary action turns plain gray, so it never reads as available.
+    private var foreground: AnyShapeStyle {
+        guard prominent else { return AnyShapeStyle(Brand.actionText) }
+        return isEnabled ? AnyShapeStyle(Color.white) : AnyShapeStyle(Brand.secondary)
+    }
+
+    private var background: AnyShapeStyle {
+        guard prominent else { return AnyShapeStyle(Brand.actionWash) }
+        return isEnabled ? AnyShapeStyle(Brand.iconGradient) : AnyShapeStyle(Brand.surface)
     }
 }
 
