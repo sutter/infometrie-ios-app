@@ -604,8 +604,13 @@ final class InfometrieUITests: XCTestCase {
         showKinds([2], in: app)
         XCTAssertTrue(results("2 résultats", in: app).waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["feed-item-1"].exists)
+        // On/off: the last checked type can be unchecked too, and the journal says why it is empty.
         citations.tap()
-        assertKinds([2], in: app, "Le dernier type coché reste coché")
+        assertKinds([], in: app, "Tous les types peuvent être décochés")
+        XCTAssertTrue(app.staticTexts["Aucun type sélectionné"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["start-podcast"].isEnabled)
+        citations.tap()
+        assertKinds([2], in: app)
         XCTAssertFalse(app.buttons["clear-filters"].exists, "Le type seul ne doit pas ajouter un récapitulatif redondant")
         capture("18-fil-citations", app: app)
         app.buttons["feed-item-2"].tap()
@@ -888,7 +893,7 @@ final class InfometrieUITests: XCTestCase {
 
     /// Checks exactly the given feed types: 1 interventions, 2 citations, 3 Publications X.
     @MainActor private func showKinds(_ kinds: Set<Int>, in app: XCUIApplication) {
-        // Check before unchecking: the last checked type cannot be unchecked.
+        // Check before unchecking, so the journal never goes empty between two steps.
         for index in kinds.sorted() where !isKindChecked(index, in: app) { toggleKind(index, in: app) }
         for index in [1, 2, 3] where !kinds.contains(index) && isKindChecked(index, in: app) { toggleKind(index, in: app) }
     }

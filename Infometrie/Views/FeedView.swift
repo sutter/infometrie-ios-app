@@ -27,6 +27,10 @@ struct FeedView: View {
                     Group {
                         if model.isRefreshing && model.items.isEmpty {
                             FeedSkeleton().padding(.vertical, 5)
+                        } else if !model.filters.hasKinds {
+                            // Every type unchecked: say why the journal is empty and how to fill it again.
+                            AppEmptyState(title: "Aucun type sélectionné", icon: "square.dashed",
+                                          message: "Cochez Interventions, Citations ou X pour afficher des passages.")
                         } else if model.visibleItems.isEmpty && model.feedError == nil {
                             VStack(alignment: .leading, spacing: 12) {
                                 AppEmptyState(title: "Aucun passage pour le moment", icon: "text.magnifyingglass", message: "Aucun résultat sur les dernières 24 heures avec ces critères.")
@@ -268,9 +272,8 @@ private struct FeedKindPicker: View {
     }
 
     private func checkbox(_ kind: Kind) -> some View {
+        // Plain on/off, at the client's request: every type can be unchecked, the journal then says so.
         let checked = isChecked(kind)
-        // Unchecking the last type would empty the feed, so it stays checked.
-        let isLast = checked && model.filters.selectedKinds.count == 1
         return Button { toggle(kind) } label: {
             HStack(spacing: 6) {
                 // The kind's color, matching the tags and left border of the rows it shows.
@@ -290,10 +293,8 @@ private struct FeedKindPicker: View {
             .chip(selected: checked, wash: FeedItem.wash(ofKind: kind.apiKind))
         }
         .buttonStyle(.plain)
-        // Not disabled: a dimmed last box would read as unchecked. `toggle` simply keeps it checked.
         .accessibilityLabel(kind.title)
         .accessibilityValue(checked ? "Coché" : "Non coché")
-        .accessibilityHint(isLast ? "Au moins un type reste coché" : "")
         .accessibilityIdentifier("feed-kind-\(kind.rawValue)")
     }
 
@@ -304,7 +305,6 @@ private struct FeedKindPicker: View {
         case .citations: filters.citations.toggle()
         case .tweets: filters.tweets.toggle()
         }
-        guard filters.hasKinds else { return }
         Task { await model.apply(filters) }
     }
 }
