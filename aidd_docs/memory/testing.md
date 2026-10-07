@@ -63,6 +63,7 @@ xcrun simctl launch --terminate-running-process booted fr.yacast.infometrie.ios
 - Core: `swift test`.
 - UI: `xcodebuild -project Infometrie.xcodeproj -scheme Infometrie -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4' -derivedDataPath build CODE_SIGN_IDENTITY=- test`, with `-only-testing:InfometrieUITests/InfometrieUITests/<test>` to target one journey.
 - Keep `CODE_SIGN_IDENTITY=-`. `CODE_SIGNING_ALLOWED=NO` blocks Keychain writes, so login fails.
+- The client uses an iPhone 13 mini (5.4", 375 pt wide): an `iPhone 13 mini` simulator on iOS 26.4 (`9A847134-E906-4731-A2EE-4A989B0AAA58`, added on 2026-10-07) is the narrow-screen check.
 - Simulators named `iPhone 17 Pro` exist on iOS 26.3, 26.4 and 27.0 (`C94E8A8A-C804-4A5F-A2EF-845BEC187CA8`, added on 2026-10-05; the iOS 17.0 runtime was deleted to free disk space). Validation runs on 26.4. Always target `OS=26.4` or the udid of the device, never the name alone. The disk is nearly full: check free space before downloading another runtime.
 - A run can stall before `Testing started` on a simulator that was just booted. Stop it after two minutes without progress, then rerun.
 - `testFullscreenTranscriptSeeksFromTextAtMaximumSize` fails at the largest text size: swiping the fullscreen text does not suspend listening-follow, so "Reprendre le suivi" never appears. The same swipe works at the standard size (`testFullscreenTranscriptKeepsPreciseSeekingAndPlayback`). The cause has not been found.
