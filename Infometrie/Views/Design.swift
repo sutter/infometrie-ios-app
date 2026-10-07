@@ -61,11 +61,14 @@ struct Wordmark: View {
     var size: CGFloat = 22
     /// Set in navigation bars, which may not follow a theme change (`Brand.fixed`).
     var scheme: ColorScheme? = nil
+    /// The ink tile leads the name on the login and launch screens only. In the navigation chrome it was
+    /// the darkest block on screen and echoed the X logo tiles, so the name stands alone there.
+    var showsTile = true
 
     var body: some View {
         let ink = Brand.fixed(Brand.ink, for: scheme)
         HStack(spacing: size * 0.38) {
-            BrandTile(side: size * 1.45, scheme: scheme)
+            if showsTile { BrandTile(side: size * 1.45, scheme: scheme) }
             (Text("info").font(.system(size: size * 1.05, weight: .heavy)).foregroundStyle(ink)
                 + Text("métrie").font(.system(size: size * 1.05, weight: .regular)).foregroundStyle(ink))
                 .tracking(-size * 0.03)

@@ -74,7 +74,7 @@ struct FeedView: View {
         .toolbarBackgroundVisibility(.visible, for: .navigationBar)
         .toolbar {
             if !usesWideLayout {
-                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme) }
+                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme, showsTile: false) }
                     .sharedBackgroundVisibility(.hidden)
                 ToolbarItem(placement: .topBarTrailing) { filtersButton(scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)

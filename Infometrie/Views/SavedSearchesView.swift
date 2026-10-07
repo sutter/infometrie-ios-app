@@ -91,7 +91,7 @@ struct SavedSearchesView: View {
         .toolbarBackground(Brand.background, for: .navigationBar)
         .toolbar {
             if sizeClass != .regular {
-                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme) }
+                ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme, showsTile: false) }
                     .sharedBackgroundVisibility(.hidden)
             }
         }
