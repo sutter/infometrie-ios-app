@@ -48,7 +48,7 @@ struct AccountView: View {
                 .accessibilityIdentifier("logout")
             }
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, sizeClass == .regular ? AppLayout.wideMargin : 20)
+            .padding(.horizontal, sizeClass == .regular ? AppLayout.wideMargin : AppLayout.margin)
             .padding(.top, 24).padding(.bottom, 32)
             .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }

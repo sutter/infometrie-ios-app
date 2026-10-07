@@ -46,7 +46,7 @@ struct RootView: View {
         Group {
             if model.isRestoring {
                 VStack(alignment: .leading, spacing: 24) { Wordmark(); FeedSkeleton(label: "Ouverture d’InfoMétrie") }
-                    .padding(20).frame(maxWidth: AppLayout.readingWidth, maxHeight: .infinity, alignment: .top)
+                    .padding(.horizontal, AppLayout.margin).padding(.vertical, 20).frame(maxWidth: AppLayout.readingWidth, maxHeight: .infinity, alignment: .top)
             } else if model.isAuthenticated {
                 let layout = horizontalSizeClass == .regular && !dynamicType.isAccessibilitySize
                     ? AnyLayout(HStackLayout(alignment: .top, spacing: 0))

@@ -43,7 +43,7 @@ struct TranscriptFullscreenView: View {
                 else { model.player.start(items: [detail.item], app: model, podcast: false, atWord: word) }
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppLayout.margin)
         .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if currentDetail.item.canPlay {

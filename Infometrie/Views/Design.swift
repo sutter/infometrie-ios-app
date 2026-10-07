@@ -256,6 +256,8 @@ enum AppLayout {
     static let maximumWidth: CGFloat = 1100
     static let readingWidth: CGFloat = 760
     static let wideMargin: CGFloat = 24
+    /// Side margin of every page on iPhone: iOS's standard 16 pt, the inset of the navigation bar items too.
+    static let margin: CGFloat = 16
     static let controlRadius: CGFloat = 14
 }
 

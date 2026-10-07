@@ -71,7 +71,7 @@ struct SearchView: View {
                         .font(.body.weight(.medium)).frame(maxWidth: .infinity, minHeight: 52)
                         .fixedSize(horizontal: false, vertical: true).contentShape(Rectangle())
                 }.buttonStyle(.plain).foregroundStyle(Brand.tint).accessibilityIdentifier("reset-search")
-            }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+            }.padding(.horizontal, AppLayout.margin).padding(.vertical, 20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .background(Brand.background)
         .scrollEdgeEffectHidden(true)
@@ -111,7 +111,7 @@ struct SearchView: View {
                                 recap("Contenus", value: model.draft.kindSummary)
                             }.frame(maxWidth: .infinity, alignment: .leading)
                         }
-                    }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+                    }.padding(.horizontal, AppLayout.margin).padding(.vertical, 20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                 }
                 .background(Brand.background)
                 .scrollDismissesKeyboard(.interactively)
@@ -165,14 +165,14 @@ struct ChoicePicker: View {
         List {
             PageHeading(title: title)
                 .padding(.vertical, 20)
-                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+                .listRowInsets(EdgeInsets(top: 0, leading: AppLayout.margin, bottom: 0, trailing: AppLayout.margin))
                 .listRowBackground(Color.clear).listRowSeparator(.hidden)
             Button { selected.removeAll() } label: {
                 FilterChoiceRow(title: allTitle, subtitle: "Sans restriction", selected: selected.isEmpty, multiple: false)
             }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }
                 .accessibilityAddTraits(selected.isEmpty ? .isSelected : [])
                 .accessibilityIdentifier("clear-choices")
-                .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 20, trailing: 20))
+                .listRowInsets(EdgeInsets(top: 8, leading: AppLayout.margin, bottom: 20, trailing: AppLayout.margin))
                 .listRowBackground(Color.clear).listRowSeparator(.hidden)
             if choices.isEmpty {
                 VStack(alignment: .leading, spacing: 16) {
@@ -190,7 +190,7 @@ struct ChoicePicker: View {
                 }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }
                     .accessibilityAddTraits(selected.contains(choice.value) ? .isSelected : [])
                     .accessibilityIdentifier("choice-\(choice.value)")
-                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 12, trailing: 20))
+                    .listRowInsets(EdgeInsets(top: 0, leading: AppLayout.margin, bottom: 12, trailing: AppLayout.margin))
                     .listRowBackground(Color.clear).listRowSeparator(.hidden)
             }
         }

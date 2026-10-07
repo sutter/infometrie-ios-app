@@ -52,7 +52,7 @@ struct FeedView: View {
             }
             // The iPhone tab bar floats above the scroll view. Leave enough
             // scrollable tail space to bring the final card clear of the bar.
-            .padding(.horizontal, 20).padding(.bottom, usesWideLayout ? 24 : 112)
+            .padding(.horizontal, AppLayout.margin).padding(.bottom, usesWideLayout ? 24 : 112)
             .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .scrollPosition($scrollPosition)

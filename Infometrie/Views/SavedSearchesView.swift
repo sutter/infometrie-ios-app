@@ -80,7 +80,7 @@ struct SavedSearchesView: View {
                         .font(.footnote).foregroundStyle(Brand.secondary).padding(.vertical, 24)
                 }
             }
-            .listRowInsets(EdgeInsets(top: 0, leading: sizeClass == .regular ? AppLayout.wideMargin : 20, bottom: 0, trailing: sizeClass == .regular ? AppLayout.wideMargin : 20))
+            .listRowInsets(EdgeInsets(top: 0, leading: sizeClass == .regular ? AppLayout.wideMargin : AppLayout.margin, bottom: 0, trailing: sizeClass == .regular ? AppLayout.wideMargin : AppLayout.margin))
             .listRowBackground(Color.clear).listRowSeparator(.hidden)
         }
         .listStyle(.plain).scrollContentBackground(.hidden)

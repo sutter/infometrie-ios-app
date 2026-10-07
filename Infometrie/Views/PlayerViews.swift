@@ -93,7 +93,7 @@ struct SequenceView: View {
                         if item.isCitation && !item.citedBy.isEmpty { Label("Mention par \(item.citedBy)", systemImage: "quote.bubble") }
                     }.font(.subheadline).foregroundStyle(Brand.secondary)
                 }.accessibilityIdentifier("sequence-context")
-            }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+            }.padding(.horizontal, AppLayout.margin).padding(.vertical, 20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                 .motion(value: displayDetail?.id)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -232,7 +232,7 @@ struct PlaybackDock: View {
                 }
             }
         }
-        .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 12)
+        .padding(.horizontal, AppLayout.margin).padding(.top, 8).padding(.bottom, 12)
         .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         .background(Brand.background).overlay(alignment: .top) { AppRule() }
         .sensoryFeedback(.impact(weight: .light), trigger: presses)
@@ -309,7 +309,7 @@ struct PodcastView: View {
                             model.player.seekToWord(word, sequenceID: detail.id)
                         }.id(detail.id).transition(.opacity)
                     }
-                }.padding(20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+                }.padding(.horizontal, AppLayout.margin).padding(.vertical, 20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                     .motion(value: model.player.current?.id)
                     .motion(value: model.player.detail?.id)
             }
