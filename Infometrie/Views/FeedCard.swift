@@ -35,7 +35,7 @@ struct FeedCard: View {
     }
 
     private var title: some View {
-        Text(displayTitle)
+        Text(item.displayTitle)
             .font(.title3.weight(seen ? .semibold : .bold)).foregroundStyle(seen ? Brand.secondary : Brand.ink)
             .lineLimit(dynamicType.isAccessibilitySize ? nil : 4)
             .fixedSize(horizontal: false, vertical: true)
@@ -91,16 +91,6 @@ struct FeedCard: View {
 
     /// The logo at the top names the channel; its name shows here only when no logo is bundled.
     private var channelLine: String { ChannelMark.hasLogo(for: item) ? "" : item.channel }
-
-    private var displayTitle: String {
-        let prefix = "(\(item.person))"
-        let trimmedTitle = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmedTitle.range(of: prefix, options: [.anchored, .caseInsensitive]) != nil else {
-            return item.title
-        }
-        return String(trimmedTitle.dropFirst(prefix.count))
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
 }
 
 /// Placeholder cards while the feed loads, drawn from the real card layout so they follow its changes.

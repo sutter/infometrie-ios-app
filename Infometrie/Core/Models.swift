@@ -22,6 +22,13 @@ struct FeedItem: Codable, Identifiable, Hashable, Sendable {
     var isCitation: Bool { kind == "citation" }
     var isTweet: Bool { kind == "tweet" }
     var canPlay: Bool { hasMedia && !isTweet }
+    /// The title without the "(Person)" prefix the API sometimes adds: the speaker is already shown above it.
+    var displayTitle: String {
+        let prefix = "(\(person))"
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.range(of: prefix, options: [.anchored, .caseInsensitive]) != nil else { return title }
+        return String(trimmed.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
     var kindLabel: String {
         switch kind {
         case "intervention": "Intervention"

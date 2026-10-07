@@ -167,7 +167,7 @@ struct PassageHeading: View {
                 facts
                 PassageSpeaker(item: item, nameFont: .headline, lineLimit: nil)
             }
-            Text(item.title)
+            Text(item.displayTitle)
                 .font(.title2.weight(.bold))
                 .foregroundStyle(Brand.ink)
                 .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)

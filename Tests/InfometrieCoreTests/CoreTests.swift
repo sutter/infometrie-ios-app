@@ -51,6 +51,15 @@ struct CoreTests {
         #expect(result.first?.title == "Titre actualisé")
     }
 
+    /// The speaker already heads the card and the passage page, so a leading "(Name)" is dropped from the title.
+    @Test func displayTitleDropsTheLeadingSpeakerOnly() {
+        var item = FeedItem(id: 1, at: "2026-09-21T12:00:00Z", kind: "citation", media: "radio", channel: "Radio",
+                            person: "Camille Martin", party: "", title: " (camille martin) Une journaliste résume le débat")
+        #expect(item.displayTitle == "Une journaliste résume le débat")
+        item.title = "Le débat selon (Camille Martin)"
+        #expect(item.displayTitle == "Le débat selon (Camille Martin)")
+    }
+
     @Test func feedParametersEncodeNamesAndOmitEmptyFilters() throws {
         let api = APIClient()
         var filters = SearchFilters(); filters.persons = ["Élodie D’Arcy", "Camille & Sam"]; filters.parties = ["DEMO-A"]
