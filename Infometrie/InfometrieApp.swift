@@ -133,7 +133,7 @@ private struct MainNavigation: View {
                 .overlay(alignment: .bottom) { AppRule() }
             } else {
                 VStack(alignment: .leading, spacing: 24) {
-                    Wordmark(size: 22, showsTile: false).padding(.horizontal, 12).padding(.top, 12)
+                    Wordmark(size: 22).padding(.horizontal, 12).padding(.top, 12)
                     VStack(alignment: .leading, spacing: 6) { destinations }
                     Spacer(minLength: 0)
                 }
