@@ -205,17 +205,10 @@ private struct FeedStatus: View {
 /// action that checks them all again, so the empty screen reads as a choice to make, not a dead end.
 private struct NoKindState: View {
     let showAll: () -> Void
-    @ScaledMetric(relativeTo: .title) private var tile = 56.0
 
     var body: some View {
         VStack(spacing: 20) {
-            ZStack {
-                kindTile("intervention", angle: -10).offset(x: -tile * 0.72, y: tile * 0.08)
-                kindTile("tweet", angle: 10).offset(x: tile * 0.72, y: tile * 0.08)
-                kindTile("citation", angle: 0)
-            }
-            .frame(height: tile * 1.35)
-            .accessibilityHidden(true)
+            KindFan()
             VStack(spacing: 8) {
                 Text("Aucun type sélectionné")
                     .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
@@ -232,20 +225,6 @@ private struct NoKindState: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 48).padding(.bottom, 24)
-    }
-
-    /// One kind as a pale tile with its pictogram, ringed with the page color where tiles overlap.
-    private func kindTile(_ kind: String, angle: Double) -> some View {
-        RoundedRectangle(cornerRadius: tile * 0.27, style: .continuous)
-            .fill(FeedItem.wash(ofKind: kind))
-            .frame(width: tile, height: tile)
-            .overlay {
-                Group { if kind == "tweet" { Image("x.logo") } else { Image(systemName: FeedItem.symbol(ofKind: kind)) } }
-                    .font(.title2.weight(.semibold)).foregroundStyle(FeedItem.color(ofKind: kind))
-            }
-            .padding(3)
-            .background(Brand.background, in: RoundedRectangle(cornerRadius: tile * 0.3, style: .continuous))
-            .rotationEffect(.degrees(angle))
     }
 }
 

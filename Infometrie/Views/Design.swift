@@ -7,6 +7,8 @@ enum Brand {
     /// A plain white page, after Medium: sections and rows sit on dividers rather than cards.
     static let background = color(light: 0xFFFFFF, dark: 0x101113)
     static let card = color(light: 0xFFFFFF, dark: 0x151719)
+    /// A gentle panel on the white page, lighter than `surface`: the login screen's showcase.
+    static let softSurface = color(light: 0xF3F4F6, dark: 0x17191C)
     static let ink = color(light: 0x111214, dark: 0xF5F5F4)
     static let primary = color(light: 0x151618, dark: 0xF1F1EF)
     static let primaryForeground = color(light: 0xFFFFFF, dark: 0x111214)

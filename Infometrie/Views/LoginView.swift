@@ -9,14 +9,28 @@ struct LoginView: View {
     @FocusState private var focused: Field?
     private enum Field { case email, password }
 
+    /// A gentle panel that says what the app is: the wordmark, the three kinds and the promise.
+    private var showcase: some View {
+        VStack(spacing: 18) {
+            Wordmark(size: 26)
+            KindFan(background: Brand.softSurface)
+            Text("Ce que disent les personnalités politiques, à la radio, à la télévision et sur\u{00A0}X.")
+                .font(.subheadline).foregroundStyle(Brand.secondary)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 26).padding(.horizontal, 20)
+        .background(Brand.softSurface, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+
     var body: some View {
         @Bindable var model = model
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Wordmark(size: 32).padding(.top, 25)
-                    PageHeading(title: "Connectez-vous", subtitle: "Retrouvez votre journal et écoutez les passages qui vous intéressent.")
-                    AppRule()
+                    showcase.padding(.top, 25)
+                    Text("Connectez-vous").font(.title2.weight(.bold)).foregroundStyle(Brand.ink)
+                        .accessibilityAddTraits(.isHeader).padding(.top, 6)
                     VStack(alignment: .leading, spacing: 18) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Email").font(.body.weight(.medium))

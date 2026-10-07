@@ -80,6 +80,36 @@ struct KindTag: View {
     }
 }
 
+/// The three kinds as pale tiles fanned out, intervention, citation and X: the app's illustration, on the
+/// empty journal and the login screen. `background` rings each tile where they overlap.
+struct KindFan: View {
+    var background: Color = Brand.background
+    @ScaledMetric(relativeTo: .title) private var tile = 56.0
+
+    var body: some View {
+        ZStack {
+            kindTile("intervention", angle: -10).offset(x: -tile * 0.72, y: tile * 0.08)
+            kindTile("tweet", angle: 10).offset(x: tile * 0.72, y: tile * 0.08)
+            kindTile("citation", angle: 0)
+        }
+        .frame(height: tile * 1.35)
+        .accessibilityHidden(true)
+    }
+
+    private func kindTile(_ kind: String, angle: Double) -> some View {
+        RoundedRectangle(cornerRadius: tile * 0.27, style: .continuous)
+            .fill(FeedItem.wash(ofKind: kind))
+            .frame(width: tile, height: tile)
+            .overlay {
+                Group { if kind == "tweet" { Image("x.logo") } else { Image(systemName: FeedItem.symbol(ofKind: kind)) } }
+                    .font(.title2.weight(.semibold)).foregroundStyle(FeedItem.color(ofKind: kind))
+            }
+            .padding(3)
+            .background(background, in: RoundedRectangle(cornerRadius: tile * 0.3, style: .continuous))
+            .rotationEffect(.degrees(angle))
+    }
+}
+
 /// The small gray title of a section ("Apparence", "Votre abonnement"…): one style for every section label.
 struct SectionLabel: View {
     let title: String
