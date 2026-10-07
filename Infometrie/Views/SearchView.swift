@@ -11,7 +11,7 @@ struct SearchView: View {
         @Bindable var model = model
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
-                PageHeading(title: "Filtrer", subtitle: "Composez le fil qui vous intéresse.")
+                PageHeading(title: "Filtrer", subtitle: "Composez le journal qui vous intéresse.")
                 AppSection(title: "Qui suivre ?") {
                     VStack(spacing: 0) {
                         NavigationLink {
@@ -75,7 +75,7 @@ struct SearchView: View {
         }
         .background(Brand.background)
         .scrollEdgeEffectHidden(true)
-        .appNavigationTitle("Filtrer le fil")
+        .appNavigationTitle("Filtrer le journal")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Annuler") { model.isSearchPresented = false } }
         }

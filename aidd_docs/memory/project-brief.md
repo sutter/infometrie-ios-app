@@ -17,7 +17,7 @@ What this project is, the problem it solves, and its domain language. The non-de
 
 | Term | Meaning |
 | ---- | ------- |
-| Fil (feed) | Items of the last 24 hours, refreshed incrementally with the `since_seq` / `last_seq` cursor |
+| Journal (feed) | Items of the last 24 hours, refreshed incrementally with the `since_seq` / `last_seq` cursor. Named "Le fil" until 2026-10-07; the UI now says "Le journal" everywhere, while code keeps `feed` (`FeedView`, `feed-*` identifiers) |
 | Passage / Séquence | One media excerpt: title, résumé, verbatim and an HLS playlist (`SequenceDetail`) |
 | Kind | `intervention`, `citation` (someone quoted, `cited_by`) or `tweet` (Publication X, never playable) |
 | Verbatim | The sequence transcript; tapping a word seeks the player to it |

@@ -51,7 +51,7 @@ struct SavedSearchesView: View {
                                 Button("Restaurer ce suivi") { model.archive(search) }
                                     .buttonStyle(ActionButtonStyle()).accessibilityIdentifier("restore-search-\(search.name)")
                             } else {
-                                Button { Task { await model.apply(search.filters) } } label: { Label("Afficher le fil", systemImage: "text.alignleft") }
+                                Button { Task { await model.apply(search.filters) } } label: { Label("Afficher le journal", systemImage: "text.alignleft") }
                                     .buttonStyle(ActionButtonStyle())
                             }
                             Menu {

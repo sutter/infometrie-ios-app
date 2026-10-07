@@ -15,7 +15,7 @@ struct LoginView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     Wordmark(size: 32).padding(.top, 25)
-                    PageHeading(title: "Connectez-vous", subtitle: "Retrouvez votre fil et écoutez les passages qui vous intéressent.")
+                    PageHeading(title: "Connectez-vous", subtitle: "Retrouvez votre journal et écoutez les passages qui vous intéressent.")
                     AppRule()
                     VStack(alignment: .leading, spacing: 18) {
                         VStack(alignment: .leading, spacing: 8) {

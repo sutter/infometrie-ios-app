@@ -59,7 +59,7 @@ struct RootView: View {
                                 FeedView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
                             }
                             .tint(Brand.tint)
-                        } label: { tabLabel("Le fil", symbol: "house", tab: .feed) }
+                        } label: { tabLabel("Le journal", symbol: "house", tab: .feed) }
                         Tab(value: AppModel.Tab.saved) {
                             NavigationStack {
                                 SavedSearchesView().toolbar(horizontalSizeClass == .regular ? .hidden : .automatic, for: .tabBar)
@@ -151,7 +151,7 @@ private struct MainNavigation: View {
     }
 
     @ViewBuilder private var destinations: some View {
-        destination("Le fil", symbol: "house", tab: .feed, identifier: "navigation-feed")
+        destination("Le journal", symbol: "house", tab: .feed, identifier: "navigation-feed")
         destination("Mes suivis", symbol: "bookmark", tab: .saved, identifier: "navigation-saved")
         destination("Compte", symbol: "person", tab: .account, identifier: "navigation-account")
     }

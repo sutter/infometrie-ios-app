@@ -19,7 +19,7 @@ final class InfometrieUITests: XCTestCase {
         }
         defer { setSize(original) }
         func passageTitleHeight() -> CGFloat {
-            navigationButton("Le fil", in: app).tap()
+            navigationButton("Le journal", in: app).tap()
             let first = app.buttons["feed-item-1"]
             XCTAssertTrue(first.waitForExistence(timeout: 5))
             reveal(first, in: app, down: false)
@@ -166,7 +166,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.textFields["login-email"].waitForExistence(timeout: 5))
         app.terminate(); app.launch()
         XCTAssertTrue(app.textFields["login-email"].waitForExistence(timeout: 5))
-        XCTAssertFalse(navigationButton("Le fil", in: app).exists)
+        XCTAssertFalse(navigationButton("Le journal", in: app).exists)
     }
 
     @MainActor
@@ -177,7 +177,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Email ou mot de passe invalide."].waitForExistence(timeout: 5), app.debugDescription)
         capture("20-connexion-erreur", app: app)
         XCTAssertTrue(app.buttons["login-submit"].isEnabled)
-        XCTAssertFalse(navigationButton("Le fil", in: app).exists)
+        XCTAssertFalse(navigationButton("Le journal", in: app).exists)
 
         submitLogin(in: app, password: "inactif", replacing: "invalide")
         XCTAssertTrue(app.staticTexts["Votre abonnement n’est pas actif. Gérez votre compte sur le portail web InfoMétrie."].waitForExistence(timeout: 5))
@@ -194,7 +194,7 @@ final class InfometrieUITests: XCTestCase {
         submitLogin(in: app, password: "quota")
         XCTAssertTrue(app.navigationBars["Limite d’appareils"].waitForExistence(timeout: 5), app.debugDescription)
         capture("13-limite-appareils-api", app: app)
-        XCTAssertFalse(navigationButton("Le fil", in: app).exists)
+        XCTAssertFalse(navigationButton("Le journal", in: app).exists)
         app.buttons.containing(.staticText, identifier: "Ancien iPhone").firstMatch.tap()
         XCTAssertTrue(app.buttons["Remplacer cet appareil"].waitForExistence(timeout: 5))
         app.buttons["Remplacer cet appareil"].tap()
@@ -264,9 +264,9 @@ final class InfometrieUITests: XCTestCase {
         reveal(app.buttons["save-search"], in: app, down: false)
         app.buttons["save-search"].tap()
         app.navigationBars["Enregistrer un suivi"].buttons["Annuler"].tap()
-        XCTAssertTrue(app.navigationBars["Filtrer le fil"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Filtrer le journal"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["apply-search"].isHittable)
-        app.navigationBars["Filtrer le fil"].buttons["Annuler"].tap()
+        app.navigationBars["Filtrer le journal"].buttons["Annuler"].tap()
 
         app.terminate(); app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light"]; app.launch()
         navigationButton("Mes suivis", in: app).tap()
@@ -282,7 +282,7 @@ final class InfometrieUITests: XCTestCase {
         app.alerts.buttons["Supprimer"].tap()
         XCTAssertFalse(app.staticTexts[String(name)].exists)
 
-        navigationButton("Le fil", in: app).tap()
+        navigationButton("Le journal", in: app).tap()
         let first = app.buttons["feed-item-1"]
         XCTAssertTrue(first.waitForExistence(timeout: 3))
         first.tap()
@@ -397,7 +397,7 @@ final class InfometrieUITests: XCTestCase {
         capture("00-connexion", app: app)
         submitLogin(in: app, password: "valide")
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
-        XCTAssertTrue(["Le fil", "Mes suivis", "Compte"].allSatisfy { navigationButton($0, in: app).exists })
+        XCTAssertTrue(["Le journal", "Mes suivis", "Compte"].allSatisfy { navigationButton($0, in: app).exists })
         XCTAssertTrue(app.buttons["feed-item-1"].isHittable)
         // UIKit may report 43.99999999999999 for a 44pt toolbar target.
         XCTAssertGreaterThanOrEqual(app.buttons["edit-filters"].frame.height + 0.01, 44)
@@ -482,7 +482,7 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["edit-filters"].tap()
         reveal(app.buttons["reset-search"], in: app, down: false)
         app.buttons["reset-search"].tap()
-        app.navigationBars["Filtrer le fil"].buttons["Annuler"].tap()
+        app.navigationBars["Filtrer le journal"].buttons["Annuler"].tap()
         XCTAssertTrue(app.buttons["clear-filters"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["feed-item-2"].exists, "Annuler une remise à zéro conserve les filtres appliqués")
 
@@ -523,7 +523,7 @@ final class InfometrieUITests: XCTestCase {
             reveal(appearance, in: app, down: false)
             XCTAssertTrue(appearance.isHittable)
             capture("20-reglages-\(suffix)", app: app)
-            navigationButton("Le fil", in: app).tap()
+            navigationButton("Le journal", in: app).tap()
             app.buttons["edit-filters"].tap()
             XCTAssertTrue(app.buttons["pick-persons"].waitForExistence(timeout: 5))
             capture("15-filtres-\(suffix)", app: app)
@@ -577,7 +577,7 @@ final class InfometrieUITests: XCTestCase {
         account.tap()
         XCTAssertTrue(app.buttons["reading-size-M"].waitForExistence(timeout: 5))
         capture("20-compte", app: app)
-        let feed = navigationButton("Le fil", in: app)
+        let feed = navigationButton("Le journal", in: app)
         feed.tap()
         XCTAssertTrue(citations.waitForExistence(timeout: 5))
         assertKinds([2], in: app)
@@ -876,7 +876,7 @@ final class InfometrieUITests: XCTestCase {
     }
 
     @MainActor private func navigationButton(_ title: String, in app: XCUIApplication) -> XCUIElement {
-        let identifiers = ["Le fil": "navigation-feed", "Mes suivis": "navigation-saved", "Compte": "navigation-account"]
+        let identifiers = ["Le journal": "navigation-feed", "Mes suivis": "navigation-saved", "Compte": "navigation-account"]
         let editorial = app.buttons[identifiers[title] ?? ""]
         return editorial.exists ? editorial : app.tabBars.buttons[title]
     }

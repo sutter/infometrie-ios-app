@@ -105,7 +105,7 @@ struct FeedCard: View {
 
 /// Placeholder cards while the feed loads, drawn from the real card layout so they follow its changes.
 struct FeedSkeleton: View {
-    var label = "Chargement du fil"
+    var label = "Chargement du journal"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -129,7 +129,7 @@ private extension FeedItem {
                  title: "Un titre plus court", durationSec: 30, hasMedia: true),
         FeedItem(id: -3, at: "2026-01-01T12:00:00Z", kind: "intervention", media: "radio", channel: "Média",
                  person: "Nom de la personnalité", role: "Fonction de la personnalité", party: "",
-                 title: "Un titre de passage plus long, qui occupe deux lignes pleines dans la carte du fil", durationSec: 30, hasMedia: true),
+                 title: "Un titre de passage plus long, qui occupe deux lignes pleines dans la carte du journal", durationSec: 30, hasMedia: true),
         FeedItem(id: -4, at: "2026-01-01T12:00:00Z", kind: "intervention", media: "tv", channel: "Média",
                  person: "Nom de personnalité", role: "Fonction de la personnalité", party: "",
                  title: "Un titre de passage de longueur moyenne", durationSec: 30, hasMedia: true),
