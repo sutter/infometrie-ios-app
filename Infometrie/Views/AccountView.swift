@@ -121,7 +121,7 @@ struct AccountView: View {
     }
 }
 
-/// The account's initials on the app icon's gradient, under a glass sheen; a person when the name is unknown.
+/// The account's initials on the app icon's gradient; a person when the name is unknown.
 private struct AccountAvatar: View {
     let name: String?
 
@@ -132,8 +132,6 @@ private struct AccountAvatar: View {
         .foregroundStyle(.white)
         .frame(width: 56, height: 56)
         .background(Brand.iconGradient, in: Circle())
-        .overlay { GlassSheen(shape: Circle()) }
-        .shadow(color: Brand.iconStart.opacity(0.3), radius: 8, y: 4)
         .accessibilityHidden(true)
     }
 

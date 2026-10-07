@@ -107,30 +107,14 @@ struct BrandTile: View {
     }
 }
 
-/// The specular light of Liquid Glass on a filled shape: a soft glow on its top half and a bright rim.
-struct GlassSheen<S: InsettableShape>: View {
-    let shape: S
-
-    var body: some View {
-        ZStack {
-            shape.fill(LinearGradient(colors: [.white.opacity(0.3), .white.opacity(0)], startPoint: .top, endPoint: .center))
-            shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.75), .white.opacity(0.08)], startPoint: .top, endPoint: .bottom),
-                               lineWidth: 1.2)
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-}
-
 /// Shared controls grow with Dynamic Type and retain a generous hit area.
-/// Primary calls to action fill with the app icon's gradient under a glass sheen; secondary ones sit on its pale wash.
+/// Primary calls to action fill flat with the app icon's gradient; secondary ones sit on its pale wash.
 struct ActionButtonStyle: ButtonStyle {
     var prominent = false
     var horizontalPadding: CGFloat = 16
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func makeBody(configuration: Configuration) -> some View {
-        let glowing = prominent && isEnabled
         configuration.label
             .font(.body.weight(.semibold))
             .multilineTextAlignment(.center)
@@ -139,8 +123,6 @@ struct ActionButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity, minHeight: 52)
             .foregroundStyle(foreground)
             .background(background, in: Capsule())
-            .overlay { if glowing { GlassSheen(shape: Capsule()) } }
-            .shadow(color: glowing ? Brand.iconStart.opacity(0.3) : .clear, radius: 12, y: 6)
             .contentShape(Capsule())
             .opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : (prominent ? 1 : 0.45))
             // The button sinks slightly under the finger and springs back.

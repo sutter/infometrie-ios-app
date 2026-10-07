@@ -156,19 +156,18 @@ struct FeedView: View {
     }
 
     private var listenButton: some View {
+        // A play link with no background: a capsule on a pale wash read as a fourth type checkbox beside the ones above.
         Button { model.player.start(items: playable, app: model, podcast: true) } label: {
-            Label("Tout écouter", systemImage: "play.fill")
-                .font(.subheadline.weight(.semibold))
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 14).padding(.vertical, 8)
-                .frame(minHeight: 44)
-                // On the pale wash, like the secondary action buttons: it stays findable without outweighing the count.
-                .foregroundStyle(Brand.actionText)
-                .background(Brand.actionWash, in: Capsule())
-                .contentShape(Capsule())
+            HStack(spacing: 6) {
+                Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(Brand.iconGradient).accessibilityHidden(true)
+                Text("Tout écouter").font(.subheadline.weight(.semibold)).foregroundStyle(Brand.actionText)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .disabled(playable.isEmpty).opacity(playable.isEmpty ? 0.45 : 1)
+        .buttonStyle(PressableStyle())
+        .disabled(playable.isEmpty)
         .accessibilityIdentifier("start-podcast")
     }
 }
