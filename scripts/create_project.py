@@ -75,5 +75,5 @@ assets=root/'Infometrie/Resources/Assets.xcassets';assets.mkdir(exist_ok=True)
 # The app icon is the Icon Composer document Resources/AppIcon.icon, written by scripts/make_app_icon.swift.
 accent=assets/'AccentColor.colorset';accent.mkdir(exist_ok=True)
 def srgb(red,green,blue):return {'color-space':'srgb','components':{'red':red,'green':green,'blue':blue,'alpha':'1.0'}}
-(accent/'Contents.json').write_text(json.dumps({'colors':[{'idiom':'universal','color':srgb('0x29','0x2B','0x2E')},{'idiom':'universal','color':srgb('0xE6','0xE6','0xE4'),'appearances':[{'appearance':'luminosity','value':'dark'}]}],'info':{'author':'xcode','version':1}},indent=2)+'\n')
+(accent/'Contents.json').write_text(json.dumps({'colors':[{'idiom':'universal','color':srgb('0x12','0x11','0x10')},{'idiom':'universal','color':srgb('0xF5','0xF3','0xF0'),'appearances':[{'appearance':'luminosity','value':'dark'}]}],'info':{'author':'xcode','version':1}},indent=2)+'\n')
 print('Projet Xcode et ressources créés.')

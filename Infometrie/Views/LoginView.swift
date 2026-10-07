@@ -9,7 +9,7 @@ struct LoginView: View {
     @FocusState private var focused: Field?
     private enum Field { case email, password }
 
-    /// What the app is, on the dawn of the icon's colors: the wordmark, the three kinds and the promise.
+    /// What the app is, on a vermillon dawn: the wordmark, the three kinds and the promise.
     private var showcase: some View {
         VStack(spacing: 18) {
             Wordmark(size: 26)
@@ -122,14 +122,13 @@ struct LoginView: View {
     }
 }
 
-/// A soft dawn of the app icon's colors behind the top of the login screen, stronger in dark so it still shows.
+/// A soft vermillon dawn behind the top of the login screen, stronger in dark so it still shows.
 private struct LoginDawn: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         let dark = colorScheme == .dark
-        LinearGradient(colors: [Brand.iconStart.opacity(dark ? 0.32 : 0.16), Brand.iconStop.opacity(dark ? 0.22 : 0.1),
-                                Brand.iconStop.opacity(0)],
+        LinearGradient(colors: [Brand.accent.opacity(dark ? 0.26 : 0.13), Brand.accent.opacity(dark ? 0.12 : 0.06), Brand.accent.opacity(0)],
                        startPoint: .topLeading, endPoint: UnitPoint(x: 0.6, y: 1))
             // The diagonal alone left a faint edge at the bottom left; this fade ends it at nothing.
             .mask { LinearGradient(colors: [.black, .clear], startPoint: UnitPoint(x: 0.5, y: 0.4), endPoint: .bottom) }

@@ -47,28 +47,25 @@ struct ChannelSource: View {
     }
 }
 
-/// The passage kind: a pale tile with its pictogram, then its name in small spaced capitals, both in the
-/// kind's color, like a newspaper section heading.
+/// The passage kind as a ghost tag: its pictogram and its name in small spaced capitals, in the kind's color,
+/// inside a thin outline of it. The solid bar beside each row already carries the color; the tag stays light.
 struct KindTag: View {
     let label: String
     let kind: String
-    @ScaledMetric(relativeTo: .caption) private var tile = 22.0
+    @ScaledMetric(relativeTo: .caption) private var height = 24.0
 
     init(item: FeedItem) { label = item.kindLabel; kind = item.kind }
     /// A kind named on its own, as in a suivi: `kind` is an API kind (`intervention`, `citation`, `tweet`).
     init(kind: String, label: String) { self.kind = kind; self.label = label }
 
     var body: some View {
-        let color = FeedItem.color(ofKind: kind)
-        HStack(spacing: 7) {
-            RoundedRectangle(cornerRadius: tile * 0.27, style: .continuous)
-                .fill(FeedItem.wash(ofKind: kind))
-                .frame(width: tile, height: tile)
-                .overlay { pictogram.font(.caption2.weight(.semibold)).foregroundStyle(color) }
-            Text(label.uppercased())
-                .font(.caption.weight(.bold)).tracking(1)
-                .foregroundStyle(color)
+        HStack(spacing: 6) {
+            pictogram.font(.caption2.weight(.bold))
+            Text(label.uppercased()).font(.caption.weight(.bold)).tracking(1)
         }
+        .foregroundStyle(FeedItem.labelColor(ofKind: kind))
+        .padding(.horizontal, 9).frame(minHeight: height)
+        .overlay { Capsule().strokeBorder(FeedItem.color(ofKind: kind), lineWidth: 1) }
         .fixedSize()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
@@ -206,9 +203,17 @@ struct PassageHeading: View {
 }
 
 extension FeedItem {
-    /// Teal for interventions, slate for citations, ink otherwise (X).
+    /// Vermillon for interventions, taupe for citations, noir chaud otherwise (X): bars, outlines and checkboxes.
     static func color(ofKind kind: String) -> Color {
         kind == "intervention" ? Brand.intervention : kind == "citation" ? Brand.citation : Brand.ink
+    }
+    /// The kind's small text on the page, a step deeper than its bar for 4.5:1.
+    static func labelColor(ofKind kind: String) -> Color {
+        kind == "intervention" ? Brand.interventionLabel : kind == "citation" ? Brand.citationLabel : Brand.ink
+    }
+    /// The kind as a solid fill under white text (X: noir chaud under blanc cassé, inverted in dark).
+    static func fill(ofKind kind: String) -> Color {
+        kind == "intervention" ? Brand.interventionFill : kind == "citation" ? Brand.citationFill : Brand.primary
     }
     static func wash(ofKind kind: String) -> Color {
         kind == "intervention" ? Brand.interventionWash : kind == "citation" ? Brand.citationWash : Brand.surface

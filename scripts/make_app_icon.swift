@@ -1,6 +1,6 @@
 // Writes the InfoMétrie app icon as an Icon Composer document (AppIcon.icon): the wordmark's pictogram, an "i"
-// on a speech bubble whose bottom-left corner is sharp, in white Liquid Glass on a cobalt-to-lilac field,
-// the colors of interventions and citations. iOS renders the glass and the light, dark, tinted and clear
+// on a speech bubble whose bottom-left corner is sharp: white Liquid Glass on a vermillon field in light, vermillon
+// glass on noir chaud in dark, the brand colors. iOS renders the glass and the light, dark, tinted and clear
 // appearances from these layers; only the light and dark colors are set here.
 // Run: swift scripts/make_app_icon.swift
 // Preview: Icon Composer's ictool, e.g. `ictool Infometrie/Resources/AppIcon.icon --export-image --output-file icon.png
@@ -65,19 +65,19 @@ func layer(_ name: String, light: UInt32, dark: UInt32, glass: Bool) -> [String:
 /// A decimal written as is: a Double would print 0.15 as 0.14999999999999999.
 func d(_ value: String) -> Decimal { Decimal(string: value)! }
 
-/// The field runs diagonally from cobalt to lilac, deeper in dark appearance.
+/// The field: a soft diagonal of vermillon in light, of noir chaud in dark.
 func field(_ start: UInt32, _ stop: UInt32) -> [String: Any] {
     ["linear-gradient": [color(start), color(stop)],
      "orientation": ["start": ["x": d("0.15"), "y": 0], "stop": ["x": d("0.85"), "y": 1]]]
 }
 
 let icon: [String: Any] = [
-    "fill-specializations": [["value": field(0x3A63D8, 0x7A55C8)],
-                             ["appearance": "dark", "value": field(0x14204A, 0x2A1D4E)]],
+    "fill-specializations": [["value": field(0xEE5A45, 0xD93A25)],
+                             ["appearance": "dark", "value": field(0x2A2623, 0x121110)]],
     // The first layer sits on top: a plain letter over the glass bubble.
     "groups": [[
-        "layers": [layer("letter", light: 0x4A5BD0, dark: 0xC9D6FF, glass: false),
-                   layer("bubble", light: 0xFFFFFF, dark: 0x2E2A52, glass: true)],
+        "layers": [layer("letter", light: 0xE74732, dark: 0xFFFFFF, glass: false),
+                   layer("bubble", light: 0xFFFFFF, dark: 0xF05A49, glass: true)],
         "lighting": "individual",
         "shadow": ["kind": "layer-color", "opacity": d("0.5")],
         "specular": true,

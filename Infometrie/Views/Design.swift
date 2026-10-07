@@ -1,26 +1,27 @@
 import SwiftUI
 
-/// Shared neutral palette and rounded surfaces adapted from the Stoic reference.
+/// The brand palette: vermillon for actions, accent and identity; mineral taupe for interface marks; noir chaud for
+/// text and icons; blanc cassé for the page; gris clair for secondary surfaces. Chosen by the client on 2026-10-07.
 enum Brand {
-    // Neutral, low-contrast surfaces inspired by Stoic. Color remains reserved
-    // for actual media branding and destructive system feedback.
-    /// A plain white page, after Medium: sections and rows sit on dividers rather than cards.
-    static let background = color(light: 0xFFFFFF, dark: 0x101113)
-    static let card = color(light: 0xFFFFFF, dark: 0x151719)
-    static let ink = color(light: 0x111214, dark: 0xF5F5F4)
-    static let primary = color(light: 0x151618, dark: 0xF1F1EF)
-    static let primaryForeground = color(light: 0xFFFFFF, dark: 0x111214)
-    static let tint = color(light: 0x292B2E, dark: 0xE6E6E4)
-    static let secondary = color(light: 0x696B70, dark: 0xA0A2A6)
-    static let surface = color(light: 0xE7E8EA, dark: 0x1D1F22)
+    /// Blanc cassé in light, noir chaud in dark: sections and rows sit on dividers rather than cards.
+    static let background = color(light: 0xFAF9F6, dark: 0x121110)
+    static let card = color(light: 0xFAF9F6, dark: 0x1A1817)
+    /// Noir chaud: text and icons.
+    static let ink = color(light: 0x121110, dark: 0xF5F3F0)
+    static let primary = color(light: 0x121110, dark: 0xF5F3F0)
+    static let primaryForeground = color(light: 0xFFFFFF, dark: 0x121110)
+    static let tint = color(light: 0x121110, dark: 0xF5F3F0)
+    static let secondary = color(light: 0x6B6560, dark: 0xA8A29E)
+    /// Gris clair: secondary surfaces, fields and control tracks.
+    static let surface = color(light: 0xF2F0ED, dark: 0x1E1C1A)
     /// The selected segment of a capsule control: lifted from its `surface` track in both themes.
-    static let raised = color(light: 0xFFFFFF, dark: 0x3A3C40)
-    static let inputBorder = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
-    static let selection = color(light: 0xE7E8EA, dark: 0x292B2E)
-    static let selectionForeground = color(light: 0x151618, dark: 0xF5F5F4)
-    static let rule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.09)
-    static let sidebar = color(light: 0xFFFFFF, dark: 0x101113)
-    static let sidebarRule = color(light: 0xDCDDDF, dark: 0xFFFFFF, darkAlpha: 0.08)
+    static let raised = color(light: 0xFFFFFF, dark: 0x34302C)
+    static let inputBorder = color(light: 0xDEDAD5, dark: 0x36322E)
+    static let selection = color(light: 0xF2F0ED, dark: 0x1E1C1A)
+    static let selectionForeground = color(light: 0x121110, dark: 0xF5F3F0)
+    static let rule = color(light: 0xDEDAD5, dark: 0x36322E)
+    static let sidebar = color(light: 0xFAF9F6, dark: 0x121110)
+    static let sidebarRule = color(light: 0xDEDAD5, dark: 0x36322E)
     static let destructive = color(light: 0xE7000B, dark: 0xFF6467)
     /// `color` fixed to one appearance. The navigation bar of a tab that is off screen during a theme
     /// change keeps resolving adaptive colors with the old theme; colors fixed by the page do not.
@@ -30,43 +31,45 @@ enum Brand {
         return Color(uiColor: UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style)))
     }
 
-    /// Color tells the passage kind: cobalt interventions, lilac citations, ink for X. The logo's name and the
-    /// calls to action stay ink. Hues no major French party owns, never paired like the flag; the coming Instagram
-    /// type will take raspberry (0xB3326F / 0xF28DBE on 0xFBEAF2 / 0x3A1A2C). Text reaches 5.2:1 or more on its wash.
-    static let intervention = color(light: 0x2959C9, dark: 0x8DB0FF)
-    static let interventionWash = color(light: 0xEAF0FC, dark: 0x16264A)
-    static let citation = color(light: 0x6E4DBF, dark: 0xB9A2F5)
-    static let citationWash = color(light: 0xF1ECFB, dark: 0x272042)
+    /// Vermillon: primary actions, the playback timeline, the logo, the active tab and selections.
+    static let accent = color(light: 0xE74732, dark: 0xF05A49)
+    /// Mineral taupe: interface marks such as the account avatar.
+    static let taupe = color(light: 0x91857B, dark: 0xA2958C)
 
-    /// The app icon's field, from cobalt to lilac, the same in both themes: the logo's tile and the login screen's dawn.
-    static let iconStart = color(light: 0x3A63D8, dark: 0x3A63D8)
-    static let iconStop = color(light: 0x7A55C8, dark: 0x7A55C8)
-    static let iconGradient = LinearGradient(colors: [iconStart, iconStop],
-                                             startPoint: UnitPoint(x: 0.15, y: 0), endPoint: UnitPoint(x: 0.85, y: 1))
-    /// Secondary actions: a pale wash of the icon's two colors, under text in a deeper pair, lighter in dark (5.3:1 or more).
-    static let actionWash = LinearGradient(colors: [color(light: 0xE8EEFC, dark: 0x1A2A55), color(light: 0xF0EAFB, dark: 0x2A2250)],
-                                           startPoint: .leading, endPoint: .trailing)
-    static let actionText = LinearGradient(colors: [color(light: 0x2F57CC, dark: 0x9DB8FF), color(light: 0x6E4DBF, dark: 0xC4B0F7)],
-                                           startPoint: .leading, endPoint: .trailing)
+    /// Color tells the passage kind at a glance: vermillon interventions, taupe citations, noir chaud for X.
+    /// `intervention` and `citation` draw the bars and outlines (3:1 or more); `…Label` the small text, a step deeper
+    /// for 4.5:1 on the page; `…Fill` the solid chips under white text, the same in both themes. The coming Instagram
+    /// type will need a hue of its own.
+    static let intervention = accent
+    static let interventionLabel = color(light: 0xC93A26, dark: 0xF05A49)
+    static let interventionFill = color(light: 0xC93A26, dark: 0xC93A26)
+    static let interventionWash = color(light: 0xFCE8E4, dark: 0x3A1C16)
+    static let citation = taupe
+    static let citationLabel = color(light: 0x7A6F66, dark: 0xA2958C)
+    static let citationFill = color(light: 0x7A6F66, dark: 0x7A6F66)
+    static let citationWash = color(light: 0xEEEAE6, dark: 0x2A2623)
+
+    /// Secondary actions: gris clair under noir chaud text.
+    static let actionWash = surface
+    static let actionText = ink
 
     // Strengthen small secondary labels on shaded surfaces (at least 4.5:1).
-    static let secondaryOnSurface = color(light: 0x686868, dark: 0xB3B3B3)
+    static let secondaryOnSurface = color(light: 0x6B6560, dark: 0xA8A29E)
 
-    private static func color(light: UInt32, dark: UInt32, darkAlpha: CGFloat = 1) -> Color {
+    private static func color(light: UInt32, dark: UInt32) -> Color {
         Color(uiColor: UIColor { traits in
-            let isDark = traits.userInterfaceStyle == .dark
-            let value = isDark ? dark : light
+            let value = traits.userInterfaceStyle == .dark ? dark : light
             return UIColor(
                 red: CGFloat((value >> 16) & 0xFF) / 255,
                 green: CGFloat((value >> 8) & 0xFF) / 255,
                 blue: CGFloat(value & 0xFF) / 255,
-                alpha: isDark ? darkAlpha : 1
+                alpha: 1
             )
         })
     }
 }
 
-/// The brand lockup: an "i" on a speech bubble in the app icon's gradient, then "info" heavy in ink
+/// The brand lockup: an "i" on a vermillon speech bubble, then "info" heavy in ink
 /// and "métrie" regular in ink: the weights alone set them apart. `size` is the text size; the tile scales with it.
 struct Wordmark: View {
     var size: CGFloat = 22
@@ -86,15 +89,14 @@ struct Wordmark: View {
     }
 }
 
-/// The brand pictogram: a white "i" (stem and dot) on a speech bubble in the app icon's gradient, its sharp
-/// corner bottom left. Its colors stay the same in both themes, like the icon.
+/// The brand pictogram: a white "i" (stem and dot) on a vermillon speech bubble, its sharp corner bottom left.
 struct BrandTile: View {
     let side: CGFloat
 
     var body: some View {
         UnevenRoundedRectangle(topLeadingRadius: side * 0.3, bottomLeadingRadius: side * 0.04,
                                bottomTrailingRadius: side * 0.3, topTrailingRadius: side * 0.3, style: .continuous)
-            .fill(Brand.iconGradient)
+            .fill(Brand.accent)
             .frame(width: side, height: side)
             .overlay {
                 VStack(spacing: side * 0.064) {
@@ -108,7 +110,7 @@ struct BrandTile: View {
 }
 
 /// Shared controls grow with Dynamic Type and retain a generous hit area.
-/// Primary calls to action fill flat with the app icon's gradient; secondary ones sit on its pale wash.
+/// Primary calls to action fill with vermillon; secondary ones sit on gris clair.
 struct ActionButtonStyle: ButtonStyle {
     var prominent = false
     var horizontalPadding: CGFloat = 16
@@ -138,7 +140,7 @@ struct ActionButtonStyle: ButtonStyle {
 
     private var background: AnyShapeStyle {
         guard prominent else { return AnyShapeStyle(Brand.actionWash) }
-        return isEnabled ? AnyShapeStyle(Brand.iconGradient) : AnyShapeStyle(Brand.surface)
+        return isEnabled ? AnyShapeStyle(Brand.accent) : AnyShapeStyle(Brand.surface)
     }
 }
 
@@ -385,7 +387,7 @@ struct AppTabButton: View {
     var iconOnly = false
     /// Sets the icon on an inverted-ink tile, like the broadcaster logos in the feed cards.
     var iconTile = false
-    var accent: Color = Brand.tint
+    var accent: Color = Brand.accent
     var compact = false
     let action: () -> Void
     @ScaledMetric(relativeTo: .footnote) private var tileSize = 20.0

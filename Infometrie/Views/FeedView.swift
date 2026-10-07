@@ -159,7 +159,7 @@ struct FeedView: View {
         // A play link with no background: a capsule on a pale wash read as a fourth type checkbox beside the ones above.
         Button { model.player.start(items: playable, app: model, podcast: true) } label: {
             HStack(spacing: 6) {
-                Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(Brand.iconGradient).accessibilityHidden(true)
+                Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(Brand.accent).accessibilityHidden(true)
                 Text("Tout écouter").font(.subheadline.weight(.semibold)).foregroundStyle(Brand.actionText)
             }
             .fixedSize(horizontal: false, vertical: true)
@@ -301,24 +301,26 @@ private struct FeedKindPicker: View {
 
     private func checkbox(_ kind: Kind) -> some View {
         // Plain on/off, at the client's request: every type can be unchecked, the journal then says so.
+        // Checked, the chip fills with the kind's color, so the row of types reads like the list below it.
         let checked = isChecked(kind)
+        let onFill = kind == .tweets ? Brand.primaryForeground : Color.white
         return Button { toggle(kind) } label: {
             HStack(spacing: 6) {
-                // The kind's color, matching the tags and left border of the rows it shows.
+                // White on the kind's fill when checked, secondary otherwise.
                 Image(systemName: checked ? "checkmark.square.fill" : "square")
-                    .font(.body).foregroundStyle(checked ? FeedItem.color(ofKind: kind.apiKind) : Brand.secondary)
+                    .font(.body).foregroundStyle(checked ? onFill : Brand.secondary)
                 // The bare X mark: an ink tile beside a filled checkbox would read as a second box.
                 if kind == .tweets {
                     Image("x.logo").font(.subheadline.weight(.semibold))
-                        .foregroundStyle(checked ? Brand.ink : Brand.secondary)
+                        .foregroundStyle(checked ? onFill : Brand.secondary)
                 } else {
                     Text(kind.title)
                         .font(.subheadline)
-                        .foregroundStyle(checked ? Brand.ink : Brand.secondary)
+                        .foregroundStyle(checked ? onFill : Brand.secondary)
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
-            .chip(selected: checked, wash: FeedItem.wash(ofKind: kind.apiKind))
+            .chip(selected: checked, wash: FeedItem.fill(ofKind: kind.apiKind))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(kind.title)

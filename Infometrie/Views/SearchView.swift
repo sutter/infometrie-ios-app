@@ -261,7 +261,7 @@ private struct FilterChoiceRow: View {
     }
 }
 
-/// A radio (one choice) or checkbox (several) in the app icon’s gradient: a ring holding a dot, or a box holding a check.
+/// A radio (one choice) or checkbox (several) in vermillon: a ring holding a dot, or a box holding a check.
 /// Unchecked, a plain secondary ring, at more than 3:1 on the page.
 private struct ChoiceMark: View {
     let selected: Bool
@@ -272,11 +272,11 @@ private struct ChoiceMark: View {
         let shape = RoundedRectangle(cornerRadius: multiple ? side * 0.3 : side / 2, style: .continuous)
         ZStack {
             if selected {
-                shape.strokeBorder(Brand.iconGradient, lineWidth: 2)
+                shape.strokeBorder(Brand.accent, lineWidth: 2)
                 if multiple {
-                    Image(systemName: "checkmark").font(.system(size: side * 0.5, weight: .bold)).foregroundStyle(Brand.actionText)
+                    Image(systemName: "checkmark").font(.system(size: side * 0.5, weight: .bold)).foregroundStyle(Brand.accent)
                 } else {
-                    Circle().fill(Brand.iconGradient).frame(width: side * 0.46, height: side * 0.46)
+                    Circle().fill(Brand.accent).frame(width: side * 0.46, height: side * 0.46)
                 }
             } else {
                 shape.strokeBorder(Brand.secondary, lineWidth: 1.5)

@@ -191,9 +191,11 @@ struct PlaybackDock: View {
                 if queue { HStack(spacing: 12) { queueButton(forward: false); queueButton(forward: true) } }
             } else {
                 VStack(spacing: 0) {
-                    PlaybackTimeline(value: Binding(get: { min(playback.position, max(1, playback.duration)) }, set: { playback.scrub(to: $0) }), range: 0...max(1, playback.duration), onEditingChanged: { editing in
+                    Slider(value: Binding(get: { min(playback.position, max(1, playback.duration)) }, set: { playback.scrub(to: $0) }), in: 0...max(1, playback.duration), onEditingChanged: { editing in
                         if editing { playback.beginScrubbing() } else { playback.endScrubbing() }
                     })
+                        .frame(minHeight: 44)
+                        .tint(Brand.accent)
                         .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
                         .accessibilityLabel("Position dans le passage")
                         .accessibilityHint(playback.isLoading ? "Préparation de l’écoute" : "")
@@ -285,39 +287,6 @@ struct PlaybackDock: View {
     private func clock(_ seconds: Double) -> String {
         let value = seconds.isFinite ? max(0, Int(seconds)) : 0
         return String(format: "%d:%02d", value / 60, value % 60)
-    }
-}
-
-/// The listening position: the system slider, its glass thumb included, over the icon’s gradient.
-/// The system slider takes a single tint color, so its elapsed part is cleared and the gradient drawn beneath it;
-/// VoiceOver and UI tests keep the native control.
-private struct PlaybackTimeline: View {
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    let onEditingChanged: (Bool) -> Void
-    @Environment(\.isEnabled) private var isEnabled
-    /// The system thumb’s width: its centre runs from half of it to the width minus half of it.
-    /// An estimate is enough, since the thumb covers where the gradient ends.
-    private let thumbWidth: CGFloat = 38
-
-    var body: some View {
-        Slider(value: $value, in: range, onEditingChanged: onEditingChanged)
-            .tint(.clear)
-            .frame(minHeight: 44)
-            .background {
-                GeometryReader { geometry in
-                    Capsule().fill(Brand.iconGradient)
-                        .frame(width: thumbWidth / 2 + max(0, geometry.size.width - thumbWidth) * fraction, height: 6)
-                        .frame(maxHeight: .infinity)
-                        .opacity(isEnabled ? 1 : 0.4)
-                }
-                .accessibilityHidden(true)
-            }
-    }
-
-    private var fraction: Double {
-        guard range.upperBound > range.lowerBound else { return 0 }
-        return (min(max(value, range.lowerBound), range.upperBound) - range.lowerBound) / (range.upperBound - range.lowerBound)
     }
 }
 

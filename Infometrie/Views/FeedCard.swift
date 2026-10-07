@@ -25,7 +25,7 @@ struct FeedCard: View {
         .padding(.vertical, 16).padding(.leading, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .leading) {
-            Capsule().fill(item.kindColor).frame(width: 4).padding(.vertical, 12).accessibilityHidden(true)
+            Capsule().fill(item.kindColor).frame(width: 6).padding(.vertical, 12).accessibilityHidden(true)
         }
         .overlay(alignment: .bottom) { AppRule() }
         .contentShape(Rectangle())
