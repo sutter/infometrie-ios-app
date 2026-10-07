@@ -37,15 +37,15 @@ enum Brand {
     static let taupe = color(light: 0x91857B, dark: 0xA2958C)
 
     /// Color tells the passage kind at a glance: vermillon interventions, taupe citations, noir chaud for X.
-    /// `intervention` and `citation` draw the bars and outlines (3:1 or more); `…Label` the small text, a step deeper
-    /// for 4.5:1 on the page; `…Fill` the solid chips under white text, the same in both themes. The coming Instagram
-    /// type will need a hue of its own.
+    /// `intervention` and `citation` draw the bars and the tags' light tint (3:1 or more); `…Label` the tags' small
+    /// text, deeper for 4.5:1 on that tint; `…Fill` the solid chips under white text, the same in both themes.
+    /// The coming Instagram type will need a hue of its own.
     static let intervention = accent
-    static let interventionLabel = color(light: 0xC93A26, dark: 0xF05A49)
+    static let interventionLabel = color(light: 0xBB3520, dark: 0xF05A49)
     static let interventionFill = color(light: 0xC93A26, dark: 0xC93A26)
     static let interventionWash = color(light: 0xFCE8E4, dark: 0x3A1C16)
     static let citation = taupe
-    static let citationLabel = color(light: 0x7A6F66, dark: 0xA2958C)
+    static let citationLabel = color(light: 0x6B6159, dark: 0xA2958C)
     static let citationFill = color(light: 0x7A6F66, dark: 0x7A6F66)
     static let citationWash = color(light: 0xEEEAE6, dark: 0x2A2623)
 
