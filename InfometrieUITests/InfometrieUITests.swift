@@ -324,10 +324,7 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["close-podcast"].tap()
 
         navigationButton("Compte", in: app).tap()
-        for _ in 0..<3 {
-            if app.buttons["logout"].exists && app.buttons["logout"].isHittable { break }
-            app.swipeUp()
-        }
+        reveal(app.buttons["logout"], in: app, down: false)
         app.buttons["logout"].tap()
         app.sheets["Se déconnecter ?"].buttons["Se déconnecter"].tap()
         XCTAssertTrue(app.textFields["login-email"].waitForExistence(timeout: 5))
@@ -1014,7 +1011,7 @@ final class InfometrieUITests: XCTestCase {
             let bottom = slider.exists ? slider.frame.minY - 12 : filterBottom ?? dockBottom ?? bounds.maxY - 150
             if element.exists && element.isHittable {
                 let contentControl = ["sequence-summary", "sequence-context", "transcript-follow", "expand-transcript", "transcript-scroll"].contains(identifier)
-                    || ["save-search", "reset-search", "clear-choices", "start-podcast"].contains(identifier)
+                    || ["save-search", "reset-search", "clear-choices", "start-podcast", "logout"].contains(identifier)
                     || ["filter-kind-", "feed-kind-", "feed-item-", "choice-", "pick-"].contains { identifier.hasPrefix($0) }
                 if element.elementType != .link && !contentControl { return }
                 // A large-text choice can be taller than the viewport. Its center

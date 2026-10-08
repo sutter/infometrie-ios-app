@@ -1,5 +1,13 @@
 # Validation du portage
 
+## Suite complète sur un nouveau Mac — 8 octobre 2026
+
+Première exécution après l’installation d’un nouveau Mac (Xcode 27.0, 27A266a, simulateurs recréés).
+
+- `build/NewMacSuite.xcresult`, iPhone 17 Pro, iOS 26.4 : 16 tests réussis sur 20. En plus des deux échecs connus (`testLoginFormAndEmptyFilters`, `testFullscreenTranscriptSeeksFromTextAtMaximumSize`), `testLoginCallsAPIStoresSessionAndRestoresAfterRelaunch` et `testSearchPersistenceSequenceAndPodcast` ne trouvaient pas la confirmation « Se déconnecter ? ».
+- Cause : dans Compte, le bouton `logout` arrivait à y = 872 sur un écran de 874 pt. XCTest le jugeait touchable, le pilote ne défilait pas, et le toucher tombait hors de l’écran. Le pilote amène désormais `logout` dans la zone de lecture avant de le toucher ; les assertions sont inchangées. Les deux parcours réussissent ensuite (`build/logout-fix.log`) : **18 sur 20**.
+- `swift test` : 45 tests réussis.
+
 ## Suite complète avant le push du build 9 — 8 octobre 2026
 
 Après la palette de marque (vermillon, bleu canard, noir chaud), les tags ghost, le logo sans pictogramme et la barre de navigation sur mesure.
