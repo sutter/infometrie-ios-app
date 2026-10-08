@@ -1,6 +1,6 @@
 ---
 objective: "Le journal fonctionne en Live, 7 j et 30 j ; en 7 j et 30 j, un graphique par jour sélectionne le jour affiché dans la liste."
-status: in-progress
+status: implemented
 ---
 
 # Plan: Périodes du journal et graphique par jour
