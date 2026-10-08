@@ -9,6 +9,9 @@ struct PersonView: View {
     @State private var profile: PersonProfile?
     @State private var error: String?
     @State private var reload = 0
+    @State private var selectedDay: String?
+    @State private var dayPage: HistoryResponse?
+    @State private var dayError: String?
 
     private var days: [String] { period.days() }
 
@@ -23,7 +26,10 @@ struct PersonView: View {
                     } else {
                         totals
                         DayChart(days: days, counts: profile?.days ?? [], kinds: ["intervention", "citation", "tweet"],
-                                 loading: profile == nil, identifier: "person-day")
+                                 loading: profile == nil, selectedDay: selectedDay, identifier: "person-day") { day in
+                            selectedDay = selectedDay == day ? nil : day
+                        }
+                        if let day = selectedDay { dayPassages(day) }
                     }
                 }
                 if let channels = profile?.topChannels, !channels.isEmpty {
@@ -48,7 +54,8 @@ struct PersonView: View {
         .navigationTitle("Personnalité").navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Brand.background, for: .navigationBar)
         .toolbarBackgroundVisibility(.visible, for: .navigationBar)
-        .task(id: "\(period.rawValue)-\(reload)") { await load() }
+        .task(id: "\(period.rawValue)-\(reload)") { selectedDay = nil; await load() }
+        .task(id: selectedDay) { await loadDay() }
     }
 
     private var heading: some View {
@@ -121,6 +128,59 @@ struct PersonView: View {
             guard !Task.isCancelled else { return }
             model.handleSessionError(error)
             profile = nil; self.error = model.message(for: error)
+        }
+    }
+
+    /// The chosen day: its date, a way back to the whole period, and the person's passages of that day.
+    @ViewBuilder private func dayPassages(_ day: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(DayLabel.long(day)).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink)
+                Spacer(minLength: 8)
+                Button { selectedDay = nil } label: {
+                    Image(systemName: "xmark").font(.body.weight(.semibold)).frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).foregroundStyle(Brand.ink)
+                .accessibilityLabel("Toute la période")
+                .accessibilityIdentifier("person-day-clear")
+            }
+            .accessibilityIdentifier("person-day-selection")
+            if let dayError {
+                ErrorNotice(message: dayError) { Task { await loadDay() } }
+            } else if let page = dayPage {
+                if page.items.isEmpty {
+                    Text("Aucun passage ce jour-là.").font(.subheadline).foregroundStyle(Brand.secondary)
+                        .padding(.vertical, 12)
+                }
+                ForEach(page.items) { item in
+                    NavigationLink { SequenceView(item: item) } label: {
+                        FeedCard(item: item, seen: model.isSeen(item)).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).accessibilityIdentifier("person-item-\(item.id)")
+                }
+                if page.hasMore {
+                    Text("Les \(page.items.count) passages les plus récents de la journée.")
+                        .font(.footnote).foregroundStyle(Brand.secondary).padding(.top, 12)
+                }
+            } else {
+                FeedSkeleton(label: "Chargement des passages du jour")
+            }
+        }
+    }
+
+    private func loadDay() async {
+        dayPage = nil; dayError = nil
+        guard let day = selectedDay, let token = model.session?.token else { return }
+        do {
+            let page = try await model.api.history(token: token, filters: SearchFilters(persons: [name]), from: day, to: day)
+            guard selectedDay == day else { return }
+            dayPage = page
+        } catch is CancellationError {
+        } catch {
+            guard !Task.isCancelled, selectedDay == day else { return }
+            model.handleSessionError(error)
+            dayError = model.message(for: error)
         }
     }
 

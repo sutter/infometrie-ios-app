@@ -7,6 +7,8 @@ struct FeedView: View {
     @Environment(\.dynamicTypeSize) private var dynamicType
     /// New criteria show their results from the top, while only the cards fade.
     @State private var scrollPosition = ScrollPosition(edge: .top)
+    /// A person whose profile a long press asked for.
+    @State private var profileName: String?
     private var playable: [FeedItem] { model.visibleItems.filter(\.canPlay).sorted { $0.at < $1.at } }
     private var hasAudienceFilters: Bool { !model.filters.isEmpty }
     private var usesWideLayout: Bool { horizontalSizeClass == .regular }
@@ -55,7 +57,10 @@ struct FeedView: View {
                                 }
                                 .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
                                 // A long press, or VoiceOver's actions, can undo or set the state by hand.
-                                .contextMenu { seenToggle(item) }
+                                .contextMenu {
+                                    seenToggle(item)
+                                    profileAction(item.person)
+                                }
                                 .accessibilityAction(named: model.isSeen(item) ? "Marquer comme non vu" : "Marquer comme vu") {
                                     model.toggleSeen(item)
                                 }
@@ -77,6 +82,7 @@ struct FeedView: View {
             .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .scrollPosition($scrollPosition)
+        .navigationDestination(item: $profileName) { PersonView(name: $0) }
         .onChange(of: model.filters) { jumpToTop() }
         .onChange(of: model.period) { jumpToTop() }
         .refreshable { await model.reload() }
@@ -159,6 +165,7 @@ struct FeedView: View {
         let pills = Group {
             ForEach(persons, id: \.self) { name in
                 criterionPill(name, icon: "person", single: !several) { $0.persons.remove(name) }
+                    .contextMenu { profileAction(name) }
             }
             ForEach(parties, id: \.self) { code in
                 let label = model.parties.first { $0.code == code }?.name ?? code
@@ -207,6 +214,13 @@ struct FeedView: View {
         .accessibilityLabel(title)
         .accessibilityHint("Touchez pour retirer ce critère")
         .accessibilityIdentifier(single ? "clear-filters" : "remove-criterion-\(title)")
+    }
+
+    /// "Voir la fiche" for a person of the panel; nothing for anyone else, whose profile would answer 404.
+    @ViewBuilder private func profileAction(_ person: String) -> some View {
+        if model.persons.contains(where: { $0.name == person }) {
+            Button("Voir la fiche de \(person)", systemImage: "person.text.rectangle") { profileName = person }
+        }
     }
 
     private func seenToggle(_ item: FeedItem) -> some View {

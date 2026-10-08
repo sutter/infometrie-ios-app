@@ -175,7 +175,13 @@ private struct DaySelection: View {
     let day: String
 
     private var index: Int? { model.historyDays.firstIndex(of: day) }
-    private var total: Int? { model.dayCounts.first { $0.day == day }?.total(for: model.filters) }
+    private var counts: DayCount? { model.dayCounts.first { $0.day == day } }
+    private var total: Int? { counts?.total(for: model.filters) }
+    /// "3 h 12 d'interventions" when interventions are shown; the journal's interventions, not the official speaking time.
+    private var duration: String? {
+        guard model.filters.interventions, let seconds = counts?.interventionSec, seconds > 0 else { return nil }
+        return "\(SpokenDuration.label(seconds: seconds)) d’interventions"
+    }
 
     var body: some View {
         HStack(spacing: 4) {
@@ -183,7 +189,7 @@ private struct DaySelection: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(DayLabel.long(day)).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink)
                 if let total {
-                    Text(total <= 1 ? "\(total) passage" : "\(total) passages")
+                    Text([total <= 1 ? "\(total) passage" : "\(total) passages", duration].compactMap { $0 }.joined(separator: " · "))
                         .font(.footnote.monospacedDigit()).foregroundStyle(Brand.secondary)
                 }
             }
