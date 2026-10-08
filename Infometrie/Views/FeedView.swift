@@ -38,6 +38,12 @@ struct FeedView: View {
                         } else if model.visibleItems.isEmpty && model.feedError == nil {
                             VStack(alignment: .leading, spacing: 12) {
                                 AppEmptyState(title: emptyTitle, icon: "text.magnifyingglass", message: emptyMessage)
+                                // 7 j and 30 j end yesterday: someone quiet all week may be speaking today.
+                                if !model.period.isLive {
+                                    Button("Voir aujourd’hui dans Live") { Task { await model.selectPeriod(.live) } }
+                                        .buttonStyle(ActionButtonStyle(prominent: true))
+                                        .accessibilityIdentifier("empty-show-live")
+                                }
                                 Button("Modifier la recherche") { model.openSearch(model.filters) }
                                     .buttonStyle(ActionButtonStyle())
                             }
@@ -105,11 +111,11 @@ struct FeedView: View {
     }
     private var emptyMessage: String {
         if model.selectedDay != nil { return "Aucun résultat ce jour-là avec ces critères. Choisissez un autre jour sur le graphique." }
-        return switch model.period {
-        case .live: "Aucun résultat sur les dernières 24 heures avec ces critères."
-        case .week: "Aucun résultat sur les 7 derniers jours avec ces critères."
-        case .month: "Aucun résultat sur les 30 derniers jours avec ces critères."
+        guard !model.period.isLive, let first = model.historyDays.first, let last = model.historyDays.last else {
+            return "Aucun résultat sur les dernières 24 heures avec ces critères."
         }
+        // Name the days: "7 jours" alone hid that today is left out, in Live.
+        return "Aucun résultat du \(DayLabel.short(first)) au \(DayLabel.short(last)) avec ces critères. Les passages d’aujourd’hui sont dans Live."
     }
 
     /// The result count and its freshness on one line, with "Tout écouter" at its end.

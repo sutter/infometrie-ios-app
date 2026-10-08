@@ -72,6 +72,13 @@ struct DayChart: View {
     /// Sparse or very large labels at the edges grow inward, or the screen edge cuts them ("09/…").
     private var anchorsEdges: Bool { labelStride > 1 || dynamicType.isAccessibilitySize }
 
+    /// Loaded, and nothing on any day: the bars would vanish and leave the dates alone.
+    private var isEmpty: Bool { !loading && !days.isEmpty && segments.allSatisfy { $0.count == 0 } }
+    /// At least 1, so a chart of empty days keeps a scale.
+    private var peak: Int {
+        max(1, segments.reduce(into: [String: Int]()) { $0[$1.day, default: 0] += $1.count }.values.max() ?? 1)
+    }
+
     var body: some View {
         Chart(segments) { segment in
             // A week keeps slim 18 pt bars instead of filling its seventh of the width.
@@ -81,6 +88,22 @@ struct DayChart: View {
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: segment.isTop ? 3 : 0, topTrailingRadius: segment.isTop ? 3 : 0))
                 .opacity(selectedDay == nil || selectedDay == segment.day ? 1 : 0.3)
         }
+        // A baseline keeps the chart's place on the page, empty days included.
+        .chartBackground { proxy in
+            GeometryReader { geometry in
+                if let plot = proxy.plotFrame {
+                    let frame = geometry[plot]
+                    Rectangle().fill(Brand.rule).frame(width: frame.width, height: 1)
+                        .offset(x: frame.minX, y: frame.maxY - 1)
+                    if isEmpty {
+                        Text("Aucun passage sur ces jours").font(.footnote).foregroundStyle(Brand.secondary)
+                            .frame(width: frame.width, height: frame.height).offset(x: frame.minX, y: frame.minY)
+                    }
+                }
+            }
+            .accessibilityHidden(true)
+        }
+        .chartYScale(domain: 0...peak)
         // The day labels are drawn by hand: on iOS 27 the axis ignored its chosen values and labeled all 30 days.
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
