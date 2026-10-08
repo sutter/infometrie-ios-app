@@ -49,7 +49,7 @@ struct SequenceView: View {
     private var sequenceContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                PassageHeading(item: displayItem, titleIdentifier: "sequence-title")
+                PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true)
                 if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
                 if isCurrent, displayItem.canPlay, displayItem.video {
                     NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit)

@@ -6,6 +6,8 @@ final class AppModel {
     enum Tab: Hashable { case feed, saved, account }
     var tab: Tab = .feed
     var isSearchPresented = false
+    /// Changing it rebuilds the journal's navigation stack, which pops it back to the feed.
+    private(set) var feedStackID = UUID()
     var session: Session?
     var isRestoring = true
     var isLoggingIn = false
@@ -252,6 +254,7 @@ final class AppModel {
         historyDays = []; historyItems = []; historyHasMore = false; dayCounts = []
         isLoadingHistory = false; isLoadingMoreHistory = false
     }
+    func returnToFeedRoot() { feedStackID = UUID(); tab = .feed }
     func openSearch(_ value: SearchFilters) {
         draft = value
         if !draft.hasKinds { draft.selectKind(0) }

@@ -155,6 +155,9 @@ struct PassageSpeaker: View {
 struct PassageHeading: View {
     let item: FeedItem
     let titleIdentifier: String
+    /// The passage page links the speaker to their profile when they belong to the panel.
+    var linksPerson = false
+    @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
@@ -163,7 +166,7 @@ struct PassageHeading: View {
         VStack(alignment: .leading, spacing: 24) {
             VStack(alignment: .leading, spacing: 12) {
                 facts
-                PassageSpeaker(item: item, nameFont: .headline, lineLimit: nil)
+                speaker
             }
             Text(item.displayTitle)
                 .font(.title2.weight(.bold))
@@ -171,6 +174,24 @@ struct PassageHeading: View {
                 .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(titleIdentifier)
         }
+    }
+
+    @ViewBuilder private var speaker: some View {
+        let speaker = PassageSpeaker(item: item, nameFont: .headline, lineLimit: nil)
+        if linksPerson, model.persons.contains(where: { $0.name == item.person }) {
+            NavigationLink { PersonView(name: item.person) } label: {
+                HStack(spacing: 8) {
+                    speaker
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Brand.secondary).accessibilityHidden(true)
+                }
+                .frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Ouvre sa fiche")
+            .accessibilityIdentifier("sequence-person")
+        } else { speaker }
     }
 
     /// One line when it fits; otherwise kind and logo, then date and duration.

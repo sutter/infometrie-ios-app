@@ -36,4 +36,5 @@ What this project is, the problem it solves, and its domain language. The non-de
 - Mes suivis: save, reuse, archive, restore and delete filter sets.
 - Sequence page: text before résumé, word-tap seeking, persistent player (play/pause, scrubber, ±10 s), fullscreen transcript.
 - Podcast of the current results.
+- Fiche personnalité (`/profile`), from the passage page: 7 or 30 complete days of interventions, citations and X posts, their day chart, the time spent in interventions, the top 5 channels, and a shortcut to their passages in the journal.
 - Appearance: system, light or dark theme, reading size S / M / L on top of the system text size.

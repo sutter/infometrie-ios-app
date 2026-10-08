@@ -164,6 +164,68 @@ struct DaysResponse: Decodable, Sendable {
     }
 }
 
+/// `/rest/v1/profile`: a person of the panel over the last complete Paris days. The Swagger names the parts
+/// only; the fields come from the real answer of 2026-10-08. `intervention_sec` sums the journal's
+/// interventions, not the official speaking time.
+struct PersonProfile: Decodable, Sendable {
+    struct Totals: Decodable, Sendable {
+        var interventions = 0
+        var citations = 0
+        var tweets = 0
+        var interventionSec = 0
+        enum CodingKeys: String, CodingKey { case interventions, citations, tweets; case interventionSec = "intervention_sec" }
+        init() { }
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            interventions = try c.decodeIfPresent(Int.self, forKey: .interventions) ?? 0
+            citations = try c.decodeIfPresent(Int.self, forKey: .citations) ?? 0
+            tweets = try c.decodeIfPresent(Int.self, forKey: .tweets) ?? 0
+            interventionSec = try c.decodeIfPresent(Int.self, forKey: .interventionSec) ?? 0
+        }
+    }
+    struct Channel: Decodable, Identifiable, Sendable {
+        var id: String { channelKey.isEmpty ? channel : channelKey }
+        var channel = ""
+        var channelKey = ""
+        var interventions = 0
+        var interventionSec = 0
+        enum CodingKeys: String, CodingKey {
+            case channel, interventions
+            case channelKey = "channel_key", interventionSec = "intervention_sec"
+        }
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            channel = try c.decodeIfPresent(String.self, forKey: .channel) ?? ""
+            channelKey = try c.decodeIfPresent(String.self, forKey: .channelKey) ?? ""
+            interventions = try c.decodeIfPresent(Int.self, forKey: .interventions) ?? 0
+            interventionSec = try c.decodeIfPresent(Int.self, forKey: .interventionSec) ?? 0
+        }
+    }
+    let person: Person
+    var totals = Totals()
+    var days: [DayCount] = []
+    var topChannels: [Channel] = []
+    enum CodingKeys: String, CodingKey { case person, totals, days; case topChannels = "top_channels" }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        person = try c.decode(Person.self, forKey: .person)
+        totals = try c.decodeIfPresent(Totals.self, forKey: .totals) ?? Totals()
+        days = try c.decodeIfPresent([DayCount].self, forKey: .days) ?? []
+        topChannels = try c.decodeIfPresent([Channel].self, forKey: .topChannels) ?? []
+    }
+}
+
+/// Durations of interventions as people read them: "45 s", "12 min", "4 h 08".
+enum SpokenDuration {
+    static func label(seconds: Int) -> String {
+        let seconds = max(0, seconds)
+        if seconds < 60 { return "\(seconds) s" }
+        let minutes = seconds / 60
+        if minutes < 60 { return "\(minutes) min" }
+        return String(format: "%d h %02d", minutes / 60, minutes % 60)
+    }
+}
+
 struct SequenceDetail: Decodable, Identifiable, Sendable {
     var id: Int64 { item.id }
     let item: FeedItem

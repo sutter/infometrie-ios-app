@@ -1,10 +1,35 @@
 import Charts
 import SwiftUI
 
-/// Passages per complete Paris day of the period, the checked kinds stacked in their colors.
+/// The journal's chart in 7 j and 30 j: the checked kinds of the period, and the chosen day with its row.
 /// Touching a bar shows that day in the list; touching it again, or the cross, shows the whole period.
-struct DayChart: View {
+struct FeedDayChart: View {
     @Environment(AppModel.self) private var model
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            DayChart(days: model.historyDays, counts: model.dayCounts, kinds: model.filters.selectedKinds,
+                     loading: model.dayCounts.isEmpty && model.isLoadingHistory, selectedDay: model.selectedDay,
+                     identifier: "feed-day") { day in
+                let next = model.selectedDay == day ? nil : day
+                Task { await model.selectDay(next) }
+            }
+            if let day = model.selectedDay { DaySelection(day: day) }
+        }
+    }
+}
+
+/// Passages per complete Paris day, the given kinds stacked in their colors. With `select`, touching a bar
+/// reports its day; without it, the chart only reads.
+struct DayChart: View {
+    let days: [String]
+    let counts: [DayCount]
+    let kinds: [String]
+    var loading = false
+    var selectedDay: String?
+    /// Prefix of the identifiers: `<identifier>-chart`, and `<identifier>-<yyyy-mm-dd>` per day.
+    var identifier = "day"
+    var select: ((String) -> Void)?
     @Environment(\.dynamicTypeSize) private var dynamicType
     /// Compact, the user's pick on 2026-10-08 (option A of a sheet of four): at 120 pt the chart crowded out the cards.
     @ScaledMetric(relativeTo: .body) private var height = 64.0
@@ -19,17 +44,16 @@ struct DayChart: View {
         var id: String { "\(day)-\(kind)" }
     }
 
-    private var loading: Bool { model.dayCounts.isEmpty && model.isLoadingHistory }
-    private var counts: [String: DayCount] {
-        Dictionary(model.dayCounts.map { ($0.day, $0) }, uniquingKeysWith: { first, _ in first })
+    private var byDay: [String: DayCount] {
+        Dictionary(counts.map { ($0.day, $0) }, uniquingKeysWith: { first, _ in first })
     }
     /// Stacked bottom to top in the order of the type checkboxes.
     private var segments: [Segment] {
-        let counts = counts
-        return model.historyDays.flatMap { day in
-            var stack = model.filters.selectedKinds.map { kind in
+        let byDay = byDay
+        return days.flatMap { day in
+            var stack = kinds.map { kind in
                 // While loading, a gentle wave stands in for the bars under the skeleton.
-                let value = loading ? 3 + Int((day.utf8.last ?? 0) & 3) : counts[day]?.count(ofKind: kind) ?? 0
+                let value = loading ? 3 + Int((day.utf8.last ?? 0) & 3) : byDay[day]?.count(ofKind: kind) ?? 0
                 return Segment(day: day, kind: kind, count: value)
             }
             if let top = stack.lastIndex(where: { $0.count > 0 }) { stack[top].isTop = true }
@@ -39,44 +63,38 @@ struct DayChart: View {
     /// Every day of a week; over 30 days, yesterday then every seventh day before it, like the client's
     /// reference chart. At accessibility sizes only the first and the last of them fit.
     private var labeledDays: [String] {
-        let days = model.historyDays
         let labeled = days.enumerated().filter { (days.count - 1 - $0.offset) % labelStride == 0 }.map(\.element)
         guard dynamicType.isAccessibilitySize, let first = labeled.first, let last = labeled.last, first != last else { return labeled }
         return [first, last]
     }
 
-    private var labelStride: Int { model.historyDays.count <= 7 ? 1 : 7 }
+    private var labelStride: Int { days.count <= 7 ? 1 : 7 }
     /// Sparse or very large labels at the edges grow inward, or the screen edge cuts them ("09/…").
     private var anchorsEdges: Bool { labelStride > 1 || dynamicType.isAccessibilitySize }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            chart
-            if let day = model.selectedDay { DaySelection(day: day) }
-        }
-    }
-
-    private var chart: some View {
         Chart(segments) { segment in
             // A week keeps slim 18 pt bars instead of filling its seventh of the width.
             BarMark(x: .value("Jour", segment.day), y: .value("Passages", segment.count),
-                    width: model.historyDays.count <= 7 ? .fixed(18) : .ratio(0.62))
+                    width: days.count <= 7 ? .fixed(18) : .ratio(0.62))
                 .foregroundStyle(FeedItem.color(ofKind: segment.kind))
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: segment.isTop ? 3 : 0, topTrailingRadius: segment.isTop ? 3 : 0))
-                .opacity(model.selectedDay == nil || model.selectedDay == segment.day ? 1 : 0.3)
+                .opacity(selectedDay == nil || selectedDay == segment.day ? 1 : 0.3)
         }
         // The day labels are drawn by hand: on iOS 27 the axis ignored its chosen values and labeled all 30 days.
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartLegend(.hidden)
         .chartOverlay { proxy in
-            GeometryReader { geometry in
-                Rectangle().fill(.clear).contentShape(Rectangle())
-                    .onTapGesture { location in
-                        guard let plot = proxy.plotFrame else { return }
-                        let x = location.x - geometry[plot].origin.x
-                        if let day = proxy.value(atX: x, as: String.self) { toggle(day) }
-                    }
+            if let select {
+                GeometryReader { geometry in
+                    Rectangle().fill(.clear).contentShape(Rectangle())
+                        .onTapGesture { location in
+                            guard let plot = proxy.plotFrame else { return }
+                            let x = location.x - geometry[plot].origin.x
+                            if let day = proxy.value(atX: x, as: String.self) { select(day) }
+                        }
+                }
             }
         }
         .chartOverlay(alignment: .topLeading) { proxy in
@@ -94,28 +112,28 @@ struct DayChart: View {
         .frame(height: min(height, 110))
         .padding(.bottom, labelHeight)
         .skeleton(loading)
-        .sensoryFeedback(.selection, trigger: model.selectedDay)
+        .sensoryFeedback(.selection, trigger: selectedDay)
         // One VoiceOver element per day, laid over its bar, which also lets UI tests touch a day.
         .accessibilityElement(children: .contain)
         .accessibilityChildren {
             HStack(spacing: 0) {
-                ForEach(model.historyDays, id: \.self) { day in
+                ForEach(days, id: \.self) { day in
                     Rectangle()
-                        .accessibilityLabel(DayLabel.spoken(day, counts: counts[day], kinds: model.filters.selectedKinds))
-                        .accessibilityValue(model.selectedDay == day ? "Sélectionné" : "")
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityAction { toggle(day) }
-                        .accessibilityIdentifier("feed-day-\(day)")
+                        .accessibilityLabel(DayLabel.spoken(day, counts: byDay[day], kinds: kinds))
+                        .accessibilityValue(selectedDay == day ? "Sélectionné" : "")
+                        .accessibilityAddTraits(select == nil ? [] : .isButton)
+                        .accessibilityAction { select?(day) }
+                        .accessibilityIdentifier("\(identifier)-\(day)")
                 }
             }
         }
         .accessibilityLabel("Passages par jour")
-        .accessibilityIdentifier("feed-day-chart")
+        .accessibilityIdentifier("\(identifier)-chart")
     }
 
     /// Centered under its bar; at the edges it starts or ends at the bar's center.
     @ViewBuilder private func dayLabel(_ day: String, at x: CGFloat, width: CGFloat, top: CGFloat) -> some View {
-        let text = Text(day == model.historyDays.last ? "hier" : DayLabel.short(day))
+        let text = Text(day == days.last ? "hier" : DayLabel.short(day))
             .font(.caption2.monospacedDigit()).foregroundStyle(Brand.secondary)
             .fixedSize()
         if anchorsEdges && day == labeledDays.last {
@@ -125,11 +143,6 @@ struct DayChart: View {
         } else {
             text.frame(width: width, alignment: .center).offset(x: x - width / 2, y: top)
         }
-    }
-
-    private func toggle(_ day: String) {
-        let next = model.selectedDay == day ? nil : day
-        Task { await model.selectDay(next) }
     }
 }
 

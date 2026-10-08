@@ -57,7 +57,7 @@ struct RootView: View {
                         // The system tab bar stays hidden: the iPhone shows `MainTabBar` under each root page,
                         // the iPad the sidebar.
                         Tab("Le journal", systemImage: "house", value: AppModel.Tab.feed) {
-                            NavigationStack { FeedView().withMainTabBar() }.tint(Brand.tint)
+                            NavigationStack { FeedView().withMainTabBar() }.id(model.feedStackID).tint(Brand.tint)
                         }
                         Tab("Mes suivis", systemImage: "bookmark", value: AppModel.Tab.saved) {
                             NavigationStack { SavedSearchesView().withMainTabBar() }.tint(Brand.tint)

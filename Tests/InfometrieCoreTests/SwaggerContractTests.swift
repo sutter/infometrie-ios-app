@@ -142,6 +142,37 @@ struct SwaggerContractTests {
         catch { Issue.record("Wrong error: \(error)") }
     }
 
+    @Test func profileDecodesTheRealAnswerShape() async throws {
+        let body = #"{"person":{"name":"Camille Martin","role":"Personnalité fictive","party":"TEST"},"totals":{"interventions":440,"intervention_sec":14869,"citations":147,"tweets":0},"days":[{"day":"2026-10-01","interventions":108,"citations":7,"tweets":0,"intervention_sec":3460}],"top_channels":[{"channel":"Radio Test","channel_key":"radio_test","interventions":354,"intervention_sec":11973}]}"#
+        let client = client(routes: ["/rest/v1/profile": (200, body)])
+        let profile = try await client.profile(token: "fixture-jwt", person: "Camille Martin", days: 7)
+        #expect(profile.person.name == "Camille Martin" && profile.person.party == "TEST")
+        #expect(profile.totals.interventions == 440 && profile.totals.interventionSec == 14869 && profile.totals.citations == 147)
+        #expect(profile.days.first?.interventionSec == 3460)
+        #expect(profile.topChannels.first?.channelKey == "radio_test" && profile.topChannels.first?.interventions == 354)
+        let sent = query(of: ContractProtocol.requests[0])
+        #expect(ContractProtocol.requests[0].url?.path == "/rest/v1/profile")
+        #expect(sent["person"] == "Camille Martin" && sent["days"] == "7")
+        #expect(ContractProtocol.requests[0].value(forHTTPHeaderField: "Authorization") == "Bearer fixture-jwt")
+        let sparse = self.client(routes: ["/rest/v1/profile": (200, #"{"person":{"name":"Camille Martin"}}"#)])
+        let empty = try await sparse.profile(token: "fixture-jwt", person: "Camille Martin", days: 30)
+        #expect(empty.days.isEmpty && empty.topChannels.isEmpty && empty.totals.interventions == 0)
+    }
+
+    @Test func profileOfAPersonOutsideThePanelIsNotFound() async {
+        let client = client(routes: ["/rest/v1/profile": (404, #"{"error":true,"reason":"Unknown person"}"#)])
+        do { _ = try await client.profile(token: "fixture-jwt", person: "Inconnu", days: 7); Issue.record("Expected not found") }
+        catch APIError.notFound { }
+        catch { Issue.record("Wrong error: \(error)") }
+    }
+
+    @Test func spokenDurationsReadNaturally() {
+        #expect(SpokenDuration.label(seconds: 45) == "45 s")
+        #expect(SpokenDuration.label(seconds: 720) == "12 min")
+        #expect(SpokenDuration.label(seconds: 14869) == "4 h 07")
+        #expect(SpokenDuration.label(seconds: -3) == "0 s")
+    }
+
     private func query(of request: URLRequest) -> [String: String] {
         let items = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems } ?? []
         return Dictionary(items.map { ($0.name, $0.value ?? "") }, uniquingKeysWith: { first, _ in first })

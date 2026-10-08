@@ -79,6 +79,11 @@ final class APIClient: @unchecked Sendable {
         let query = [URLQueryItem(name: "days", value: String(count))] + audienceQuery(filters)
         return try await historySend(request(path: "rest/v1/days", token: token, query: query))
     }
+    /// Activity of one person of the panel; 404 means the person is not in the panel.
+    func profile(token: String, person: String, days: Int) async throws -> PersonProfile {
+        let query = [URLQueryItem(name: "person", value: person), URLQueryItem(name: "days", value: String(days))]
+        return try await historySend(request(path: "rest/v1/profile", token: token, query: query))
+    }
     private func historySend<T: Decodable>(_ request: URLRequest) async throws -> T {
         do { return try await send(request) }
         catch APIError.server(503) { throw APIError.historyUnavailable }
