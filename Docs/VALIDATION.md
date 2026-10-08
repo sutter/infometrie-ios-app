@@ -1,5 +1,13 @@
 # Validation du portage
 
+## Suite complète des périodes du journal et de la fiche personnalité — 8 octobre 2026
+
+Branche `feat/feed-periods` : périodes 7 j et 30 j avec graphique par jour (Swagger 0.11.0, `/history` et `/days`), barre de navigation gris clair, résumés répétant la transcription masqués, fiche personnalité (`/profile`).
+
+- `build/FullSuite-20261008.xcresult`, iPhone 17 Pro, iOS 26.4 : **20 tests réussis sur 22**, dont les deux nouveaux parcours `testFeedPeriodsChartSelectsDay` et `testPersonProfileFromPassageShowsActivityAndFiltersTheJournal`. Les deux échecs sont les échecs connus, avec leurs symptômes habituels : `testLoginFormAndEmptyFilters` (audit : texte tronqué et contraste, 12 assertions) et `testFullscreenTranscriptSeeksFromTextAtMaximumSize` (« Reprendre le suivi » absent à la taille maximale).
+- `swift test` : 57 tests réussis.
+- Non couvert par les tests : les données réelles. Les comptes de `/days` (259 087 passages sur 30 jours) et le contenu de `resume` restent à confirmer avec le backend.
+
 ## Suite complète sur un nouveau Mac — 8 octobre 2026
 
 Première exécution après l’installation d’un nouveau Mac (Xcode 27.0, 27A266a, simulateurs recréés).
