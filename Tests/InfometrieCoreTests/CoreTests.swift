@@ -7,6 +7,17 @@ struct CoreTests {
     private let fixture = #"{"id":42,"seq":101,"at":"2026-09-21T10:00:00Z","kind":"intervention","media":"radio","channel":"Radio Test","person":"Camille Martin","party":"DEMO-A","title":"Un passage","duration_sec":30,"has_media":true,"unknown":"ignored"}"#
     private func item() throws -> FeedItem { try JSONDecoder().decode(FeedItem.self, from: Data(fixture.utf8)) }
 
+    @Test func summaryThatRepeatsTheTranscriptIsHidden() {
+        let item = FeedItem(id: 1, at: "2026-10-01T10:00:00Z", kind: "intervention", media: "tv", channel: "TV Test",
+                            person: "Camille Martin", party: "TEST", title: "Extrait")
+        let verbatim = "Si je peux me permettre de vous répondre,\n\nil se trouve que moi j'ai mes enfants en lycée."
+        func summary(_ resume: String) -> String? { SequenceDetail(item: item, resume: resume, verbatim: verbatim).summary }
+        #expect(summary("Si je peux me permettre de vous répondre, il se trouve que moi j'ai mes enfants en lycée.") == nil)
+        #expect(summary("Si je peux me permettre de vous répondre, il se trouve") == nil)
+        #expect(summary("  ") == nil)
+        #expect(summary("La députée défend l’école publique de Seine-Saint-Denis.") == "La députée défend l’école publique de Seine-Saint-Denis.")
+    }
+
     @Test func decodeAPKContractAndDefaults() throws {
         let item = try item()
         #expect(item.id == 42)

@@ -76,9 +76,9 @@ struct SequenceView: View {
                             else { model.player.start(items: [item], app: model, podcast: false, atWord: word) }
                         }.id(detail.id).transition(.opacity)
                     } else { Text("Le texte n’est pas disponible pour ce passage.").foregroundStyle(Brand.secondary) }
-                    if !displayItem.isTweet && !detail.resume.isEmpty {
+                    if !displayItem.isTweet, let summary = detail.summary {
                         SequenceDisclosure(title: "Lire le résumé", icon: "text.alignleft") {
-                            Text(detail.resume).font(.body).lineSpacing(3)
+                            Text(summary).font(.body).lineSpacing(3)
                                 .fixedSize(horizontal: false, vertical: true)
                         }.accessibilityIdentifier("sequence-summary")
                     }
