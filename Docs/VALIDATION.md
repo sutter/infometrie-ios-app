@@ -1,5 +1,11 @@
 # Validation du portage
 
+## Suite complète après les corrections de grande taille — 8 octobre 2026
+
+Corrections : étiquettes de type qui débordaient de l’écran aux tailles d’accessibilité, ligne du nom sur la page passage, lecteur compact à ces tailles, bouton « Créer un suivi », étiquettes de type d’un suivi sur plusieurs lignes.
+
+- `build/FullSuite-AX.xcresult`, iPhone 17 Pro, iOS 26.4 : **20 tests réussis sur 22**, avec les deux échecs connus et leurs symptômes habituels. L’audit de `testLoginFormAndEmptyFilters` compte 4 contrastes et 7 textes tronqués sans élément exposé, comme avant le build 10 ; le nombre total d’assertions varie d’une suite à l’autre selon les cartes que l’audit voit sous la barre de navigation.
+
 ## Suite complète avant le build 10 — 8 octobre 2026
 
 Après la suite précédente : barre de navigation gris clair, résumé toujours ouvert, défilement Live au-delà des 50 premiers passages, tendance des suivis, pastilles de recherche par critère, état vide des périodes, accès à la fiche depuis le journal, jour cliquable dans la fiche, durée des interventions du jour choisi.
