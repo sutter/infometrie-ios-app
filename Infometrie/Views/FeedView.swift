@@ -149,24 +149,64 @@ struct FeedView: View {
         .accessibilityIdentifier("feed-filter-bar")
     }
 
-    /// The active search as one removable pill (the user's pick on 2026-10-08, option A of sheet 03): the former
-    /// name line, "Tout afficher" button and rule took three rows. Touching it shows everything again.
+    /// The active search as removable pills, one per person or party (the user's pick on 2026-10-08, option A of
+    /// sheet 03, then split per criterion): the former name line, "Tout afficher" button and rule took three rows, and
+    /// one pill for several criteria could only clear them all. From two criteria on, "Tout effacer" ends the row.
     private var selectionSummary: some View {
-        Button { Task { await model.apply(SearchFilters()) } } label: {
+        let persons = model.filters.persons.sorted()
+        let parties = model.filters.parties.sorted()
+        let several = persons.count + parties.count > 1
+        let pills = Group {
+            ForEach(persons, id: \.self) { name in
+                criterionPill(name, icon: "person", single: !several) { $0.persons.remove(name) }
+            }
+            ForEach(parties, id: \.self) { code in
+                let label = model.parties.first { $0.code == code }?.name ?? code
+                criterionPill(label, icon: "building.columns", single: !several) { $0.parties.remove(code) }
+            }
+            if several {
+                Button("Tout effacer") { Task { await model.apply(SearchFilters()) } }
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(Brand.tint)
+                    .buttonStyle(.plain).frame(minHeight: 44).padding(.horizontal, 4)
+                    .accessibilityIdentifier("clear-filters")
+            }
+        }
+        return Group {
+            if dynamicType.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) { pills }
+            } else {
+                // One row that scrolls and draws out to the screen edges, like the type chips above.
+                ScrollView(.horizontal) { HStack(spacing: 8) { pills } }
+                    .scrollIndicators(.hidden)
+                    .scrollClipDisabled()
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Recherche active")
+    }
+
+    /// One person or party; touching it removes that criterion only. Alone, it carries `clear-filters`.
+    private func criterionPill(_ title: String, icon: String, single: Bool, remove: @escaping (inout SearchFilters) -> Void) -> some View {
+        Button {
+            var filters = model.filters
+            remove(&filters)
+            Task { await model.apply(filters) }
+        } label: {
             HStack(spacing: 6) {
-                Text(model.filters.summary).font(.subheadline.weight(.medium)).foregroundStyle(Brand.ink)
+                Image(systemName: icon).font(.caption.weight(.semibold)).foregroundStyle(Brand.secondary)
+                Text(title).font(.subheadline.weight(.medium)).foregroundStyle(Brand.ink)
                     .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
                 Image(systemName: "xmark").font(.caption.weight(.bold)).foregroundStyle(Brand.secondary)
             }
-            .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 36)
+            .padding(.horizontal, 12).padding(.vertical, 8).frame(minHeight: 36)
             .background(Brand.surface, in: Capsule())
             .overlay(Capsule().strokeBorder(Brand.rule, lineWidth: 0.5))
             .frame(minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
-        .accessibilityLabel("Recherche : \(model.filters.summary)")
-        .accessibilityHint("Touchez pour tout afficher")
-        .accessibilityIdentifier("clear-filters")
+        .accessibilityLabel(title)
+        .accessibilityHint("Touchez pour retirer ce critère")
+        .accessibilityIdentifier(single ? "clear-filters" : "remove-criterion-\(title)")
     }
 
     private func seenToggle(_ item: FeedItem) -> some View {
