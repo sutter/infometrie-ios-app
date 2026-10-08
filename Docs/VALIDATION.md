@@ -1,5 +1,13 @@
 # Validation du portage
 
+## Suite complète avant le push du build 9 — 8 octobre 2026
+
+Après la palette de marque (vermillon, bleu canard, noir chaud), les tags ghost, le logo sans pictogramme et la barre de navigation sur mesure.
+
+- `build/FullSuite-20261008-0744.xcresult`, iPhone 17 Pro, iOS 26.4 : **18 tests réussis sur 20**. Restent les deux échecs connus, avec les mêmes erreurs : `testLoginFormAndEmptyFilters` (audit d’accessibilité : texte rogné et contraste sans élément exposé) et `testFullscreenTranscriptSeeksFromTextAtMaximumSize`.
+- La barre de navigation sur mesure (`MainTabBar`) remplace la barre système sans casser les parcours : ils la pilotent par les identifiants `navigation-*`, et l’audit du journal prend `main-tab-bar` comme bas de la zone de lecture.
+- `swift test` : 45 tests réussis.
+
 ## Suite complète avant le push du build 7 — 7 octobre 2026
 
 Après les couleurs par type, le « journal », la recherche, la nouvelle icône, la connexion et le style des actions en dégradé.
