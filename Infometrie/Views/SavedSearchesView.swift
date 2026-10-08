@@ -39,6 +39,10 @@ struct SavedSearchesView: View {
                             .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                         Text(search.filters.isEmpty ? "Toutes les personnalités" : search.filters.summary)
                             .font(.subheadline).foregroundStyle(Brand.secondary)
+                        if !archived {
+                            SuiviTrend(filters: search.filters, days: model.trends[search.filters])
+                                .accessibilityIdentifier("saved-trend-\(search.name)")
+                        }
                         // The kinds as tags, as in the feed.
                         HStack(spacing: 6) {
                             if search.filters.interventions { KindTag(kind: "intervention", label: "Interventions") }
@@ -95,6 +99,7 @@ struct SavedSearchesView: View {
                     .sharedBackgroundVisibility(.hidden)
             }
         }
+        .task(id: model.savedSearches.filter { !$0.isArchived }.map(\.filters)) { await model.loadTrends() }
         .alert("Supprimer ce suivi ?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button("Annuler", role: .cancel) { deleting = nil }
             Button("Supprimer", role: .destructive) { if let deleting { model.delete(deleting) }; deleting = nil }
@@ -110,5 +115,57 @@ struct SavedSearchesView: View {
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier(value ? "saved-archived" : "saved-active")
+    }
+}
+
+/// A suivi's last 7 complete days: its total, then one small bar per day, its kinds stacked in their colors,
+/// so the suivi that is stirring shows at a glance.
+private struct SuiviTrend: View {
+    let filters: SearchFilters
+    let days: [DayCount]?
+    @ScaledMetric(relativeTo: .footnote) private var barHeight = 32.0
+
+    private var placeholder: [DayCount] {
+        ParisDay.days(count: 7, before: Date()).enumerated().map { DayCount(day: $1, interventions: 2 + $0 % 3) }
+    }
+    private var shown: [DayCount] { days ?? placeholder }
+    private var kinds: [String] { days == nil ? ["intervention"] : filters.selectedKinds }
+    private var total: Int { shown.reduce(0) { $0 + $1.total(for: filters) } }
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(total.formatted()).font(.title3.weight(.bold).monospacedDigit()).foregroundStyle(Brand.ink)
+                Text(total == 1 ? "passage sur 7 jours" : "passages sur 7 jours").font(.footnote).foregroundStyle(Brand.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            bars
+        }
+        .skeleton(days == nil)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(days == nil ? "Chargement de la tendance" : "\(total) passages sur les 7 derniers jours")
+    }
+
+    private var bars: some View {
+        let peak = max(1, shown.map { $0.total(for: filters) }.max() ?? 1)
+        return HStack(alignment: .bottom, spacing: 4) {
+            ForEach(shown) { day in
+                // Bottom to top in the order of the type checkboxes, like the journal's chart.
+                VStack(spacing: 0) {
+                    ForEach(kinds.reversed(), id: \.self) { kind in
+                        let count = day.count(ofKind: kind)
+                        if count > 0 {
+                            Rectangle().fill(FeedItem.color(ofKind: kind))
+                                .frame(height: barHeight * CGFloat(count) / CGFloat(peak))
+                        }
+                    }
+                }
+                .frame(width: 8, height: barHeight, alignment: .bottom)
+                .background(alignment: .bottom) { Rectangle().fill(Brand.rule).frame(height: 1) }
+                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 2, topTrailingRadius: 2))
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

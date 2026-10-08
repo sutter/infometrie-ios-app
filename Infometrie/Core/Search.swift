@@ -1,6 +1,6 @@
 import Foundation
 
-struct SearchFilters: Codable, Equatable, Sendable {
+struct SearchFilters: Codable, Hashable, Sendable {
     var persons: Set<String> = []
     var parties: Set<String> = []
     var interventions = true

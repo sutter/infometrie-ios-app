@@ -20,6 +20,9 @@ final class AppModel {
     var filters = SearchFilters()
     var draft = SearchFilters()
     var savedSearches: [SavedSearch] = []
+    /// The last 7 complete Paris days of each active suivi's criteria, for its trend in Mes suivis.
+    private(set) var trends: [SearchFilters: [DayCount]] = [:]
+    private var trendsDay = ""
     /// Passages already opened or listened to, with the time they were seen (stored on the device).
     private(set) var seen: [Int64: Date] = [:]
     var isRefreshing = false
@@ -118,7 +121,7 @@ final class AppModel {
         for task in wordTimingTasks.values { task.cancel() }
         wordTimingTasks = [:]; wordTimings = [:]; wordTimingStates = [:]
         requestID = UUID(); player.stop()
-        items = []; persons = []; parties = []; savedSearches = []; seen = [:]
+        items = []; persons = []; parties = []; savedSearches = []; seen = [:]; trends = [:]; trendsDay = ""
         filters = SearchFilters(); draft = SearchFilters(); tab = .feed; isSearchPresented = false
         lastSeq = 0; lastRefresh = nil; feedError = nil; choicesError = nil
         resetHistory(); period = .live; selectedDay = nil; liveHasMore = false; liveGeneration = UUID()
@@ -299,6 +302,23 @@ final class AppModel {
         guard let index = savedSearches.firstIndex(where: { $0.id == search.id }) else { return }
         savedSearches[index].archivedAt = search.isArchived ? nil : Date()
         persistSearches()
+    }
+    /// Loads the missing trends of the active suivis, once per Paris day. A trend is optional: a failure leaves
+    /// the suivi without one, and the journal still reports an ended session.
+    func loadTrends(now: Date = Date()) async {
+        guard let token = session?.token else { return }
+        let today = ParisDay.string(now)
+        if trendsDay != today { trends = [:]; trendsDay = today }
+        let missing = Set(savedSearches.filter { !$0.isArchived }.map(\.filters)).filter { trends[$0] == nil }
+        guard !missing.isEmpty else { return }
+        await withTaskGroup(of: (SearchFilters, [DayCount]?).self) { group in
+            for criteria in missing {
+                group.addTask { [api] in (criteria, try? await api.days(token: token, filters: criteria, count: 7).days) }
+            }
+            for await (criteria, days) in group {
+                if let days, session?.token == token, trendsDay == today { trends[criteria] = days }
+            }
+        }
     }
     func delete(_ search: SavedSearch) { savedSearches.removeAll { $0.id == search.id }; persistSearches() }
     private func loadSearches() {
