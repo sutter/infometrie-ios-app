@@ -18,7 +18,7 @@ project, this one included, lives in the ecosystem memory.
 - The 409 body has `error` as a boolean. Only `max_devices` and `devices` are decoded. An incomplete body is an explicit error, never an invented quota.
 - No automatic retry: the user retries. The feed polls every 30 seconds while the app is active and signed in.
 - HLS `margin`: 10 for a sequence, 0 in the podcast, clamped to 0–60.
-- Some sequences carry the transcript in `resume` (seen on 2026-10-08): `SequenceDetail.summary` hides a summary that only repeats the verbatim, in full or cut short. Reported to the backend as a data issue.
+- Some sequences carry the transcript in `resume` (seen on 2026-10-08): `SequenceDetail.summary` hides a summary that only repeats the verbatim, in full or cut short. A data issue to report to the backend.
 - `/rest/v1/sequences/{id}/words` answering 404 or 502 means "no timings": the media plays with estimated highlighting.
 - API changes arrive unannounced. `scripts/check_api_contract.sh` compares the live Swagger with `Docs/API/openapi.yaml` (exit 1 on change, needs `oasdiff`); the `api-contract-sync` skill (`.claude/skills/`) explains the impact and updates the contract, its README and `SwaggerContractTests`.
 - The agent may call the API with `curl`. `/healthz` and `/readiness` need no auth. Private routes need a session of the real account. Never send a device replacement, never revoke a device, and never commit a token or credential: the repository is public.
