@@ -370,26 +370,54 @@ private struct FeedKindPicker: View {
     }
 }
 
-/// The journal's period: Live (the last 24 hours) or the last 7 or 30 complete days with their chart.
+/// The journal's period (Live, or the last 7 or 30 complete days with their day chart) and its display.
+/// Liste is the only display today: Graphique, a synthesis per person and per party, waits for an API, so it stays
+/// visible and explains in an alert, rather than on screen, that it is coming.
 private struct FeedViewOptions: View {
     @Environment(AppModel.self) private var model
+    @State private var comingSoon = false
 
     var body: some View {
-        HStack(spacing: 8) {
-            tab(.live, title: "Live", label: "Live, dernières 24 heures", id: "feed-period-live")
-            tab(.week, title: "7 j", label: "7 derniers jours", id: "feed-period-7")
-            tab(.month, title: "30 j", label: "30 derniers jours", id: "feed-period-30")
-            Spacer(minLength: 0)
+        // One row of underlined tabs on a hairline: period on the left, display as icons on the right,
+        // so every single choice in the header shares the same selection mark.
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) { periods; Spacer(minLength: 8); displays }
+            // At the largest text sizes the display icons move under the periods.
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 8) { periods }
+                HStack(spacing: 8) { displays }
+            }
         }
         // The tabs' inner padding would push "Live" past the checkboxes' edge.
         .padding(.leading, -4)
         .overlay(alignment: .bottom) { AppRule() }
         .sensoryFeedback(.selection, trigger: model.period)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Période")
+        .accessibilityLabel("Période et affichage")
+        .alert("Bientôt disponible", isPresented: $comingSoon) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("La synthèse graphique par personnalité et par parti arrivera avec une prochaine version du service.")
+        }
     }
 
-    private func tab(_ period: FeedPeriod, title: String, label: String, id: String) -> some View {
+    @ViewBuilder private var periods: some View {
+        period(.live, title: "Live", label: "Live, dernières 24 heures", id: "feed-period-live")
+        period(.week, title: "7 j", label: "7 derniers jours", id: "feed-period-7")
+        period(.month, title: "30 j", label: "30 derniers jours", id: "feed-period-30")
+    }
+
+    @ViewBuilder private var displays: some View {
+        AppTabButton(title: "Liste", selected: true, icon: "list.bullet", iconOnly: true, compact: true) { }
+            .accessibilityLabel("Liste")
+            .accessibilityIdentifier("feed-display-list")
+        AppTabButton(title: "Graphique", selected: false, icon: "chart.bar.xaxis", iconOnly: true, compact: true) { comingSoon = true }
+            .accessibilityLabel("Synthèse graphique")
+            .accessibilityValue("Bientôt disponible")
+            .accessibilityIdentifier("feed-display-chart")
+    }
+
+    private func period(_ period: FeedPeriod, title: String, label: String, id: String) -> some View {
         AppTabButton(title: title, selected: model.period == period, compact: true) {
             Task { await model.selectPeriod(period) }
         }

@@ -673,7 +673,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(bar(1).exists && bar(7).exists)
         XCTAssertFalse(bar(0).exists, "Aujourd’hui reste dans Live")
         XCTAssertFalse(bar(8).exists)
-        XCTAssertFalse(app.buttons["feed-display-chart"].exists, "Le choix Liste / Graphique est retiré")
+        XCTAssertTrue(app.buttons["feed-display-chart"].exists, "Graphique reste annoncé à côté des périodes")
         capture("periode-7-jours", app: app)
 
         // Touching a bar shows that day only; previous and next move one day; the cross restores the period.
