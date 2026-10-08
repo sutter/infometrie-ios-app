@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: IActus
   description: "Backend IActus (Boussole) : API mobile (journal politique temps réel), portail client web et administration."
-  version: "0.6.0-20260923140711"
+  version: "0.11.0-20261007171809"
 
 servers:
   - url: "/"
@@ -233,6 +233,119 @@ paths:
           description: "Media stream"
         404:
           description: "Unknown media"
+
+  /rest/v1/history:
+    get:
+      summary: "Journal history: the items of a window, newest first, paged on the item id (the app's infinite scroll over 24 hours, 7 or 31 days, or one day). Items have the same id as in /feed; their seq is 0 and must never feed last_seq."
+      operationId: "routeMobileHistory"
+      tags: [mobile]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string }
+          description: "Window start, inclusive: Unix milliseconds, RFC 3339 (encode the + of an offset as %2B, or use Z), or a YYYY-MM-DD Paris day (its midnight). Default: to minus 24 hours."
+        - name: to
+          in: query
+          schema: { type: string }
+          description: "Window end, exclusive, same formats; a YYYY-MM-DD day is inclusive (the next midnight). Default: now. The window spans at most 31 Paris days."
+        - name: before_id
+          in: query
+          schema: { type: integer }
+          description: "Only items with a lower id: the id of the last item of the previous page."
+        - name: persons
+          in: query
+          schema: { type: string }
+          description: "Comma-separated person names"
+        - name: parties
+          in: query
+          schema: { type: string }
+          description: "Comma-separated party labels"
+        - name: kinds
+          in: query
+          schema: { type: string }
+          description: "Comma-separated kinds to keep: intervention, citation, tweet. Every kind when absent."
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+      responses:
+        200:
+          description: "A page of items and whether older ones remain"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { type: object } }
+                  has_more: { type: boolean }
+        400:
+          description: "Unreadable bound, window over 31 days, unknown kind, or limit out of range"
+        503:
+          description: "History unavailable (only the live window can be served)"
+
+  /rest/v1/days:
+    get:
+      summary: "Day frise: the items of the last complete Paris days (yesterday last, today left out: the 7 and 31 days are fixed, they do not slide with the clock), oldest first, zero days included. Every kind is counted, each in its column: the app stacks the kinds it shows."
+      operationId: "routeMobileDays"
+      tags: [mobile]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: days
+          in: query
+          schema: { type: integer, default: 7, minimum: 1, maximum: 31 }
+        - name: persons
+          in: query
+          schema: { type: string }
+          description: "Comma-separated person names"
+        - name: parties
+          in: query
+          schema: { type: string }
+          description: "Comma-separated party labels"
+      responses:
+        200:
+          description: "One entry per day"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        day: { type: string, description: "YYYY-MM-DD, Paris" }
+                        interventions: { type: integer }
+                        citations: { type: integer }
+                        tweets: { type: integer }
+                        intervention_sec: { type: integer, description: "Seconds of the interventions" }
+        503:
+          description: "History unavailable"
+
+  /rest/v1/profile:
+    get:
+      summary: "Activity of a person of the panel over the last complete days (as /days, today left out): totals, one entry per Paris day and the 5 channels the person intervened the longest on. intervention_sec sums the interventions of the journal, not the official speaking time."
+      operationId: "routeMobileProfile"
+      tags: [mobile]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: person
+          in: query
+          required: true
+          schema: { type: string }
+          description: "Person name, as /persons lists it"
+        - name: days
+          in: query
+          schema: { type: integer, default: 7, minimum: 1, maximum: 31 }
+      responses:
+        200:
+          description: "Profile: person, totals, days, top_channels"
+        400:
+          description: "Missing person or days out of range"
+        404:
+          description: "Unknown person"
+        503:
+          description: "History unavailable"
 
 components:
   securitySchemes:

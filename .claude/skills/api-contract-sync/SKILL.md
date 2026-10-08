@@ -17,7 +17,7 @@ Run `scripts/check_api_contract.sh` from the repository root.
 
 ## 2. Explain the impact
 
-Read the changed paths in `build/api-contract/specs.yaml`: parameters, request bodies, descriptions. The Swagger does not describe response bodies, so a diff never shows a JSON change.
+Read the changed paths in `build/api-contract/specs.yaml`: parameters, request bodies, descriptions. The Swagger describes few response bodies (`/days` since 0.11.0), so most JSON changes never show in a diff.
 
 For each change, say what it means for the app:
 

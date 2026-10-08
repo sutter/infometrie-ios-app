@@ -1,8 +1,8 @@
 # Contrat API utilisé par l’application iOS
 
-Source officielle : [Swagger HLS Test](https://hls-test.yacast.fr/swagger/), [spécification YAML](https://hls-test.yacast.fr/swagger/specs.yaml), actualisée le 23 septembre 2026.
+Source officielle : [Swagger HLS Test](https://hls-test.yacast.fr/swagger/), [spécification YAML](https://hls-test.yacast.fr/swagger/specs.yaml), actualisée le 8 octobre 2026.
 
-Copie locale : [openapi.yaml](openapi.yaml). Version annoncée : `0.6.0-20260923140711`. SHA-256 : `59685aa7cc86d373ff85d44312c05e57d0ff38f28c1cc022b7d4fcc6b87da42f`.
+Copie locale : [openapi.yaml](openapi.yaml). Version annoncée : `0.11.0-20261007171809`. SHA-256 : `e28187b7b5945cf8cff688dd6f675fd42745dc863f6718dc1fba8642b376f38c`. Pour comparer avec la version en ligne : `scripts/check_api_contract.sh`.
 
 ## Routes branchées
 
@@ -23,6 +23,18 @@ Les routes privées utilisent le JWT client dans `Authorization: Bearer …`. La
 Vérifié le 22 septembre 2026 avec le compte fourni : HTTP 409 renvoie `error: true` (booléen), `reason: "device quota reached"`, `max_devices` (entier) et `devices` (liste d’appareils). Le Swagger ne détaille pas ce corps. Le modèle iOS décode uniquement les champs utiles au remplacement et ignore `error` : l’ancien type `String` faisait échouer tout le décodage, puis affichait à tort zéro appareil et une liste vide. Une réponse incomplète produit désormais une erreur explicite, sans inventer de quota. Aucun remplacement n’est envoyé avant confirmation.
 
 La spécification 0.5.0 avait été relue le 22 septembre sans changement. La comparaison du 23 septembre avec 0.6.0 ajoute `kinds` et décrit `tweet`, `url` et `channel_key`, sans nouvelle route.
+
+### Routes ajoutées en 0.11.0, pas encore branchées
+
+La comparaison du 8 octobre 2026 avec 0.11.0 ajoute trois routes, sans modifier celles que l’application appelle. Elles renvoient HTTP 503 quand l’historique est indisponible.
+
+| Route | Contenu annoncé | Usage possible |
+| --- | --- | --- |
+| `GET /rest/v1/history` | Passages d’une fenêtre (`from` / `to`, au plus 31 jours de Paris), du plus récent au plus ancien, paginés par `before_id`, filtres `persons` / `parties` / `kinds`, `limit` 1–200 (50 par défaut). Réponse `items` et `has_more`. Les passages gardent leur `id` du fil, mais leur `seq` vaut 0 et ne doit jamais alimenter `last_seq` | Périodes 7 j et 30 j du journal, défilement infini |
+| `GET /rest/v1/days` | Comptes par jour complet de Paris (aujourd’hui exclu), du plus ancien au plus récent : `interventions`, `citations`, `tweets`, `intervention_sec`. `days` de 1 à 31 (7 par défaut), filtres `persons` / `parties` | Vue Graphique, par jour et par type |
+| `GET /rest/v1/profile` | Activité d’une personnalité (`person` obligatoire) sur les derniers jours complets : totaux, un point par jour, ses cinq chaînes principales. `intervention_sec` additionne les interventions du journal, pas le temps de parole officiel | Aucune fonction prévue pour l’instant |
+
+Le Swagger décrit le corps de `/days` champ par champ ; ceux de `/history` (`items` sans schéma) et de `/profile` restent à vérifier sur le serveur réel avant tout branchement.
 
 ## Publications X, filtres et logos — API 0.6
 
@@ -56,5 +68,5 @@ Repli explicite vers l’estimation lorsque les timings sont indisponibles : HTT
 - `/healthz` et `/readiness` répondent HTTP 200 ; `/rest/v1/sequences/1/words` répond HTTP 401 sans authentification.
 - Le compte fourni a permis de vérifier la réponse distante HTTP 409. L’appel de diagnostic n’a remplacé ni révoqué d’appareil. Les identifiants et jetons ne sont pas conservés dans ce dépôt.
 - Un contrôle natif ultérieur a confirmé la présence de la session réelle attendue et sa restauration après relance du simulateur. Le compte était déjà connecté ; aucun transfert supplémentaire n’a été exécuté.
-- Le Swagger ne décrit pas les schémas JSON de réponse du fil, des référentiels ou du détail de séquence. Les modèles issus de l’APK ont été complétés pour l’API 0.6. Le contrôle réel des publications décrit ci-dessus confirme ce parcours, sans constituer une validation exhaustive des réponses et des flux privés.
+- Le Swagger ne décrit pas les schémas JSON de réponse du fil, des référentiels ou du détail de séquence (seul `/days`, ajouté en 0.11.0, a un schéma détaillé). Les modèles issus de l’APK ont été complétés pour l’API 0.6. Le contrôle réel des publications décrit ci-dessus confirme ce parcours, sans constituer une validation exhaustive des réponses et des flux privés.
 - La fixture UI précise est activée uniquement en compilation Debug avec `--uitesting --signed-in --precise-word-timings`. Elle utilise des temps non uniformes et des silences sur l’audio instrumental local : elle valide les positions, pas la qualité de reconnaissance vocale du STT distant.
