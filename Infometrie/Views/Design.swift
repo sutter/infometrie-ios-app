@@ -37,10 +37,6 @@ enum Brand {
     static let canard = color(light: 0x356F73, dark: 0x6FAEB2)
     /// Bleu canard under white text, such as the account avatar: the same in both themes (5.7:1).
     static let canardFill = color(light: 0x356F73, dark: 0x356F73)
-    /// The iPhone's main navigation: a noir chaud capsule (gris chaud in dark, so it stands off the page), its active
-    /// destination in vermillon, lighter in dark for 4.5:1 on the bar.
-    static let dock = color(light: 0x121110, dark: 0x2A2725)
-    static let dockActive = color(light: 0xF05A49, dark: 0xFF7A66)
 
     /// Color tells the passage kind at a glance: vermillon interventions, bleu canard citations, noir chaud for X.
     /// `intervention` and `citation` draw the bars and the tags' light tint (3:1 or more); `…Label` the tags' small

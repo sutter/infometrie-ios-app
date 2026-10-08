@@ -119,10 +119,13 @@ private struct MainTabBarDock: ViewModifier {
     }
 }
 
-/// The iPhone's main navigation: a noir chaud capsule docked at the bottom, the active destination in vermillon
-/// on a lighter pill (the user's pick on 2026-10-07). Drawn by hand: the system tab bar takes no fill color.
+/// The iPhone's main navigation: a gris clair capsule docked at the bottom, the active destination in ink on a raised
+/// pill, like the S / M / L control (the user's pick on 2026-10-08). No kind color: noir chaud is X and vermillon the
+/// interventions, so the former noir chaud bar with its vermillon tab read as content. Drawn by hand: the system tab
+/// bar takes no fill color.
 private struct MainTabBar: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 0) {
@@ -131,8 +134,9 @@ private struct MainTabBar: View {
             item("Compte", symbol: "person", tab: .account, identifier: "navigation-account")
         }
         .padding(4)
-        .background(Brand.dock, in: Capsule())
-        .shadow(color: .black.opacity(0.25), radius: 14, y: 6)
+        .background(Brand.surface, in: Capsule())
+        .overlay(Capsule().strokeBorder(Brand.rule.opacity(0.6), lineWidth: 0.5))
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.08), radius: 14, y: 5)
         // Like the system tab bar, the labels stop growing at the largest standard size; a long press on an item
         // shows it enlarged at accessibility sizes.
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
@@ -151,9 +155,14 @@ private struct MainTabBar: View {
                 Image(systemName: selected ? "\(symbol).fill" : symbol).font(.title3.weight(.medium))
                 Text(title).font(.caption2.weight(selected ? .semibold : .medium)).lineLimit(1)
             }
-            .foregroundStyle(selected ? Brand.dockActive : Color.white.opacity(0.72))
+            .foregroundStyle(selected ? Brand.ink : Brand.secondaryOnSurface)
             .frame(width: 92).frame(minHeight: 54)
-            .background { if selected { Capsule().fill(Color.white.opacity(0.1)) } }
+            .background {
+                if selected {
+                    Capsule().fill(Brand.raised)
+                        .shadow(color: .black.opacity(colorScheme == .dark ? 0.3 : 0.08), radius: 3, y: 1)
+                }
+            }
             .contentShape(Capsule())
         }
         .buttonStyle(PressableStyle())
