@@ -11,7 +11,7 @@ What this project is, the problem it solves, and its domain language. The non-de
 
 - Port of the Android app `fr.yacast.iactus` 0.4.0. No Android source was provided: the contract was rebuilt from the decompiled APK (`Docs/APK-ANALYSIS.md`), then aligned on the official Swagger (`Docs/API/README.md`).
 - Read-only by design, like the APK: no export, copy or share of a sequence. Alerts and the daily digest are announced "coming soon" in the APK and are not shown as working.
-- Asked by the client on 2026-10-05, waiting for an API: feed periods 7 j and 30 j beside Live (the current 24 h), and a chart synthesis beside the list, counting passages per person, per party and per kind. The feed shows these choices with "Bientôt disponible" until the API exists; Swagger 0.11.0 (2026-10-07) adds the routes, not wired yet: `/history` for the periods (the server window is 31 days, not 30) and `/days` for per-day counts by kind; no route breaks counts down by person or party (`/profile` covers one person).
+- Asked by the client on 2026-10-05: feed periods 7 j and 30 j beside Live (the current 24 h), and a chart synthesis counting passages per person, per party and per kind. Wired on 2026-10-08 with Swagger 0.11.0: 7 j and 30 j cover the last complete Paris days up to yesterday (`/history`), with a per-day chart by kind that selects a day (`/days`). Still waiting for an API: counts per person and per party (`/profile` covers one person only).
 
 ## Domain language
 

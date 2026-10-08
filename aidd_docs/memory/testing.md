@@ -31,6 +31,7 @@ Run only the area a change touches; the first test of each row is the broadest.
 | Area | Tests |
 | ---- | ----- |
 | Login, session, device quota | `testLoginCallsAPIStoresSessionAndRestoresAfterRelaunch`, `testLoginDeviceQuotaRequiresConfirmationThenAuthenticates`, `testLoginDisplaysAPIErrorsAndAllowsRetry`, `testLoginFormAndEmptyFilters` |
+| Feed periods, day chart | `testFeedPeriodsChartSelectsDay` |
 | Feed kinds, Publications X | `testFeedKindSelectionSyncNavigationAndPodcast`, `testPublicationsUseServerKindsResetCursorAndHaveNoAudio`, `testFeedKindsDarkAppearanceAndMaximumText` |
 | Filters | `testFilterSearchMultipleSelectionIntersectionAndReset`, `testFiltersDarkAppearanceAndMaximumText` |
 | Main navigation, iPad sidebar | `testMainNavigationPreservesFeedSelection` |
@@ -57,6 +58,7 @@ xcrun simctl launch --terminate-running-process booted fr.yacast.infometrie.ios
 - To see a screen the agent cannot tap (a pushed page, a sheet, a theme change), write a temporary XCUITest, never committed, that saves `app.screenshot()` PNGs to the scratchpad; run it with `-only-testing`, stop `xcodebuild` as soon as the log shows `Test Case … passed` or `failed` (it may hang finalizing), then delete the file and relaunch the app for the user.
 - Client screenshots with real data: run the same kind of temporary test without `--uitesting` on simulators where the user signed in (launch with `-appearance light|dark` only), with the status bar set first (`xcrun simctl status_bar <udid> override --time "9:41" …`, cleared afterwards). The real feed names real politicians: keep these captures out of the repository, which is public. `XCUIScreen.main.screenshot()` on the iPhone 13 mini is 1124 × 2436 while a `simctl` capture and its screen mask are 1080 × 2340: scale a capture to the mask before framing it in a device. A run that is interrupted can leave temporary token patches in `Infometrie/Views`: check `git status` and restore before the next run.
 - Motion glitches never show on a screenshot. Record the simulator (`xcrun simctl io <udid> recordVideo --codec=h264 --force <file>.mp4`, stopped with SIGINT) while a temporary UI test, never committed, drives the journey. Then extract frames with `ffmpeg -i <file>.mp4 -vf "select='between(t,A,B)',crop=…,drawtext=text='%{pts\\:hms}'" -vsync vfr`: `-ss` lands on the wrong frames of these variable-frame-rate recordings, and scene detection misses thin changes such as an underline.
+- The test server's history holds 8 passages a day over the last 7 complete Paris days (56, two pages) and `index % 4` a day before, 89 over 30 days; ids grow with time from 1000.
 - The test server's feed holds seven passages, so a bug tied to scrolling a long list may not reproduce there. Ask the user for a screen recording of the real feed and read it frame by frame the same way.
 
 ## Run

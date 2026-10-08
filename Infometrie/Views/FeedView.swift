@@ -17,15 +17,16 @@ struct FeedView: View {
                 Section {
                     // Period and display scroll with the list: only the types stay pinned, so the cards get the room.
                     FeedViewOptions().padding(.top, 8)
+                    if !model.period.isLive { DayChart().padding(.top, 16) }
                     statusRow.padding(.top, 16).padding(.bottom, 8)
                     if hasAudienceFilters { selectionSummary.padding(.vertical, 12) }
                     if let error = model.feedError {
-                        ErrorNotice(message: error) { Task { await model.refresh(reset: true) } }
+                        ErrorNotice(message: error) { Task { await model.reload() } }
                             .padding(.vertical, 12)
                     }
                     // The cards change without animation: the user asked for a still list.
                     Group {
-                        if model.isRefreshing && model.items.isEmpty {
+                        if model.isLoadingPassages && model.visibleItems.isEmpty {
                             FeedSkeleton().padding(.vertical, 5)
                         } else if !model.filters.hasKinds {
                             // Every type unchecked: say why the journal is empty and offer to fill it again.
@@ -36,7 +37,7 @@ struct FeedView: View {
                             }
                         } else if model.visibleItems.isEmpty && model.feedError == nil {
                             VStack(alignment: .leading, spacing: 12) {
-                                AppEmptyState(title: "Aucun passage pour le moment", icon: "text.magnifyingglass", message: "Aucun résultat sur les dernières 24 heures avec ces critères.")
+                                AppEmptyState(title: emptyTitle, icon: "text.magnifyingglass", message: emptyMessage)
                                 Button("Modifier la recherche") { model.openSearch(model.filters) }
                                     .buttonStyle(ActionButtonStyle())
                             }
@@ -52,6 +53,13 @@ struct FeedView: View {
                                 .accessibilityAction(named: model.isSeen(item) ? "Marquer comme non vu" : "Marquer comme vu") {
                                     model.toggleSeen(item)
                                 }
+                                // 7 j and 30 j page through the history: the last card asks for the next page.
+                                .onAppear {
+                                    if item.id == model.visibleItems.last?.id { Task { await model.loadMoreHistory() } }
+                                }
+                            }
+                            if model.isLoadingMoreHistory {
+                                FeedSkeleton(label: "Chargement de la suite").padding(.vertical, 5)
                             }
                         }
                     }
@@ -63,13 +71,9 @@ struct FeedView: View {
             .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .scrollPosition($scrollPosition)
-        .onChange(of: model.filters) {
-            // Jump, never animate: pinned headers do not follow an animated programmatic scroll,
-            // which leaves a gap under the type row and makes the heading pop in at the end.
-            var jump = Transaction(); jump.disablesAnimations = true
-            withTransaction(jump) { scrollPosition.scrollTo(edge: .top) }
-        }
-        .refreshable { await model.refresh(reset: true) }
+        .onChange(of: model.filters) { jumpToTop() }
+        .onChange(of: model.period) { jumpToTop() }
+        .refreshable { await model.reload() }
         .modifier(FeedScrollOverflow(overTabBar: !usesWideLayout))
         // No scroll edge effect: the pinned type row already covers the cards under the bar, and on
         // iOS 27 the hard effect drew a hairline and a different tint under the bar at rest.
@@ -86,6 +90,25 @@ struct FeedView: View {
                 ToolbarItem(placement: .topBarTrailing) { filtersButton(scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
             }
+        }
+    }
+
+    /// Jump, never animate: pinned headers do not follow an animated programmatic scroll,
+    /// which leaves a gap under the type row and makes the heading pop in at the end.
+    private func jumpToTop() {
+        var jump = Transaction(); jump.disablesAnimations = true
+        withTransaction(jump) { scrollPosition.scrollTo(edge: .top) }
+    }
+
+    private var emptyTitle: String {
+        model.period.isLive ? "Aucun passage pour le moment" : model.selectedDay == nil ? "Aucun passage sur la période" : "Aucun passage ce jour-là"
+    }
+    private var emptyMessage: String {
+        if model.selectedDay != nil { return "Aucun résultat ce jour-là avec ces critères. Choisissez un autre jour sur le graphique." }
+        return switch model.period {
+        case .live: "Aucun résultat sur les dernières 24 heures avec ces critères."
+        case .week: "Aucun résultat sur les 7 derniers jours avec ces critères."
+        case .month: "Aucun résultat sur les 30 derniers jours avec ces critères."
         }
     }
 
@@ -180,14 +203,22 @@ private struct FeedStatus: View {
     var body: some View {
         // Re-read the age every 15 seconds; the feed itself refreshes every 30.
         TimelineView(.periodic(from: .now, by: 15)) { context in
-            let count = model.visibleItems.count
+            let count = total
             // One text, so that at accessibility sizes the age wraps under the count rather than beside it.
+            // 7 j and 30 j end yesterday: their age says nothing, only Live shows it.
             (Text(count <= 1 ? "\(count) résultat" : "\(count) résultats").fontWeight(.semibold).foregroundStyle(Brand.ink)
-                + Text(model.lastRefresh.map { " · \(Self.age(of: $0, at: context.date))" } ?? "").foregroundStyle(Brand.secondary))
+                + Text(model.period.isLive ? model.lastRefresh.map { " · \(Self.age(of: $0, at: context.date))" } ?? "" : "").foregroundStyle(Brand.secondary))
                 .font(.footnote.monospacedDigit())
                 .fixedSize(horizontal: singleLine, vertical: true)
                 .accessibilityIdentifier("feed-status")
         }
+    }
+
+    /// Live counts its list; 7 j and 30 j count the period or the chosen day from `/days`, beyond the loaded pages.
+    private var total: Int {
+        guard !model.period.isLive, !model.dayCounts.isEmpty else { return model.visibleItems.count }
+        let days = model.dayCounts.filter { model.selectedDay == nil || $0.day == model.selectedDay }
+        return days.reduce(0) { $0 + $1.total(for: model.filters) }
     }
 
     /// The age of the last refresh, short enough to keep the line whole beside "Tout écouter".
@@ -339,53 +370,30 @@ private struct FeedKindPicker: View {
     }
 }
 
-/// Period and display of the feed. Only Live and Liste work today: 7 j, 30 j and the chart synthesis
-/// wait for an API, so they stay visible and explain in an alert, rather than on screen, that they are coming.
+/// The journal's period: Live (the last 24 hours) or the last 7 or 30 complete days with their chart.
 private struct FeedViewOptions: View {
-    @State private var comingSoon: String?
+    @Environment(AppModel.self) private var model
 
     var body: some View {
-        // One row of underlined tabs on a hairline: period on the left, display as icons on the right,
-        // so every single choice in the header shares the same selection mark.
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 8) { periods; Spacer(minLength: 8); displays }
-            // At the largest text sizes the display icons move under the periods.
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 8) { periods }
-                HStack(spacing: 8) { displays }
-            }
+        HStack(spacing: 8) {
+            tab(.live, title: "Live", label: "Live, dernières 24 heures", id: "feed-period-live")
+            tab(.week, title: "7 j", label: "7 derniers jours", id: "feed-period-7")
+            tab(.month, title: "30 j", label: "30 derniers jours", id: "feed-period-30")
+            Spacer(minLength: 0)
         }
         // The tabs' inner padding would push "Live" past the checkboxes' edge.
         .padding(.leading, -4)
         .overlay(alignment: .bottom) { AppRule() }
+        .sensoryFeedback(.selection, trigger: model.period)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Période et affichage")
-        .alert("Bientôt disponible", isPresented: Binding(get: { comingSoon != nil }, set: { if !$0 { comingSoon = nil } })) {
-            Button("OK", role: .cancel) { comingSoon = nil }
-        } message: { Text(comingSoon ?? "") }
+        .accessibilityLabel("Période")
     }
 
-    @ViewBuilder private var periods: some View {
-        tab("Live", label: "Live, dernières 24 heures", id: "feed-period-live", selected: true)
-        tab("7 j", label: "7 jours", id: "feed-period-7", message: Self.periods)
-        tab("30 j", label: "30 jours", id: "feed-period-30", message: Self.periods)
-    }
-
-    @ViewBuilder private var displays: some View {
-        tab("Liste", icon: "list.bullet", label: "Liste", id: "feed-display-list", selected: true)
-        tab("Graphique", icon: "chart.bar.xaxis", label: "Synthèse graphique", id: "feed-display-chart", message: Self.chart)
-    }
-
-    private static let periods = "Les périodes de 7 et 30 jours arriveront avec une prochaine version du service."
-    private static let chart = "La synthèse graphique arrivera avec une prochaine version du service."
-
-    /// A tab that works when `message` is nil; otherwise it is coming soon and says so when tapped.
-    private func tab(_ title: String, icon: String? = nil, label: String, id: String, selected: Bool = false, message: String? = nil) -> some View {
-        AppTabButton(title: title, selected: selected, icon: icon, iconOnly: icon != nil, compact: true) {
-            if let message { comingSoon = message }
+    private func tab(_ period: FeedPeriod, title: String, label: String, id: String) -> some View {
+        AppTabButton(title: title, selected: model.period == period, compact: true) {
+            Task { await model.selectPeriod(period) }
         }
         .accessibilityLabel(label)
-        .accessibilityValue(message == nil ? "" : "Bientôt disponible")
         .accessibilityIdentifier(id)
     }
 }

@@ -9,6 +9,8 @@ Copie locale : [openapi.yaml](openapi.yaml). Version annoncée : `0.11.0-2026100
 | Route | Utilisation iOS |
 | --- | --- |
 | `POST /rest/v1/auth/login` | Connexion JSON, succès HTTP 201, identifiant stable de l’installation, remplacement d’appareil après confirmation |
+| `GET /rest/v1/history` | Périodes 7 j et 30 j : jours complets de Paris jusqu’à hier (`from` / `to`), ou un seul jour choisi sur le graphique ; pages de 50 par `before_id`. `seq` vaut 0 et ne touche jamais le curseur Live |
+| `GET /rest/v1/days` | Graphique par jour de 7 j et 30 j, empilant les types cochés ; total de la période ou du jour |
 | `GET /rest/v1/feed` | Fil, filtres `persons`/`parties`/`kinds` séparés par virgules, limite 50, curseur `last_seq` renvoyé comme `since_seq` au prochain rafraîchissement |
 | `GET /rest/v1/persons` | Sélecteur de personnalités |
 | `GET /rest/v1/parties` | Sélecteur de partis |
@@ -24,7 +26,7 @@ Vérifié le 22 septembre 2026 avec le compte fourni : HTTP 409 renvoie `error: 
 
 La spécification 0.5.0 avait été relue le 22 septembre sans changement. La comparaison du 23 septembre avec 0.6.0 ajoute `kinds` et décrit `tweet`, `url` et `channel_key`, sans nouvelle route.
 
-### Routes ajoutées en 0.11.0, pas encore branchées
+### Routes ajoutées en 0.11.0
 
 La comparaison du 8 octobre 2026 avec 0.11.0 ajoute trois routes, sans modifier celles que l’application appelle. Elles renvoient HTTP 503 quand l’historique est indisponible.
 
@@ -32,7 +34,7 @@ La comparaison du 8 octobre 2026 avec 0.11.0 ajoute trois routes, sans modifier 
 | --- | --- | --- |
 | `GET /rest/v1/history` | Passages d’une fenêtre (`from` / `to`, au plus 31 jours de Paris), du plus récent au plus ancien, paginés par `before_id`, filtres `persons` / `parties` / `kinds`, `limit` 1–200 (50 par défaut). Réponse `items` et `has_more`. Les passages gardent leur `id` du fil, mais leur `seq` vaut 0 et ne doit jamais alimenter `last_seq` | Périodes 7 j et 30 j du journal, défilement infini |
 | `GET /rest/v1/days` | Comptes par jour complet de Paris (aujourd’hui exclu), du plus ancien au plus récent : `interventions`, `citations`, `tweets`, `intervention_sec`. `days` de 1 à 31 (7 par défaut), filtres `persons` / `parties` | Vue Graphique, par jour et par type |
-| `GET /rest/v1/profile` | Activité d’une personnalité (`person` obligatoire) sur les derniers jours complets : totaux, un point par jour, ses cinq chaînes principales. `intervention_sec` additionne les interventions du journal, pas le temps de parole officiel | Aucune fonction prévue pour l’instant |
+| `GET /rest/v1/profile` | Activité d’une personnalité (`person` obligatoire) sur les derniers jours complets : totaux, un point par jour, ses cinq chaînes principales. `intervention_sec` additionne les interventions du journal, pas le temps de parole officiel | Non branchée : aucune fonction prévue pour l’instant |
 
 Le Swagger décrit le corps de `/days` champ par champ ; ceux de `/history` (`items` sans schéma) et de `/profile` restent à vérifier sur le serveur réel avant tout branchement.
 
