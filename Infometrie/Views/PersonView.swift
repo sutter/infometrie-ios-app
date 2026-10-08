@@ -106,6 +106,7 @@ struct PersonView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("person-total-\(kind)")
     }
 
     private func load() async {

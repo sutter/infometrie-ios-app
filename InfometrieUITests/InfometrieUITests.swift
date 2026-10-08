@@ -727,6 +727,41 @@ final class InfometrieUITests: XCTestCase {
     }
 
     @MainActor
+    func testPersonProfileFromPassageShowsActivityAndFiltersTheJournal() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--signed-in", "--reset-searches", "-appearance", "light"]
+        app.launch()
+        XCTAssertTrue(results("7 résultats", in: app).waitForExistence(timeout: 10))
+        app.buttons["feed-item-1"].tap()
+        let person = app.buttons["sequence-person"]
+        XCTAssertTrue(person.waitForExistence(timeout: 10), "Le nom d’une personnalité du panel ouvre sa fiche")
+        person.tap()
+        XCTAssertTrue(app.navigationBars["Personnalité"].waitForExistence(timeout: 5))
+
+        // 7 j: the fictional history holds 10 interventions, 4 citations and 5 posts of Camille Martin.
+        let interventions = app.descendants(matching: .any)["person-total-intervention"]
+        XCTAssertTrue(interventions.waitForExistence(timeout: 10))
+        wait(interventions, key: "label", equals: "10, interventions")
+        XCTAssertEqual(app.descendants(matching: .any)["person-total-citation"].label, "4, citations")
+        XCTAssertEqual(app.descendants(matching: .any)["person-total-tweet"].label, "5, publications X")
+        XCTAssertEqual(app.staticTexts["person-duration"].label, "3 min d’interventions")
+        XCTAssertTrue(app.descendants(matching: .any)["person-day-chart"].exists)
+        capture("fiche-personnalite-7-jours", app: app)
+
+        app.buttons["person-period-30"].tap()
+        wait(interventions, key: "label", equals: "13, interventions")
+
+        // The shortcut filters the journal on this person and returns to its root.
+        let show = app.buttons["person-show-passages"]
+        reveal(show, in: app, down: true)
+        show.tap()
+        XCTAssertTrue(results("3 résultats", in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["clear-filters"].exists)
+        XCTAssertFalse(app.navigationBars["Personnalité"].exists)
+        XCTAssertFalse(app.navigationBars["Séquence"].exists)
+    }
+
+    @MainActor
     func testFeedKindsDarkAppearanceAndMaximumText() {
         let app = XCUIApplication()
         for largeText in [false, true] {

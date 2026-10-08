@@ -32,6 +32,7 @@ Run only the area a change touches; the first test of each row is the broadest.
 | ---- | ----- |
 | Login, session, device quota | `testLoginCallsAPIStoresSessionAndRestoresAfterRelaunch`, `testLoginDeviceQuotaRequiresConfirmationThenAuthenticates`, `testLoginDisplaysAPIErrorsAndAllowsRetry`, `testLoginFormAndEmptyFilters` |
 | Feed periods, day chart | `testFeedPeriodsChartSelectsDay` |
+| Person profile | `testPersonProfileFromPassageShowsActivityAndFiltersTheJournal` |
 | Feed kinds, Publications X | `testFeedKindSelectionSyncNavigationAndPodcast`, `testPublicationsUseServerKindsResetCursorAndHaveNoAudio`, `testFeedKindsDarkAppearanceAndMaximumText` |
 | Filters | `testFilterSearchMultipleSelectionIntersectionAndReset`, `testFiltersDarkAppearanceAndMaximumText` |
 | Main navigation, iPad sidebar | `testMainNavigationPreservesFeedSelection` |

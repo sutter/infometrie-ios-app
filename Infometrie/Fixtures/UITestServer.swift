@@ -86,6 +86,7 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
         case ("feed", 1): respondToFeed(url)
         case ("history", 1): respondToHistory(url)
         case ("days", 1): respondToDays(url)
+        case ("profile", 1): respondToProfile(url)
         case ("persons", 1): respond(200, json(FixtureContent.persons))
         case ("parties", 1): respond(200, json(FixtureContent.parties))
         case ("sequences", 2):
@@ -160,6 +161,33 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
                             interventionSec: passages.filter { $0.kind == "intervention" }.reduce(0) { $0 + $1.durationSec })
         }
         respond(200, ["days": json(days)])
+    }
+
+    /// A person's history totals, days and top channels, shaped like the real answer.
+    private func respondToProfile(_ url: URL) {
+        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        let count = query.first { $0.name == "days" }?.value.flatMap { Int($0) } ?? 7
+        guard let name = query.first(where: { $0.name == "person" })?.value, !name.isEmpty, (1...31).contains(count) else { respond(400); return }
+        guard let person = FixtureContent.persons.first(where: { $0.name == name }) else {
+            respond(404, ["error": true, "reason": "Unknown person"]); return
+        }
+        let days = ParisDay.days(count: count, before: Date())
+        let items = FixtureContent.history.filter { $0.person == name && $0.date.map(ParisDay.string).map(days.contains) == true }
+        let interventions = items.filter { $0.kind == "intervention" }
+        func counts(_ passages: [FeedItem]) -> [String: Any] {
+            let spoken = passages.filter { $0.kind == "intervention" }
+            return ["interventions": spoken.count, "citations": passages.filter(\.isCitation).count,
+                    "tweets": passages.filter(\.isTweet).count, "intervention_sec": spoken.reduce(0) { $0 + $1.durationSec }]
+        }
+        let perDay = days.map { day in
+            counts(items.filter { $0.date.map(ParisDay.string) == day }).merging(["day": day]) { first, _ in first }
+        }
+        let channels = Dictionary(grouping: interventions, by: \.channel).map { channel, passages in
+            ["channel": channel, "channel_key": passages.first?.channelKey ?? "", "interventions": passages.count,
+             "intervention_sec": passages.reduce(0) { $0 + $1.durationSec }] as [String: Any]
+        }
+        respond(200, ["person": ["name": person.name, "role": person.role, "party": person.party],
+                      "totals": counts(items), "days": perDay, "top_channels": channels])
     }
 
     /// The media always starts at the passage; its program date tells the player where it sits in time.
