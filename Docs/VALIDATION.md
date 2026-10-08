@@ -1,5 +1,12 @@
 # Validation du portage
 
+## Suite complète avant le build 10 — 8 octobre 2026
+
+Après la suite précédente : barre de navigation gris clair, résumé toujours ouvert, défilement Live au-delà des 50 premiers passages, tendance des suivis, pastilles de recherche par critère, état vide des périodes, accès à la fiche depuis le journal, jour cliquable dans la fiche, durée des interventions du jour choisi.
+
+- `build/FullSuite-Build10.xcresult`, iPhone 17 Pro, iOS 26.4 : **20 tests réussis sur 22**. Les deux échecs sont les échecs connus : `testLoginFormAndEmptyFilters` et `testFullscreenTranscriptSeeksFromTextAtMaximumSize`.
+- Archive Release 0.4.0 (10) envoyée sur App Store Connect le 8 octobre 2026 (« Upload succeeded »), sans les médias de test.
+
 ## Suite complète des périodes du journal et de la fiche personnalité — 8 octobre 2026
 
 Branche `feat/feed-periods` : périodes 7 j et 30 j avec graphique par jour (Swagger 0.11.0, `/history` et `/days`), barre de navigation gris clair, résumés répétant la transcription masqués, fiche personnalité (`/profile`).
