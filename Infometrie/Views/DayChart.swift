@@ -6,13 +6,16 @@ import SwiftUI
 struct DayChart: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
-    @ScaledMetric(relativeTo: .body) private var height = 120.0
-    @ScaledMetric(relativeTo: .footnote) private var labelHeight = 22.0
+    /// Compact, the user's pick on 2026-10-08 (option A of a sheet of four): at 120 pt the chart crowded out the cards.
+    @ScaledMetric(relativeTo: .body) private var height = 64.0
+    @ScaledMetric(relativeTo: .caption2) private var labelHeight = 18.0
 
     private struct Segment: Identifiable {
         let day: String
         let kind: String
         let count: Int
+        /// The top of the day's stack gets the rounded corners.
+        var isTop = false
         var id: String { "\(day)-\(kind)" }
     }
 
@@ -24,11 +27,13 @@ struct DayChart: View {
     private var segments: [Segment] {
         let counts = counts
         return model.historyDays.flatMap { day in
-            model.filters.selectedKinds.map { kind in
+            var stack = model.filters.selectedKinds.map { kind in
                 // While loading, a gentle wave stands in for the bars under the skeleton.
                 let value = loading ? 3 + Int((day.utf8.last ?? 0) & 3) : counts[day]?.count(ofKind: kind) ?? 0
                 return Segment(day: day, kind: kind, count: value)
             }
+            if let top = stack.lastIndex(where: { $0.count > 0 }) { stack[top].isTop = true }
+            return stack
         }
     }
     /// Every day of a week; over 30 days, yesterday then every seventh day before it, like the client's
@@ -53,8 +58,11 @@ struct DayChart: View {
 
     private var chart: some View {
         Chart(segments) { segment in
-            BarMark(x: .value("Jour", segment.day), y: .value("Passages", segment.count), width: .ratio(0.7))
+            // A week keeps slim 18 pt bars instead of filling its seventh of the width.
+            BarMark(x: .value("Jour", segment.day), y: .value("Passages", segment.count),
+                    width: model.historyDays.count <= 7 ? .fixed(18) : .ratio(0.62))
                 .foregroundStyle(FeedItem.color(ofKind: segment.kind))
+                .clipShape(UnevenRoundedRectangle(topLeadingRadius: segment.isTop ? 3 : 0, topTrailingRadius: segment.isTop ? 3 : 0))
                 .opacity(model.selectedDay == nil || model.selectedDay == segment.day ? 1 : 0.3)
         }
         // The day labels are drawn by hand: on iOS 27 the axis ignored its chosen values and labeled all 30 days.
@@ -76,14 +84,14 @@ struct DayChart: View {
                 if let plot = proxy.plotFrame {
                     let frame = geometry[plot]
                     ForEach(labeledDays, id: \.self) { day in
-                        if let x = proxy.position(forX: day) { dayLabel(day, at: frame.minX + x, width: geometry.size.width, top: frame.maxY + 6) }
+                        if let x = proxy.position(forX: day) { dayLabel(day, at: frame.minX + x, width: geometry.size.width, top: frame.maxY + 4) }
                     }
                 }
             }
             .allowsHitTesting(false)
             .accessibilityHidden(true)
         }
-        .frame(height: min(height, 200))
+        .frame(height: min(height, 110))
         .padding(.bottom, labelHeight)
         .skeleton(loading)
         .sensoryFeedback(.selection, trigger: model.selectedDay)
@@ -108,7 +116,7 @@ struct DayChart: View {
     /// Centered under its bar; at the edges it starts or ends at the bar's center.
     @ViewBuilder private func dayLabel(_ day: String, at x: CGFloat, width: CGFloat, top: CGFloat) -> some View {
         let text = Text(day == model.historyDays.last ? "hier" : DayLabel.short(day))
-            .font(.footnote.monospacedDigit()).foregroundStyle(Brand.secondary)
+            .font(.caption2.monospacedDigit()).foregroundStyle(Brand.secondary)
             .fixedSize()
         if anchorsEdges && day == labeledDays.last {
             text.frame(width: width, alignment: .trailing).offset(x: x - width, y: top)
