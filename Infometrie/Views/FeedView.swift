@@ -19,7 +19,7 @@ struct FeedView: View {
                     FeedViewOptions().padding(.top, 8)
                     if !model.period.isLive { FeedDayChart().padding(.top, 16) }
                     statusRow.padding(.top, 16).padding(.bottom, 8)
-                    if hasAudienceFilters { selectionSummary.padding(.vertical, 12) }
+                    if hasAudienceFilters { selectionSummary.padding(.bottom, 8) }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.reload() } }
                             .padding(.vertical, 12)
@@ -149,18 +149,24 @@ struct FeedView: View {
         .accessibilityIdentifier("feed-filter-bar")
     }
 
+    /// The active search as one removable pill (the user's pick on 2026-10-08, option A of sheet 03): the former
+    /// name line, "Tout afficher" button and rule took three rows. Touching it shows everything again.
     private var selectionSummary: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(model.filters.summary).font(.subheadline).foregroundStyle(Brand.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button { Task { await model.apply(SearchFilters()) } } label: {
-                Label("Tout afficher", systemImage: "arrow.counterclockwise")
-                    .font(.subheadline.weight(.semibold)).frame(minHeight: 48)
+        Button { Task { await model.apply(SearchFilters()) } } label: {
+            HStack(spacing: 6) {
+                Text(model.filters.summary).font(.subheadline.weight(.medium)).foregroundStyle(Brand.ink)
+                    .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
+                Image(systemName: "xmark").font(.caption.weight(.bold)).foregroundStyle(Brand.secondary)
             }
-            .buttonStyle(.plain).foregroundStyle(Brand.tint)
-            .accessibilityIdentifier("clear-filters")
-            AppRule()
+            .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 36)
+            .background(Brand.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(Brand.rule, lineWidth: 0.5))
+            .frame(minHeight: 44).contentShape(Rectangle())
         }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel("Recherche : \(model.filters.summary)")
+        .accessibilityHint("Touchez pour tout afficher")
+        .accessibilityIdentifier("clear-filters")
     }
 
     private func seenToggle(_ item: FeedItem) -> some View {
