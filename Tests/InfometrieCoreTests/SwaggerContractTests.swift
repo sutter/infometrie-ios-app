@@ -123,6 +123,10 @@ struct SwaggerContractTests {
         let page = try await client.history(token: "fixture-jwt", filters: SearchFilters(), from: "2026-10-01", to: "2026-10-07")
         #expect(page.items.isEmpty && !page.hasMore)
         #expect(query(of: ContractProtocol.requests[0])["before_id"] == nil)
+        // Live's older passages: no bounds, so the server keeps its last-24-hours window.
+        _ = try await client.history(token: "fixture-jwt", filters: SearchFilters(), beforeID: 7)
+        let live = query(of: ContractProtocol.requests[1])
+        #expect(live["from"] == nil && live["to"] == nil && live["before_id"] == "7")
     }
 
     @Test func historyOutageHasItsOwnMessage() async {

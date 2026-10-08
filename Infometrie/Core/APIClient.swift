@@ -21,6 +21,8 @@ enum APIError: Error, LocalizedError, Sendable {
 
 final class APIClient: @unchecked Sendable {
     static let baseURL = URL(string: "https://hls-test.yacast.fr")!
+    /// `/feed` serves at most this many of the newest passages; older ones come from `/history`.
+    static let feedLimit = 50
     let baseURL: URL
     private let session: URLSession
 
@@ -51,7 +53,7 @@ final class APIClient: @unchecked Sendable {
         return result
     }
     func feedRequest(token: String, filters: SearchFilters, since: Int64) -> URLRequest {
-        var query = [URLQueryItem(name: "since_seq", value: String(since)), URLQueryItem(name: "limit", value: "50")]
+        var query = [URLQueryItem(name: "since_seq", value: String(since)), URLQueryItem(name: "limit", value: String(Self.feedLimit))]
         query.append(.init(name: "kinds", value: filters.selectedKinds.joined(separator: ",")))
         return request(path: "rest/v1/feed", token: token, query: query + audienceQuery(filters))
     }
@@ -66,11 +68,14 @@ final class APIClient: @unchecked Sendable {
         return try await send(feedRequest(token: token, filters: filters, since: since))
     }
     /// Items of the Paris days `from` to `to`, both included, newest first; `beforeID` asks for the next page.
-    func history(token: String, filters: SearchFilters, from: String, to: String, beforeID: Int64? = nil, limit: Int = 50) async throws -> HistoryResponse {
+    /// Without bounds, the server's window is the last 24 hours: Live's.
+    func history(token: String, filters: SearchFilters, from: String? = nil, to: String? = nil, beforeID: Int64? = nil, limit: Int = 50) async throws -> HistoryResponse {
         guard filters.hasKinds else { return HistoryResponse() }
-        var query = [URLQueryItem(name: "from", value: from), URLQueryItem(name: "to", value: to),
-                     URLQueryItem(name: "kinds", value: filters.selectedKinds.joined(separator: ",")),
-                     URLQueryItem(name: "limit", value: String(limit))]
+        var query: [URLQueryItem] = []
+        if let from { query.append(.init(name: "from", value: from)) }
+        if let to { query.append(.init(name: "to", value: to)) }
+        query += [URLQueryItem(name: "kinds", value: filters.selectedKinds.joined(separator: ",")),
+                  URLQueryItem(name: "limit", value: String(limit))]
         if let beforeID { query.append(.init(name: "before_id", value: String(beforeID))) }
         return try await historySend(request(path: "rest/v1/history", token: token, query: query + audienceQuery(filters)))
     }

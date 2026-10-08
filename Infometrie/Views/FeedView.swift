@@ -53,12 +53,12 @@ struct FeedView: View {
                                 .accessibilityAction(named: model.isSeen(item) ? "Marquer comme non vu" : "Marquer comme vu") {
                                     model.toggleSeen(item)
                                 }
-                                // 7 j and 30 j page through the history: the last card asks for the next page.
+                                // Every period pages through the history: the last card asks for the next page.
                                 .onAppear {
-                                    if item.id == model.visibleItems.last?.id { Task { await model.loadMoreHistory() } }
+                                    if item.id == model.visibleItems.last?.id { Task { await model.loadMore() } }
                                 }
                             }
-                            if model.isLoadingMoreHistory {
+                            if model.isLoadingMore {
                                 FeedSkeleton(label: "Chargement de la suite").padding(.vertical, 5)
                             }
                         }

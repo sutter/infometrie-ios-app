@@ -31,7 +31,7 @@ La spécification 0.5.0 avait été relue le 22 septembre sans changement. La co
 
 Même version, sans nouvelle route ni changement cassant ; le Swagger précise :
 
-- `/feed` ne sert que la tête du journal (au plus `limit` passages, les plus récents) puis ce qui arrive ensuite par le polling ; les passages plus anciens se lisent dans `/history`. En Live, l’application s’arrête donc aux 50 premiers passages : un défilement au-delà passerait par `/history` avec `before_id`, ce qui n’est pas encore branché.
+- `/feed` ne sert que la tête du journal (au plus `limit` passages, les plus récents) puis ce qui arrive ensuite par le polling ; les passages plus anciens se lisent dans `/history`. En Live, l’application lit donc les 50 premiers passages dans `/feed`, puis, en fin de liste, les plus anciens des dernières 24 heures dans `/history` sans bornes (fenêtre par défaut du serveur), page par page avec `before_id`.
 - `parties` attend partout le code de `/parties`, qui est le libellé du parti. C’est déjà ce que l’application envoie (`Party.code`), et `/history` et `/days` disaient auparavant « labels ».
 - `/history` peut répondre 502 (historique illisible) : l’application affiche alors le message générique de serveur indisponible, pas celui d’historique indisponible réservé au 503.
 - `/days` répond 400 hors de 1 à 31 jours ; l’application n’envoie que 7 ou 30.

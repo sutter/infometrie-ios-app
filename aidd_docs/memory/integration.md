@@ -16,6 +16,7 @@ project, this one included, lives in the ecosystem memory.
 - Ephemeral URLSession, no cache, 25-second request timeout (30 seconds in the relay), same-origin redirects only.
 - Status mapping (`APIError`): 401 / 403 end the session, except on login, where they mean wrong credentials and inactive subscription. 404 means content gone. 409 on login means device quota. Any other code shows a French "try again" message.
 - The 409 body has `error` as a boolean. Only `max_devices` and `devices` are decoded. An incomplete body is an explicit error, never an invented quota.
+- `/feed` serves the newest 50 passages only (its head) and then what arrives by polling. Live reads older passages of the last 24 hours from `/history` with no bounds (the server's default window) and `before_id` = the lowest id loaded; they carry `seq` 0, so they sort after the feed's and never move `last_seq`. `liveGeneration` changes only when Live starts over, so a poll never cancels a page.
 - No automatic retry: the user retries. The feed polls every 30 seconds while the app is active and signed in.
 - HLS `margin`: 10 for a sequence, 0 in the podcast, clamped to 0–60.
 - Many sequences carry the transcript in `resume`: on 2026-10-08, of the 40 latest passages, 10 had `resume` identical to `verbatim` and 14 more its first words, cut short with or without "…"; 16 had a real summary. `SequenceDetail.summary` hides the repeats. A data issue to report to the backend.

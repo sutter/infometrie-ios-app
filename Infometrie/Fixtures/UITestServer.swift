@@ -129,8 +129,9 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         func value(_ name: String) -> String? { query.first { $0.name == name }?.value }
         func values(_ name: String) -> Set<String>? { value(name).map { Set($0.split(separator: ",").map(String.init)) } }
-        guard let from = value("from").flatMap(ParisDay.date), let last = value("to").flatMap(ParisDay.date),
-              let to = ParisDay.calendar.date(byAdding: .day, value: 1, to: last), from < to,
+        // Without bounds, the last 24 hours, like the server.
+        let to = value("to").flatMap(ParisDay.date).flatMap { ParisDay.calendar.date(byAdding: .day, value: 1, to: $0) } ?? Date()
+        guard let from = value("from").map(ParisDay.date) ?? to.addingTimeInterval(-86_400), from < to,
               to.timeIntervalSince(from) <= 31 * 86_400 + 3_600,
               let kinds = values("kinds"), !kinds.isEmpty else { respond(400); return }
         let limit = value("limit").flatMap { Int($0) } ?? 50
