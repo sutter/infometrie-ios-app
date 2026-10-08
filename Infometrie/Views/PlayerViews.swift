@@ -77,7 +77,8 @@ struct SequenceView: View {
                         }.id(detail.id).transition(.opacity)
                     } else { Text("Le texte n’est pas disponible pour ce passage.").foregroundStyle(Brand.secondary) }
                     if !displayItem.isTweet, let summary = detail.summary {
-                        SequenceDisclosure(title: "Lire le résumé", icon: "text.alignleft") {
+                        // Always open, at the user's request on 2026-10-08: the summary is read, not hunted for.
+                        SequenceSection(title: "Résumé", icon: "text.alignleft") {
                             Text(summary).font(.body).lineSpacing(3)
                                 .fixedSize(horizontal: false, vertical: true)
                         }.accessibilityIdentifier("sequence-summary")
@@ -154,18 +155,43 @@ private struct SequenceDisclosure<Content: View>: View {
             content().frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 4).padding(.bottom, 20)
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: icon).font(.system(size: 16, weight: .medium))
-                    .frame(width: 32, height: 32)
-                    .foregroundStyle(Brand.tint)
-                    .accessibilityHidden(true)
-                Text(title).font(.headline)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .foregroundStyle(Brand.tint).frame(minHeight: 48)
+            SequenceSectionLabel(title: title, icon: icon)
         }
         .tint(Brand.tint)
         .overlay(alignment: .top) { AppRule() }
+    }
+}
+
+/// The same header as `SequenceDisclosure`, over content that stays open.
+private struct SequenceSection<Content: View>: View {
+    let title: String
+    let icon: String
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            SequenceSectionLabel(title: title, icon: icon).accessibilityAddTraits(.isHeader)
+            content().frame(maxWidth: .infinity, alignment: .leading).padding(.bottom, 20)
+        }
+        .overlay(alignment: .top) { AppRule() }
+        .accessibilityElement(children: .contain)
+    }
+}
+
+private struct SequenceSectionLabel: View {
+    let title: String
+    let icon: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon).font(.system(size: 16, weight: .medium))
+                .frame(width: 32, height: 32)
+                .foregroundStyle(Brand.tint)
+                .accessibilityHidden(true)
+            Text(title).font(.headline)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(Brand.tint).frame(minHeight: 48)
     }
 }
 

@@ -289,14 +289,12 @@ final class InfometrieUITests: XCTestCase {
         let toggle = app.buttons["player-toggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 10))
         capture("03-sequence-avant-lecture", app: app)
-        let summary = app.buttons["sequence-summary"]
+        // The summary is always open: no toggle to find.
+        let summary = app.staticTexts["Exemple fictif pour découvrir la consultation d’une séquence. Aucun propos réel ni passage à l’antenne n’est représenté ici."]
+        XCTAssertTrue(summary.waitForExistence(timeout: 3))
         reveal(summary, in: app, down: false)
-        summary.tap()
-        XCTAssertEqual(toggle.label, "Écouter", "Déplier le résumé ne doit pas démarrer l’écoute")
-        XCTAssertTrue(app.staticTexts["Exemple fictif pour découvrir la consultation d’une séquence. Aucun propos réel ni passage à l’antenne n’est représenté ici."].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["sequence-summary"].exists, "Le résumé n’est plus un bouton à déplier")
         capture("03-sequence-resume", app: app)
-        reveal(summary, in: app, down: false)
-        summary.tap()
         let context = app.buttons["sequence-context"]
         reveal(context, in: app, down: false)
         context.tap()
