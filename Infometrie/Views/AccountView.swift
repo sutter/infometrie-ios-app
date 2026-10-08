@@ -121,7 +121,7 @@ struct AccountView: View {
     }
 }
 
-/// The account's initials on mineral taupe; a person when the name is unknown.
+/// The account's initials on bleu canard; a person when the name is unknown.
 private struct AccountAvatar: View {
     let name: String?
 
@@ -131,7 +131,7 @@ private struct AccountAvatar: View {
         }
         .foregroundStyle(.white)
         .frame(width: 56, height: 56)
-        .background(Brand.taupe, in: Circle())
+        .background(Brand.canardFill, in: Circle())
         .accessibilityHidden(true)
     }
 

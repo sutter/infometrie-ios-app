@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The brand palette: vermillon for actions, accent and identity; mineral taupe for interface marks; noir chaud for
+/// The brand palette: vermillon for actions, accent and identity; bleu canard for interface marks; noir chaud for
 /// text and icons; blanc cassé for the page; gris clair for secondary surfaces. Chosen by the client on 2026-10-07.
 enum Brand {
     /// Blanc cassé in light, noir chaud in dark: sections and rows sit on dividers rather than cards.
@@ -33,14 +33,16 @@ enum Brand {
 
     /// Vermillon: primary actions, the playback timeline, the logo, the active tab and selections.
     static let accent = color(light: 0xE74732, dark: 0xF05A49)
-    /// Mineral taupe: interface marks such as the account avatar.
-    static let taupe = color(light: 0x91857B, dark: 0xA2958C)
+    /// Bleu canard: interface marks and citations, lighter in dark for 7:1 on the page.
+    static let canard = color(light: 0x356F73, dark: 0x6FAEB2)
+    /// Bleu canard under white text, such as the account avatar: the same in both themes (5.7:1).
+    static let canardFill = color(light: 0x356F73, dark: 0x356F73)
     /// The iPhone's main navigation: a noir chaud capsule (gris chaud in dark, so it stands off the page), its active
     /// destination in vermillon, lighter in dark for 4.5:1 on the bar.
     static let dock = color(light: 0x121110, dark: 0x2A2725)
     static let dockActive = color(light: 0xF05A49, dark: 0xFF7A66)
 
-    /// Color tells the passage kind at a glance: vermillon interventions, taupe citations, noir chaud for X.
+    /// Color tells the passage kind at a glance: vermillon interventions, bleu canard citations, noir chaud for X.
     /// `intervention` and `citation` draw the bars and the tags' light tint (3:1 or more); `…Label` the tags' small
     /// text, deeper for 4.5:1 on that tint; `…Fill` the solid chips under white text, the same in both themes.
     /// The coming Instagram type will need a hue of its own.
@@ -48,10 +50,10 @@ enum Brand {
     static let interventionLabel = color(light: 0xBB3520, dark: 0xF05A49)
     static let interventionFill = color(light: 0xC93A26, dark: 0xC93A26)
     static let interventionWash = color(light: 0xFCE8E4, dark: 0x3A1C16)
-    static let citation = taupe
-    static let citationLabel = color(light: 0x6B6159, dark: 0xA2958C)
-    static let citationFill = color(light: 0x7A6F66, dark: 0x7A6F66)
-    static let citationWash = color(light: 0xEEEAE6, dark: 0x2A2623)
+    static let citation = canard
+    static let citationLabel = color(light: 0x2F6468, dark: 0x6FAEB2)
+    static let citationFill = canardFill
+    static let citationWash = color(light: 0xE5F0F0, dark: 0x142527)
 
     /// Secondary actions: gris clair under noir chaud text.
     static let actionWash = surface

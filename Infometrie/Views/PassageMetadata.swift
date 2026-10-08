@@ -204,7 +204,7 @@ struct PassageHeading: View {
 }
 
 extension FeedItem {
-    /// Vermillon for interventions, taupe for citations, noir chaud otherwise (X): bars, outlines and checkboxes.
+    /// Vermillon for interventions, bleu canard for citations, noir chaud otherwise (X): bars, outlines and checkboxes.
     static func color(ofKind kind: String) -> Color {
         kind == "intervention" ? Brand.intervention : kind == "citation" ? Brand.citation : Brand.ink
     }
