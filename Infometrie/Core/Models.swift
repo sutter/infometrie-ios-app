@@ -107,6 +107,63 @@ struct FeedResponse: Decodable, Sendable {
     enum CodingKeys: String, CodingKey { case items; case lastSeq = "last_seq" }
 }
 
+/// A page of `/rest/v1/history`. Its items keep their feed id, but their `seq` is 0: never a live cursor.
+struct HistoryResponse: Decodable, Sendable {
+    var items: [FeedItem] = []
+    var hasMore = false
+    enum CodingKeys: String, CodingKey { case items; case hasMore = "has_more" }
+    init(items: [FeedItem] = [], hasMore: Bool = false) { self.items = items; self.hasMore = hasMore }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        items = try c.decodeIfPresent([FeedItem].self, forKey: .items) ?? []
+        hasMore = try c.decodeIfPresent(Bool.self, forKey: .hasMore) ?? false
+    }
+}
+
+/// One complete Paris day of `/rest/v1/days`: every kind is counted, the app adds up the ones it shows.
+struct DayCount: Codable, Identifiable, Hashable, Sendable {
+    var id: String { day }
+    let day: String
+    var interventions = 0
+    var citations = 0
+    var tweets = 0
+    var interventionSec = 0
+    enum CodingKeys: String, CodingKey {
+        case day, interventions, citations, tweets
+        case interventionSec = "intervention_sec"
+    }
+    init(day: String, interventions: Int = 0, citations: Int = 0, tweets: Int = 0, interventionSec: Int = 0) {
+        self.day = day; self.interventions = interventions; self.citations = citations
+        self.tweets = tweets; self.interventionSec = interventionSec
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        day = try c.decode(String.self, forKey: .day)
+        interventions = try c.decodeIfPresent(Int.self, forKey: .interventions) ?? 0
+        citations = try c.decodeIfPresent(Int.self, forKey: .citations) ?? 0
+        tweets = try c.decodeIfPresent(Int.self, forKey: .tweets) ?? 0
+        interventionSec = try c.decodeIfPresent(Int.self, forKey: .interventionSec) ?? 0
+    }
+    func count(ofKind kind: String) -> Int {
+        switch kind {
+        case "intervention": interventions
+        case "citation": citations
+        case "tweet": tweets
+        default: 0
+        }
+    }
+    func total(for filters: SearchFilters) -> Int { filters.selectedKinds.reduce(0) { $0 + count(ofKind: $1) } }
+}
+
+struct DaysResponse: Decodable, Sendable {
+    var days: [DayCount] = []
+    enum CodingKeys: String, CodingKey { case days }
+    init(days: [DayCount] = []) { self.days = days }
+    init(from decoder: Decoder) throws {
+        days = try decoder.container(keyedBy: CodingKeys.self).decodeIfPresent([DayCount].self, forKey: .days) ?? []
+    }
+}
+
 struct SequenceDetail: Decodable, Identifiable, Sendable {
     var id: Int64 { item.id }
     let item: FeedItem

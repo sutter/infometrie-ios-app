@@ -84,6 +84,69 @@ struct SwaggerContractTests {
         catch { Issue.record("Wrong error: \(error)") }
     }
 
+    @Test func historyAndDaysSendTheDocumentedParameters() async throws {
+        let client = client(routes: [
+            "/rest/v1/history": (200, "{\"items\":[\(sequence.replacingOccurrences(of: "\"seq\":108", with: "\"seq\":0"))],\"has_more\":true}"),
+            "/rest/v1/days": (200, #"{"days":[{"day":"2026-10-06","interventions":2,"citations":40,"tweets":5,"intervention_sec":310},{"day":"2026-10-07"}]}"#)
+        ])
+        let filters = SearchFilters(persons: ["Sam Laurent", "Camille Martin"], parties: ["TEST"], interventions: true, citations: true, tweets: false)
+        let page = try await client.history(token: "fixture-jwt", filters: filters, from: "2026-10-01", to: "2026-10-07", beforeID: 42)
+        #expect(page.hasMore)
+        #expect(page.items.first?.id == 42)
+        #expect(page.items.first?.seq == 0)
+        let days = try await client.days(token: "fixture-jwt", filters: filters, count: 7).days
+        #expect(days.map(\.day) == ["2026-10-06", "2026-10-07"])
+        #expect(days[0].citations == 40 && days[0].interventionSec == 310)
+        #expect(days[1].interventions == 0 && days[1].tweets == 0)
+        #expect(ContractProtocol.requests.allSatisfy { $0.value(forHTTPHeaderField: "Authorization") == "Bearer fixture-jwt" })
+        let history = query(of: ContractProtocol.requests[0])
+        #expect(ContractProtocol.requests[0].url?.path == "/rest/v1/history")
+        #expect(history["from"] == "2026-10-01")
+        #expect(history["to"] == "2026-10-07")
+        #expect(history["kinds"] == "intervention,citation")
+        #expect(history["persons"] == "Camille Martin,Sam Laurent")
+        #expect(history["parties"] == "TEST")
+        #expect(history["before_id"] == "42")
+        #expect(history["limit"] == "50")
+        let count = query(of: ContractProtocol.requests[1])
+        #expect(ContractProtocol.requests[1].url?.path == "/rest/v1/days")
+        #expect(count["days"] == "7")
+        #expect(count["kinds"] == nil)
+        #expect(count["persons"] == "Camille Martin,Sam Laurent")
+    }
+
+    @Test func historyWithoutKindsSendsNothingAndMissingFieldsDecode() async throws {
+        let client = client(routes: ["/rest/v1/history": (200, "{}")])
+        let none = SearchFilters(interventions: false, citations: false, tweets: false)
+        #expect(try await client.history(token: "fixture-jwt", filters: none, from: "2026-10-01", to: "2026-10-07").items.isEmpty)
+        #expect(ContractProtocol.requests.isEmpty)
+        let page = try await client.history(token: "fixture-jwt", filters: SearchFilters(), from: "2026-10-01", to: "2026-10-07")
+        #expect(page.items.isEmpty && !page.hasMore)
+        #expect(query(of: ContractProtocol.requests[0])["before_id"] == nil)
+    }
+
+    @Test func historyOutageHasItsOwnMessage() async {
+        for path in ["/rest/v1/history", "/rest/v1/days"] {
+            let client = client(routes: [path: (503, "{}")])
+            do {
+                if path.hasSuffix("days") { _ = try await client.days(token: "fixture-jwt", filters: SearchFilters(), count: 30) }
+                else { _ = try await client.history(token: "fixture-jwt", filters: SearchFilters(), from: "2026-09-08", to: "2026-10-07") }
+                Issue.record("Expected history outage")
+            } catch APIError.historyUnavailable {
+                #expect(APIError.historyUnavailable.errorDescription?.contains("historique") == true)
+            } catch { Issue.record("Wrong error: \(error)") }
+        }
+        let client = client(routes: ["/rest/v1/days": (401, "{}")])
+        do { _ = try await client.days(token: "fixture-jwt", filters: SearchFilters(), count: 7); Issue.record("Expected session expiry") }
+        catch APIError.sessionExpired { }
+        catch { Issue.record("Wrong error: \(error)") }
+    }
+
+    private func query(of request: URLRequest) -> [String: String] {
+        let items = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems } ?? []
+        return Dictionary(items.map { ($0.name, $0.value ?? "") }, uniquingKeysWith: { first, _ in first })
+    }
+
     @Test func playlistMarginsRespectSwaggerBoundsAndKeepOtherQueryItems() throws {
         let item = try JSONDecoder().decode(FeedItem.self, from: Data(sequence.utf8))
         let detail = SequenceDetail(item: item, resume: "", verbatim: "", playlist: "/rest/v1/hls/42/index.m3u8?fixture=1&margin=30")
