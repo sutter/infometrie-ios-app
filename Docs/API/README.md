@@ -2,7 +2,7 @@
 
 Source officielle : [Swagger HLS Test](https://hls-test.yacast.fr/swagger/), [spécification YAML](https://hls-test.yacast.fr/swagger/specs.yaml), actualisée le 8 octobre 2026.
 
-Copie locale : [openapi.yaml](openapi.yaml). Version annoncée : `0.11.0-20261007171809`. SHA-256 : `e28187b7b5945cf8cff688dd6f675fd42745dc863f6718dc1fba8642b376f38c`. Pour comparer avec la version en ligne : `scripts/check_api_contract.sh`.
+Copie locale : [openapi.yaml](openapi.yaml). Version annoncée : `0.11.0-20261008105127`. SHA-256 : `df8d99e552430a85f86f18d02b85ab9dbd62adf8a52931516a6ef693002d5228`. Pour comparer avec la version en ligne : `scripts/check_api_contract.sh`.
 
 ## Routes branchées
 
@@ -26,6 +26,16 @@ Les routes privées utilisent le JWT client dans `Authorization: Bearer …`. La
 Vérifié le 22 septembre 2026 avec le compte fourni : HTTP 409 renvoie `error: true` (booléen), `reason: "device quota reached"`, `max_devices` (entier) et `devices` (liste d’appareils). Le Swagger ne détaille pas ce corps. Le modèle iOS décode uniquement les champs utiles au remplacement et ignore `error` : l’ancien type `String` faisait échouer tout le décodage, puis affichait à tort zéro appareil et une liste vide. Une réponse incomplète produit désormais une erreur explicite, sans inventer de quota. Aucun remplacement n’est envoyé avant confirmation.
 
 La spécification 0.5.0 avait été relue le 22 septembre sans changement. La comparaison du 23 septembre avec 0.6.0 ajoute `kinds` et décrit `tweet`, `url` et `channel_key`, sans nouvelle route.
+
+### Révision du 8 octobre 2026 (0.11.0-20261008105127)
+
+Même version, sans nouvelle route ni changement cassant ; le Swagger précise :
+
+- `/feed` ne sert que la tête du journal (au plus `limit` passages, les plus récents) puis ce qui arrive ensuite par le polling ; les passages plus anciens se lisent dans `/history`. En Live, l’application s’arrête donc aux 50 premiers passages : un défilement au-delà passerait par `/history` avec `before_id`, ce qui n’est pas encore branché.
+- `parties` attend partout le code de `/parties`, qui est le libellé du parti. C’est déjà ce que l’application envoie (`Party.code`), et `/history` et `/days` disaient auparavant « labels ».
+- `/history` peut répondre 502 (historique illisible) : l’application affiche alors le message générique de serveur indisponible, pas celui d’historique indisponible réservé au 503.
+- `/days` répond 400 hors de 1 à 31 jours ; l’application n’envoie que 7 ou 30.
+- `/sequences/{id}` répond 404 pour un passage absent du journal en direct et de l’historique, qui garde 35 jours : les passages de 30 j restent ouvrables.
 
 ### Routes ajoutées en 0.11.0
 

@@ -27,7 +27,7 @@ Les contenus sont proposés en consultation seule. Les alertes et le résumé qu
 
 ## API et médias
 
-Le serveur configuré est **`https://hls-test.yacast.fr`**. Le client utilise les routes mobiles du [Swagger officiel](https://hls-test.yacast.fr/swagger/), version `0.11.0-20261007171809`. Voir le [contrat API et les choix d’intégration](Docs/API/README.md), ainsi que l’[analyse initiale de l’APK](Docs/APK-ANALYSIS.md).
+Le serveur configuré est **`https://hls-test.yacast.fr`**. Le client utilise les routes mobiles du [Swagger officiel](https://hls-test.yacast.fr/swagger/), version `0.11.0-20261008105127`. Voir le [contrat API et les choix d’intégration](Docs/API/README.md), ainsi que l’[analyse initiale de l’APK](Docs/APK-ANALYSIS.md).
 
 ### Suivre les évolutions de l’API
 

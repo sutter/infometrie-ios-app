@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: IActus
   description: "Backend IActus (Boussole) : API mobile (journal politique temps réel), portail client web et administration."
-  version: "0.11.0-20261007171809"
+  version: "0.11.0-20261008105127"
 
 servers:
   - url: "/"
@@ -100,7 +100,7 @@ paths:
 
   /rest/v1/feed:
     get:
-      summary: "Journal: interventions and citations, newest first"
+      summary: "Live journal: interventions, citations and posts on X, newest first. Serves the head (the newest items, limit at most) and then what was observed since (polling); the items before the head are read from /rest/v1/history."
       operationId: "routeMobileFeed"
       tags: [mobile]
       security: [{ bearerAuth: [] }]
@@ -116,7 +116,7 @@ paths:
         - name: parties
           in: query
           schema: { type: string }
-          description: "Comma-separated party codes"
+          description: "Comma-separated party codes, as /parties lists them (the party's label)"
         - name: kinds
           in: query
           required: false
@@ -164,7 +164,7 @@ paths:
         200:
           description: "Sequence"
         404:
-          description: "Unknown sequence"
+          description: "Unknown sequence: neither in the live journal nor in the history (35 days)"
 
   /rest/v1/sequences/{id}/words:
     get:
@@ -260,7 +260,7 @@ paths:
         - name: parties
           in: query
           schema: { type: string }
-          description: "Comma-separated party labels"
+          description: "Comma-separated party codes, as /parties lists them (the party's label)"
         - name: kinds
           in: query
           schema: { type: string }
@@ -279,7 +279,9 @@ paths:
                   items: { type: array, items: { type: object } }
                   has_more: { type: boolean }
         400:
-          description: "Unreadable bound, window over 31 days, unknown kind, or limit out of range"
+          description: "Unreadable bound, from not before to, window over 31 Paris days, before_id not a positive id, unknown kind, or limit out of range"
+        502:
+          description: "The history could not be read"
         503:
           description: "History unavailable (only the live window can be served)"
 
@@ -300,7 +302,7 @@ paths:
         - name: parties
           in: query
           schema: { type: string }
-          description: "Comma-separated party labels"
+          description: "Comma-separated party codes, as /parties lists them (the party's label)"
       responses:
         200:
           description: "One entry per day"
@@ -319,6 +321,8 @@ paths:
                         citations: { type: integer }
                         tweets: { type: integer }
                         intervention_sec: { type: integer, description: "Seconds of the interventions" }
+        400:
+          description: "days out of range"
         503:
           description: "History unavailable"
 
