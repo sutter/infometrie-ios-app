@@ -29,6 +29,28 @@ Les contenus sont proposés en consultation seule. Les alertes et le résumé qu
 
 Le serveur configuré est **`https://hls-test.yacast.fr`**. Le client utilise les routes mobiles du [Swagger officiel](https://hls-test.yacast.fr/swagger/), version `0.6.0-20260923140711`. Voir le [contrat API et les choix d’intégration](Docs/API/README.md), ainsi que l’[analyse initiale de l’APK](Docs/APK-ANALYSIS.md).
 
+### Suivre les évolutions de l’API
+
+Le serveur évolue sans annonce. Pour savoir si le Swagger en ligne a changé depuis la copie locale [`Docs/API/openapi.yaml`](Docs/API/openapi.yaml), lancer depuis la racine du projet :
+
+```sh
+scripts/check_api_contract.sh
+```
+
+Le script demande [`oasdiff`](https://github.com/oasdiff/oasdiff) (`brew install oasdiff`). Il télécharge la spécification en ligne dans `build/api-contract/specs.yaml` et la compare au contrat local :
+
+| Code de sortie | Signification |
+| --- | --- |
+| `0` | API inchangée, la version est affichée |
+| `1` | API modifiée : versions, empreinte SHA-256 et liste des changements (routes, paramètres, changements cassants) |
+| `2` | Vérification impossible : Swagger injoignable ou `oasdiff` absent |
+
+`SPEC_URL=<url> scripts/check_api_contract.sh` vérifie un autre serveur. Le script ne modifie rien : le Swagger ne décrit pas les corps de réponse, donc un changement du JSON renvoyé lui échappe.
+
+Pour intégrer un changement, demander à Claude Code de synchroniser le contrat de l’API (skill `api-contract-sync`). Il lance le script, explique l’impact de chaque changement sur l’application, met à jour `Docs/API/openapi.yaml`, `Docs/API/README.md` et les tests de contrat, puis propose un commit. Il n’implémente pas de nouvelle route sans accord.
+
+Pour être prévenu sans y penser, un pipeline programmé chaque jour peut lancer le script : le code `1` fait échouer le job et la forge envoie l’e-mail d’échec.
+
 Le jeton reste dans Keychain. Les mots de passe ne sont pas persistés. Les recherches sont séparées par compte. Le lecteur HLS passe par un relais lié à `127.0.0.1` : il authentifie les playlists et segments avec URLSession et les sert à AVPlayer. Il ne stocke aucun média sur disque et refuse les ressources et redirections hors de l’origine du serveur. AirPlay est désactivé pour ce lecteur local ; la lecture s’arrête en arrière-plan, comme dans l’APK.
 
 ## Verbatim et lecteur

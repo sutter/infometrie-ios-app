@@ -19,5 +19,5 @@ project, this one included, lives in the ecosystem memory.
 - No automatic retry: the user retries. The feed polls every 30 seconds while the app is active and signed in.
 - HLS `margin`: 10 for a sequence, 0 in the podcast, clamped to 0–60.
 - `/rest/v1/sequences/{id}/words` answering 404 or 502 means "no timings": the media plays with estimated highlighting.
-- When the Swagger changes, compare it with `Docs/API/openapi.yaml`, then update the contract tests (`SwaggerContractTests`) and `Docs/API/README.md`.
+- API changes arrive unannounced. `scripts/check_api_contract.sh` compares the live Swagger with `Docs/API/openapi.yaml` (exit 1 on change, needs `oasdiff`); the `api-contract-sync` skill (`.claude/skills/`) explains the impact and updates the contract, its README and `SwaggerContractTests`.
 - The agent may call the API with `curl`. `/healthz` and `/readiness` need no auth. Private routes need a session of the real account. Never send a device replacement, never revoke a device, and never commit a token or credential: the repository is public.
