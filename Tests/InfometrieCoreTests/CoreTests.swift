@@ -14,7 +14,10 @@ struct CoreTests {
         func summary(_ resume: String) -> String? { SequenceDetail(item: item, resume: resume, verbatim: verbatim).summary }
         #expect(summary("Si je peux me permettre de vous répondre, il se trouve que moi j'ai mes enfants en lycée.") == nil)
         #expect(summary("Si je peux me permettre de vous répondre, il se trouve") == nil)
+        #expect(summary("Si je peux me permettre de vous répondre, il se trouve…") == nil)
+        #expect(summary("Si je peux me permettre de vous répondre, il se trouve que moi ...") == nil)
         #expect(summary("  ") == nil)
+        #expect(summary("… il se trouve que moi j'ai mes enfants en lycée.") != nil, "Un extrait du milieu n’est pas le début du texte")
         #expect(summary("La députée défend l’école publique de Seine-Saint-Denis.") == "La députée défend l’école publique de Seine-Saint-Denis.")
     }
 
