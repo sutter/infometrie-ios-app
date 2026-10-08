@@ -7,6 +7,7 @@ struct DayChart: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
     @ScaledMetric(relativeTo: .body) private var height = 120.0
+    @ScaledMetric(relativeTo: .footnote) private var labelHeight = 22.0
 
     private struct Segment: Identifiable {
         let day: String
@@ -40,12 +41,8 @@ struct DayChart: View {
     }
 
     private var labelStride: Int { model.historyDays.count <= 7 ? 1 : 7 }
-    /// Sparse or very large labels at the edges grow inward, or the chart cuts them ("09/…").
+    /// Sparse or very large labels at the edges grow inward, or the screen edge cuts them ("09/…").
     private var anchorsEdges: Bool { labelStride > 1 || dynamicType.isAccessibilitySize }
-    private func anchor(for day: String) -> UnitPoint {
-        guard anchorsEdges else { return .top }
-        return day == labeledDays.last ? .topTrailing : day == labeledDays.first ? .topLeading : .top
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -60,16 +57,8 @@ struct DayChart: View {
                 .foregroundStyle(FeedItem.color(ofKind: segment.kind))
                 .opacity(model.selectedDay == nil || model.selectedDay == segment.day ? 1 : 0.3)
         }
-        .chartXAxis {
-            AxisMarks(values: labeledDays) { value in
-                let day = value.as(String.self) ?? ""
-                AxisValueLabel(anchor: anchor(for: day), collisionResolution: .disabled) {
-                    Text(day == model.historyDays.last ? "hier" : DayLabel.short(day))
-                        .font(.footnote.monospacedDigit()).foregroundStyle(Brand.secondary)
-                        .fixedSize()
-                }
-            }
-        }
+        // The day labels are drawn by hand: on iOS 27 the axis ignored its chosen values and labeled all 30 days.
+        .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartLegend(.hidden)
         .chartOverlay { proxy in
@@ -82,7 +71,20 @@ struct DayChart: View {
                     }
             }
         }
+        .chartOverlay(alignment: .topLeading) { proxy in
+            GeometryReader { geometry in
+                if let plot = proxy.plotFrame {
+                    let frame = geometry[plot]
+                    ForEach(labeledDays, id: \.self) { day in
+                        if let x = proxy.position(forX: day) { dayLabel(day, at: frame.minX + x, width: geometry.size.width, top: frame.maxY + 6) }
+                    }
+                }
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
         .frame(height: min(height, 200))
+        .padding(.bottom, labelHeight)
         .skeleton(loading)
         .sensoryFeedback(.selection, trigger: model.selectedDay)
         // One VoiceOver element per day, laid over its bar, which also lets UI tests touch a day.
@@ -101,6 +103,20 @@ struct DayChart: View {
         }
         .accessibilityLabel("Passages par jour")
         .accessibilityIdentifier("feed-day-chart")
+    }
+
+    /// Centered under its bar; at the edges it starts or ends at the bar's center.
+    @ViewBuilder private func dayLabel(_ day: String, at x: CGFloat, width: CGFloat, top: CGFloat) -> some View {
+        let text = Text(day == model.historyDays.last ? "hier" : DayLabel.short(day))
+            .font(.footnote.monospacedDigit()).foregroundStyle(Brand.secondary)
+            .fixedSize()
+        if anchorsEdges && day == labeledDays.last {
+            text.frame(width: width, alignment: .trailing).offset(x: x - width, y: top)
+        } else if anchorsEdges && day == labeledDays.first {
+            text.frame(width: width, alignment: .leading).offset(x: x, y: top)
+        } else {
+            text.frame(width: width, alignment: .center).offset(x: x - width / 2, y: top)
+        }
     }
 
     private func toggle(_ day: String) {
