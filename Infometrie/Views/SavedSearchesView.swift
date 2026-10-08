@@ -43,11 +43,11 @@ struct SavedSearchesView: View {
                             SuiviTrend(filters: search.filters, days: model.trends[search.filters])
                                 .accessibilityIdentifier("saved-trend-\(search.name)")
                         }
-                        // The kinds as tags, as in the feed.
-                        HStack(spacing: 6) {
-                            if search.filters.interventions { KindTag(kind: "intervention", label: "Interventions") }
-                            if search.filters.citations { KindTag(kind: "citation", label: "Citations") }
-                            if search.filters.tweets { KindTag(kind: "tweet", label: "Publications X") }
+                        // The kinds as tags, as in the feed; stacked when the three do not fit the width, since a
+                        // row wider than the screen pushed the whole suivi off its left edge.
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 6) { kindTags(search.filters) }
+                            VStack(alignment: .leading, spacing: 6) { kindTags(search.filters) }
                         }
                         .accessibilityElement(children: .combine)
                         AdaptiveRow {
@@ -104,6 +104,11 @@ struct SavedSearchesView: View {
             Button("Annuler", role: .cancel) { deleting = nil }
             Button("Supprimer", role: .destructive) { if let deleting { model.delete(deleting) }; deleting = nil }
         } message: { Text("« \(deleting?.name ?? "") » disparaîtra de cet appareil. Cette action est définitive.") }
+    }
+    @ViewBuilder private func kindTags(_ filters: SearchFilters) -> some View {
+        if filters.interventions { KindTag(kind: "intervention", label: "Interventions") }
+        if filters.citations { KindTag(kind: "citation", label: "Citations") }
+        if filters.tweets { KindTag(kind: "tweet", label: "Publications X") }
     }
     private func category(_ title: String, archived value: Bool) -> some View {
         let selected = archived == value

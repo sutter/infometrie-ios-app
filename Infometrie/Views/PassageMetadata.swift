@@ -62,11 +62,14 @@ struct KindTag: View {
         HStack(spacing: 6) {
             pictogram.font(.caption2.weight(.bold))
             Text(label.uppercased()).font(.caption.weight(.bold)).tracking(1)
+                // Shrinks only when the tag would not fit: at accessibility sizes "INTERVENTION" grew wider than
+                // an iPhone 13 mini and, fixed at its ideal width, pushed the whole page off the left edge.
+                .lineLimit(1).minimumScaleFactor(0.5)
         }
         .foregroundStyle(FeedItem.labelColor(ofKind: kind))
         .padding(.horizontal, 9).frame(minHeight: height)
         .background(FeedItem.color(ofKind: kind).opacity(0.12), in: Capsule())
-        .fixedSize()
+        .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
     }
@@ -180,13 +183,16 @@ struct PassageHeading: View {
         let speaker = PassageSpeaker(item: item, nameFont: .headline, lineLimit: nil)
         if linksPerson, model.persons.contains(where: { $0.name == item.person }) {
             NavigationLink { PersonView(name: item.person) } label: {
-                HStack(spacing: 8) {
-                    speaker
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Brand.secondary).accessibilityHidden(true)
-                }
-                .frame(minHeight: 44).contentShape(Rectangle())
+                // The name keeps the full width it is offered, so its ViewThatFits wraps; in an HStack beside a
+                // Spacer it measured its ideal one-line width and pushed the page off screen at accessibility sizes.
+                speaker
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.trailing, 28)
+                    .overlay(alignment: .trailing) {
+                        Image(systemName: "chevron.right").font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Brand.secondary).accessibilityHidden(true)
+                    }
+                    .frame(minHeight: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityHint("Ouvre sa fiche")
