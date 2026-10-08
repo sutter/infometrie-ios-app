@@ -4,6 +4,7 @@ struct SavedSearchesView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicType
     @State private var archived = false
     @State private var deleting: SavedSearch?
     private var searches: [SavedSearch] {
@@ -15,7 +16,10 @@ struct SavedSearchesView: View {
             Group {
                 VStack(alignment: .leading, spacing: 20) {
                     PageHeading(title: "Mes suivis", subtitle: "Vos sujets, au fil de l’actualité.")
-                    Button { model.newSearch() } label: { Label("Créer un suivi", systemImage: "plus") }
+                    // At accessibility sizes the "+" left too little room and the label broke inside "Créer".
+                    Button { model.newSearch() } label: {
+                        if dynamicType.isAccessibilitySize { Text("Créer un suivi") } else { Label("Créer un suivi", systemImage: "plus") }
+                    }
                         // Prominent only while the list is empty; afterwards the suivis themselves lead.
                         .buttonStyle(ActionButtonStyle(prominent: model.savedSearches.isEmpty)).accessibilityIdentifier("new-search")
                     // Chips, like the feed's types: one look for every choice that narrows a list.

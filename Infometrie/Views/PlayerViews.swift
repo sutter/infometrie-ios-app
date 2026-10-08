@@ -244,15 +244,14 @@ struct PlaybackDock: View {
                     } else {
                         HStack(spacing: 8) { queueButton(forward: false); playCircle; queueButton(forward: true) }
                     }
-                } else if compact {
+                } else if compact || dynamicType.isAccessibilitySize {
+                    // At accessibility sizes too: "Écouter" on its own row over the skips took half the screen and
+                    // hid the passage's speaker. The play button keeps "Écouter" for VoiceOver.
                     HStack(spacing: 12) {
                         skipButton(forward: false)
                         playButton.labelStyle(.iconOnly)
                         skipButton(forward: true)
                     }
-                } else if dynamicType.isAccessibilitySize {
-                    playButton
-                    HStack(spacing: 16) { skipButton(forward: false); skipButton(forward: true) }
                 } else {
                     HStack(spacing: 12) { skipButton(forward: false); playButton; skipButton(forward: true) }
                 }
