@@ -3,7 +3,7 @@ import plistlib, json, re
 root=Path(__file__).resolve().parents[1]
 project=root/'Infometrie.xcodeproj';project.mkdir(exist_ok=True)
 # Signing team and build number set in Xcode after the first generation; kept here so a rerun matches the committed project.
-TEAM='Q37972BSB3';APP_BUILD='8'
+TEAM='Q37972BSB3';APP_BUILD='9'
 # Stable IDs make the project reproducible without a generator dependency.
 ids={k:f'{i:024X}' for i,k in enumerate(['project','main','products','appgroup','testgroup','app','test','appproduct','testproduct','appsources','appresources','appframeworks','testsources','testresources','testframeworks','projectconfig','appconfig','testconfig','projectdebug','projectrelease','appdebug','apprelease','testdebug','testrelease','exception','dependency','proxy'],1)}
 def ref(k):return ids[k]
