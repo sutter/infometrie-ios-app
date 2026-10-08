@@ -18,7 +18,7 @@ The user reviews the result in the simulator themselves: after any change that s
 
 | Change | Check |
 | ------ | ----- |
-| Any change on screen (layout, copy, behavior, navigation) | Open the updated app in the simulator for the user. No UI test and no screenshot unless asked: the user iterates fast and checks the result themselves. UI tests run only on request or before a push |
+| Any change on screen (layout, copy, behavior, navigation) | Open the updated app in the simulator for the user. No UI test and no screenshot unless asked: the user iterates fast and checks the result themselves. UI tests run only on request or before a push. This outranks a plan's acceptance criteria and a skill's assert step: there, the build plus the app open in the simulator is the proof |
 
 ## Before push
 
