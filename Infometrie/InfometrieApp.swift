@@ -85,12 +85,14 @@ struct RootView: View {
             guard model.isAuthenticated, scenePhase == .active else { model.player.pause(); return }
             let appModel = model
             async let choices: Void = appModel.loadChoices()
-            await appModel.refresh(reset: appModel.items.isEmpty)
+            if appModel.period.isLive { await appModel.refresh(reset: appModel.items.isEmpty) }
+            else { await appModel.reloadHistoryIfDayChanged() }
             await choices
+            // Only Live polls: 7 j and 30 j end yesterday, so their days no longer change.
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(30)) } catch { return }
                 guard !Task.isCancelled else { return }
-                if !model.isRefreshing { await model.refresh() }
+                if model.period.isLive, !model.isRefreshing { await model.refresh() }
             }
         }
         .alert("InfoMétrie", isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } })) {

@@ -21,6 +21,17 @@ final class AppModel {
     /// Passages already opened or listened to, with the time they were seen (stored on the device).
     private(set) var seen: [Int64: Date] = [:]
     var isRefreshing = false
+    /// Live (the last 24 hours, polled) or the last 7 or 30 complete Paris days (`/history`, `/days`).
+    private(set) var period: FeedPeriod = .live
+    /// One day of the period chosen on the chart; nil shows the whole period.
+    private(set) var selectedDay: String?
+    /// The Paris days the period covers, oldest first.
+    private(set) var historyDays: [String] = []
+    private(set) var historyItems: [FeedItem] = []
+    private(set) var historyHasMore = false
+    private(set) var dayCounts: [DayCount] = []
+    private(set) var isLoadingHistory = false
+    private(set) var isLoadingMoreHistory = false
     var feedError: String?
     var choicesError: String?
     var lastRefresh: Date?
@@ -29,7 +40,9 @@ final class AppModel {
     private(set) var wordTimings: [Int64: SequenceWordTimings] = [:]
     private(set) var wordTimingStates: [Int64: WordTimingState] = [:]
     var isAuthenticated: Bool { session != nil }
-    var visibleItems: [FeedItem] { items.filter(filters.accepts) }
+    var visibleItems: [FeedItem] { (period.isLive ? items : historyItems).filter(filters.accepts) }
+    /// The first page of the current period is on its way.
+    var isLoadingPassages: Bool { period.isLive ? isRefreshing : isLoadingHistory }
     var accountID: String { session?.email.lowercased() ?? "" }
     let api: APIClient
     private let sessionStore: SessionStore
@@ -38,6 +51,8 @@ final class AppModel {
     let player = PlaybackModel()
     private var lastSeq: Int64 = 0
     private var requestID = UUID()
+    /// History has its own guard: its items carry `seq` 0 and must never touch the live cursor.
+    private var historyRequestID = UUID()
     private let searches = SearchStore()
     private let seenStore = SeenStore()
     @ObservationIgnored private var wordTimingTasks: [Int64: Task<Void, Never>] = [:]
@@ -99,6 +114,7 @@ final class AppModel {
         items = []; persons = []; parties = []; savedSearches = []; seen = [:]
         filters = SearchFilters(); draft = SearchFilters(); tab = .feed; isSearchPresented = false
         lastSeq = 0; lastRefresh = nil; feedError = nil; choicesError = nil
+        resetHistory(); period = .live; selectedDay = nil
         isRefreshing = false; quota = nil; notice = nil
     }
 
@@ -143,8 +159,98 @@ final class AppModel {
         persistSearches()
         if changed {
             requestID = UUID(); lastSeq = 0; items = []
-            await refresh(reset: true)
+            if period.isLive { await refresh(reset: true) } else { await reloadHistory() }
         }
+    }
+
+    // MARK: Periods
+
+    func selectPeriod(_ value: FeedPeriod) async {
+        guard value != period else { return }
+        period = value; selectedDay = nil; feedError = nil
+        if value.isLive {
+            resetHistory()
+            await refresh(reset: items.isEmpty)
+        } else { await reloadHistory() }
+    }
+    /// Shows one day of the period, or the whole period with nil.
+    func selectDay(_ day: String?) async {
+        guard !period.isLive, day != selectedDay, day.map(historyDays.contains) ?? true else { return }
+        selectedDay = day
+        let id = UUID(); historyRequestID = id
+        historyItems = []; historyHasMore = false; isLoadingMoreHistory = false; feedError = nil
+        await loadHistoryPage(id: id)
+    }
+    /// Pull to refresh: the live cursor from zero, or the period's counts and first page again.
+    func reload() async {
+        if period.isLive { await refresh(reset: true) } else { await reloadHistory() }
+    }
+    /// Back in the foreground: a 7 or 30 day period moves on once a new day has started in Paris.
+    func reloadHistoryIfDayChanged(now: Date = Date()) async {
+        guard !period.isLive, period.days(before: now) != historyDays else { return }
+        await reloadHistory(now: now)
+    }
+    func reloadHistory(now: Date = Date()) async {
+        guard let session, !period.isLive else { return }
+        let id = UUID(); historyRequestID = id
+        let criteria = filters, span = period
+        historyDays = span.days(before: now)
+        if let day = selectedDay, !historyDays.contains(day) { selectedDay = nil }
+        dayCounts = []; historyItems = []; historyHasMore = false; isLoadingMoreHistory = false; feedError = nil
+        async let counts = api.days(token: session.token, filters: criteria, count: span.rawValue)
+        async let page: Void = loadHistoryPage(id: id)
+        do {
+            let result = try await counts
+            guard historyRequestID == id, self.session?.token == session.token, !Task.isCancelled else { await page; return }
+            dayCounts = result.days
+        } catch {
+            if historyRequestID == id, !Task.isCancelled { failHistory(error) }
+        }
+        await page
+    }
+    /// The next page of the period or day, once the list reaches its end.
+    func loadMoreHistory() async {
+        guard let session, !period.isLive, historyHasMore, !isLoadingHistory, !isLoadingMoreHistory,
+              let last = historyItems.last, let window = historyWindow else { return }
+        let id = historyRequestID, criteria = filters
+        isLoadingMoreHistory = true
+        defer { if historyRequestID == id { isLoadingMoreHistory = false } }
+        do {
+            let result = try await api.history(token: session.token, filters: criteria, from: window.from, to: window.to, beforeID: last.id)
+            guard historyRequestID == id, self.session?.token == session.token, !Task.isCancelled else { return }
+            let known = Set(historyItems.map(\.id))
+            historyItems += result.items.filter { !known.contains($0.id) }
+            historyHasMore = result.hasMore && !result.items.isEmpty
+        } catch {
+            if historyRequestID == id, !Task.isCancelled { failHistory(error) }
+        }
+    }
+    private var historyWindow: (from: String, to: String)? {
+        if let selectedDay { return (selectedDay, selectedDay) }
+        guard let first = historyDays.first, let last = historyDays.last else { return nil }
+        return (first, last)
+    }
+    private func loadHistoryPage(id: UUID) async {
+        guard let session, let window = historyWindow else { return }
+        let criteria = filters
+        isLoadingHistory = true
+        defer { if historyRequestID == id { isLoadingHistory = false } }
+        do {
+            let result = try await api.history(token: session.token, filters: criteria, from: window.from, to: window.to)
+            guard historyRequestID == id, self.session?.token == session.token, !Task.isCancelled else { return }
+            historyItems = result.items; historyHasMore = result.hasMore; lastRefresh = Date()
+        } catch {
+            if historyRequestID == id, !Task.isCancelled { failHistory(error) }
+        }
+    }
+    private func failHistory(_ error: Error) {
+        handleSessionError(error)
+        if isAuthenticated { feedError = message(for: error) }
+    }
+    private func resetHistory() {
+        historyRequestID = UUID()
+        historyDays = []; historyItems = []; historyHasMore = false; dayCounts = []
+        isLoadingHistory = false; isLoadingMoreHistory = false
     }
     func openSearch(_ value: SearchFilters) {
         draft = value

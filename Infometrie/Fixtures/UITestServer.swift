@@ -81,9 +81,11 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
     /// Routes of `FixtureContent`: feed, filter choices, sequences, word timings and HLS media.
     private func respondWithContent(_ url: URL) {
         let route = Array(url.pathComponents.dropFirst(3))
-        let item = route.count >= 2 ? Int64(route[1]).flatMap { id in FixtureContent.feed.first { $0.id == id } } : nil
+        let item = route.count >= 2 ? Int64(route[1]).flatMap { id in FixtureContent.all.first { $0.id == id } } : nil
         switch (route.first ?? "", route.count) {
         case ("feed", 1): respondToFeed(url)
+        case ("history", 1): respondToHistory(url)
+        case ("days", 1): respondToDays(url)
         case ("persons", 1): respond(200, json(FixtureContent.persons))
         case ("parties", 1): respond(200, json(FixtureContent.parties))
         case ("sequences", 2):
@@ -119,6 +121,45 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
         }
         let lastSeq = max(since, FixtureContent.feed.map(\.seq).max() ?? 0)
         respond(200, ["last_seq": lastSeq, "items": json(items)])
+    }
+
+    /// Items of a window of Paris days, newest first, paged on the id like the server.
+    private func respondToHistory(_ url: URL) {
+        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        func value(_ name: String) -> String? { query.first { $0.name == name }?.value }
+        func values(_ name: String) -> Set<String>? { value(name).map { Set($0.split(separator: ",").map(String.init)) } }
+        guard let from = value("from").flatMap(ParisDay.date), let last = value("to").flatMap(ParisDay.date),
+              let to = ParisDay.calendar.date(byAdding: .day, value: 1, to: last), from < to,
+              to.timeIntervalSince(from) <= 31 * 86_400 + 3_600,
+              let kinds = values("kinds"), !kinds.isEmpty else { respond(400); return }
+        let limit = value("limit").flatMap { Int($0) } ?? 50
+        let before = value("before_id").flatMap { Int64($0) } ?? .max
+        let persons = values("persons"), parties = values("parties")
+        let matches = FixtureContent.history.filter { item in
+            guard let date = item.date else { return false }
+            return date >= from && date < to && item.id < before && kinds.contains(item.kind)
+                && persons?.contains(item.person) != false && parties?.contains(item.party) != false
+        }.sorted { $0.id > $1.id }
+        respond(200, ["items": json(Array(matches.prefix(limit))), "has_more": matches.count > limit])
+    }
+
+    /// Every kind counted per complete Paris day, oldest first, today left out.
+    private func respondToDays(_ url: URL) {
+        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        func values(_ name: String) -> Set<String>? {
+            query.first { $0.name == name }?.value.map { Set($0.split(separator: ",").map(String.init)) }
+        }
+        let count = query.first { $0.name == "days" }?.value.flatMap { Int($0) } ?? 7
+        guard (1...31).contains(count) else { respond(400); return }
+        let persons = values("persons"), parties = values("parties")
+        let items = FixtureContent.history.filter { persons?.contains($0.person) != false && parties?.contains($0.party) != false }
+        let days = ParisDay.days(count: count, before: Date()).map { day in
+            let passages = items.filter { $0.date.map(ParisDay.string) == day }
+            return DayCount(day: day, interventions: passages.filter { $0.kind == "intervention" }.count,
+                            citations: passages.filter(\.isCitation).count, tweets: passages.filter(\.isTweet).count,
+                            interventionSec: passages.filter { $0.kind == "intervention" }.reduce(0) { $0 + $1.durationSec })
+        }
+        respond(200, ["days": json(days)])
     }
 
     /// The media always starts at the passage; its program date tells the player where it sits in time.
