@@ -789,8 +789,10 @@ final class InfometrieUITests: XCTestCase {
         }
     }
 
+    /// The text lies in the passage page since 2026-10-09; the fullscreen text was removed then, and these two
+    /// journeys moved onto the page.
     @MainActor
-    func testFullscreenTranscriptKeepsPreciseSeekingAndPlayback() {
+    func testTranscriptKeepsPreciseSeekingAndPlayback() {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--signed-in", "--precise-word-timings", "-appearance", "dark",
                                "-readingSize", "M", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"]
@@ -798,116 +800,59 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         app.buttons["feed-item-1"].tap()
         let toggle = app.buttons["player-toggle"]
+        let elapsed = app.staticTexts["player-elapsed"]
+        let status = app.staticTexts["transcript-position"]
         listen(toggle)
         toggle.tap()
         reveal(app.links["retrouverez"], in: app, down: false)
         app.links["retrouverez"].tap()
-        wait(app.staticTexts["transcript-position"], key: "value", equals: "Mot 19 sur 41")
-        let expand = app.buttons["expand-transcript"]
-        reveal(expand, in: app, down: true)
-        expand.tap()
-        let fullscreen = app.descendants(matching: .any).matching(identifier: "fullscreen-transcript").firstMatch
-        let close = fullscreen.buttons["collapse-transcript"]
-        let fullToggle = fullscreen.buttons["player-toggle"]
-        let fullElapsed = fullscreen.staticTexts["player-elapsed"]
-        let fullStatus = fullscreen.staticTexts["transcript-position"]
-        XCTAssertTrue(close.waitForExistence(timeout: 5))
-        wait(fullToggle, key: "label", equals: "Écouter")
-        XCTAssertTrue(fullToggle.isHittable)
-        XCTAssertEqual(fullElapsed.label, "0:12", "Agrandir ne doit pas recréer le lecteur")
-        wait(fullStatus, key: "value", equals: "Mot 19 sur 41")
+        wait(status, key: "value", equals: "Mot 19 sur 41")
+        XCTAssertEqual(elapsed.label, "0:12")
         XCTAssertFalse(app.tabBars.firstMatch.exists)
-        XCTAssertFalse(app.buttons["navigation-feed"].isHittable, "Le plein écran doit aussi masquer la navigation iPad")
-        let scroll = fullscreen.scrollViews["transcript-scroll"]
-        XCTAssertGreaterThan(scroll.frame.height, 300, "Le texte utilise la hauteur disponible")
-        fullscreen.buttons["Reculer de 10 secondes"].tap()
-        wait(fullStatus, key: "value", equals: "Aucun mot actif")
-        fullscreen.buttons["Avancer de 10 secondes"].tap()
-        wait(fullStatus, key: "value", equals: "Mot 19 sur 41")
-        fullscreen.links["retrouverez"].tap()
-        XCTAssertEqual(fullElapsed.label, "0:12")
-        capture("24-texte-plein-ecran-sombre", app: app)
+        app.buttons["Reculer de 10 secondes"].tap()
+        wait(status, key: "value", equals: "Aucun mot actif")
+        app.buttons["Avancer de 10 secondes"].tap()
+        wait(status, key: "value", equals: "Mot 19 sur 41")
+        capture("24-texte-page-sombre", app: app)
 
-        let slider = fullscreen.sliders["player-position"]
-        slider.adjust(toNormalizedSliderPosition: 0.25)
-        XCTAssertNotEqual(fullElapsed.label, "0:12")
-        XCTAssertNotEqual(fullStatus.value as? String, "Mot 19 sur 41", "Le curseur met aussi à jour le texte")
-        XCTAssertEqual(fullToggle.label, "Écouter", "Déplacer le curseur conserve la pause")
-        let pausedPosition = fullElapsed.label
-        // Scrolling by hand suspends following, which comes back on its own a few seconds later (no button since 2026-10-09).
-        scroll.swipeUp()
-        let follow = fullscreen.staticTexts["transcript-follow"]
-        wait(follow, key: "value", equals: "Désactivé")
-        wait(follow, key: "value", equals: "Activé")
-        close.tap()
-        XCTAssertTrue(expand.waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["player-elapsed"].label, pausedPosition)
-        XCTAssertEqual(toggle.label, "Écouter")
-        expand.tap()
-        XCTAssertTrue(close.waitForExistence(timeout: 5))
-        for _ in 0..<4 {
-            if fullscreen.links["Cette"].isHittable { break }
-            scroll.swipeDown()
-        }
-        fullscreen.links["Cette"].tap()
-        wait(fullStatus, key: "value", equals: "Mot 1 sur 41")
-        XCTAssertEqual(fullElapsed.label, "0:01")
-        close.tap()
-        XCTAssertTrue(expand.waitForExistence(timeout: 5))
+        app.sliders["player-position"].adjust(toNormalizedSliderPosition: 0.25)
+        XCTAssertNotEqual(elapsed.label, "0:12")
+        XCTAssertNotEqual(status.value as? String, "Mot 19 sur 41", "Le curseur met aussi à jour le texte")
+        XCTAssertEqual(toggle.label, "Écouter", "Déplacer le curseur conserve la pause")
+        reveal(app.links["Cette"], in: app, down: true)
+        app.links["Cette"].tap()
+        wait(status, key: "value", equals: "Mot 1 sur 41")
+        XCTAssertEqual(elapsed.label, "0:01")
         toggle.tap()
         wait(toggle, key: "label", equals: "Pause")
-        expand.tap()
-        XCTAssertTrue(close.waitForExistence(timeout: 5))
-        XCTAssertEqual(fullToggle.label, "Pause", "L’écoute continue à l’ouverture")
-        close.tap()
-        XCTAssertTrue(expand.waitForExistence(timeout: 5))
-        XCTAssertEqual(toggle.label, "Pause", "L’écoute continue à la fermeture")
         toggle.tap()
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 5))
     }
 
     @MainActor
-    func testFullscreenTranscriptSeeksFromTextAtMaximumSize() {
+    func testTranscriptSeeksFromTextAtMaximumSize() {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light", "-readingSize", "M",
                                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         app.buttons["feed-item-1"].tap()
-        let expand = app.buttons["expand-transcript"]
-        reveal(expand, in: app, down: false)
-        expand.tap()
-        let fullscreen = app.descendants(matching: .any).matching(identifier: "fullscreen-transcript").firstMatch
-        let close = fullscreen.buttons["collapse-transcript"]
-        XCTAssertTrue(close.waitForExistence(timeout: 5))
-        let toggle = fullscreen.buttons["player-toggle"]
+        let toggle = app.buttons["player-toggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 10))
-        XCTAssertEqual(toggle.label, "Écouter", "Agrandir ne démarre pas l’écoute")
-        XCTAssertTrue(fullscreen.links["Cette"].isHittable)
-        fullscreen.links["Cette"].tap()
-        wait(fullscreen.staticTexts["player-elapsed"], key: "label", equals: "0:00")
-        listen(toggle)
-        toggle.tap()
         XCTAssertEqual(toggle.label, "Écouter")
-        let scroll = fullscreen.scrollViews["transcript-scroll"]
-        XCTAssertGreaterThan(scroll.frame.height, 100)
-        for control in [close, toggle, fullscreen.sliders["player-position"], fullscreen.buttons["Avancer de 10 secondes"], fullscreen.buttons["Reculer de 10 secondes"]] {
+        reveal(app.links["Cette"], in: app, down: false)
+        app.links["Cette"].tap()
+        wait(app.staticTexts["player-elapsed"], key: "label", equals: "0:00")
+        XCTAssertEqual(toggle.label, "Écouter", "Toucher un mot ne démarre pas l’écoute")
+        for control in [toggle, app.sliders["player-position"], app.buttons["Avancer de 10 secondes"], app.buttons["Reculer de 10 secondes"]] {
             XCTAssertTrue(control.isHittable)
             // Native sliders expose their track frame, independently of their extended hit area.
             if control.elementType != .slider { XCTAssertGreaterThanOrEqual(control.frame.height, 44) }
             XCTAssertLessThanOrEqual(control.frame.maxY, app.frame.maxY)
             XCTAssertLessThanOrEqual(control.frame.maxX, app.frame.maxX)
         }
-        scroll.swipeUp()
-        let follow = fullscreen.staticTexts["transcript-follow"]
-        wait(follow, key: "value", equals: "Désactivé")
-        wait(follow, key: "value", equals: "Activé")
-        capture("25-texte-plein-ecran-accessibilite", app: app)
-        close.tap()
-        XCTAssertTrue(expand.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["player-toggle"].exists)
-        XCTAssertEqual(app.buttons["player-toggle"].label, "Écouter")
+        capture("25-texte-page-accessibilite", app: app)
     }
 
     @MainActor
@@ -954,7 +899,6 @@ final class InfometrieUITests: XCTestCase {
         let changed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value != %@", before), object: status)
         XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 4), .completed)
         toggle.tap()
-        // The fullscreen journeys cover suspending and resuming.
         XCTAssertEqual(app.staticTexts["transcript-follow"].value as? String, "Activé")
         capture("08-verbatim-suivi-lecteur", app: app)
     }
@@ -1117,7 +1061,7 @@ final class InfometrieUITests: XCTestCase {
             let dockBottom = listen.exists && listen.isHittable ? listen.frame.minY - 12 : nil
             let bottom = slider.exists ? slider.frame.minY - 12 : filterBottom ?? dockBottom ?? bounds.maxY - 150
             if element.exists && element.isHittable {
-                let contentControl = ["sequence-summary", "sequence-context", "transcript-follow", "expand-transcript", "transcript-scroll"].contains(identifier)
+                let contentControl = ["sequence-summary", "sequence-context", "transcript-follow", "transcript-scroll"].contains(identifier)
                     || ["save-search", "reset-search", "clear-choices", "start-podcast", "logout"].contains(identifier)
                     || ["filter-kind-", "feed-kind-", "feed-item-", "choice-", "pick-"].contains { identifier.hasPrefix($0) }
                 if element.elementType != .link && !contentControl { return }

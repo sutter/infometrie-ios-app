@@ -16,7 +16,6 @@ How the user moves through the app: routing and the page structure.
 flowchart LR
     Login["Connexion"] --> Feed["Le journal"]
     Feed --> Sequence["Séquence"]
-    Sequence --> Fullscreen["Texte plein écran"]
     Sequence --> Person["Fiche personnalité"]
     Person -->|Voir ses passages| Feed
     Feed --> Filters["Filtres · sheet"]

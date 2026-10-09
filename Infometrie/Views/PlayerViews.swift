@@ -9,7 +9,6 @@ struct SequenceView: View {
     @State private var detail: SequenceDetail?
     @State private var error: String?
     @State private var reload = 0
-    @State private var isTranscriptExpanded = false
     @State private var transcriptReading = TranscriptReadingState()
     private var isCurrent: Bool { model.player.current?.id == item.id && !model.player.isPodcast }
     private var displayDetail: SequenceDetail? { isCurrent ? model.player.detail ?? detail : detail }
@@ -17,20 +16,9 @@ struct SequenceView: View {
 
     var body: some View {
         VStack(spacing: 0) { sequenceContent }
-            // Group the scroll view and its safe-area controls before hiding the presenter.
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("sequence-content")
-            .accessibilityHidden(isTranscriptExpanded)
-            .fullScreenCover(isPresented: $isTranscriptExpanded) {
-                if let detail = displayDetail {
-                    TranscriptFullscreenView(detail: detail, reading: transcriptReading)
-                        .environment(model)
-                }
-            }
-            .onDisappear {
-                // Presenting the reading view must keep the existing AVPlayer alive.
-                if isCurrent && !isTranscriptExpanded { model.player.stop() }
-            }
+            .onDisappear { if isCurrent { model.player.stop() } }
     }
 
     /// The transcript heading and a paragraph, drawn as placeholders until the passage arrives.
@@ -73,7 +61,7 @@ struct SequenceView: View {
                             }
                         } else if !detail.verbatim.isEmpty {
                             TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: isCurrent,
-                                           reading: transcriptReading, onExpand: { isTranscriptExpanded = true }) { word in
+                                           reading: transcriptReading) { word in
                                 if isCurrent { model.player.seekToWord(word, sequenceID: detail.id) }
                                 else { model.player.start(items: [item], app: model, podcast: false, atWord: word) }
                             }.id(detail.id).transition(.opacity)
@@ -103,35 +91,33 @@ struct SequenceView: View {
                 }.padding(.horizontal, AppLayout.margin).padding(.vertical, 20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if !isTranscriptExpanded {
-                    if displayItem.isTweet, let url = displayItem.publicationURL {
-                        Link(destination: url) { Label("Voir la publication sur X", systemImage: "arrow.up.right") }
-                            .buttonStyle(ActionButtonStyle(prominent: true))
-                            .accessibilityIdentifier("open-publication")
-                            .accessibilityHint("Ouvre la publication dans X ou votre navigateur")
-                            .padding([.horizontal, .top], 16).modifier(HomeIndicatorPadding()).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-                            .background(Brand.background).overlay(alignment: .top) { AppRule() }
-                    } else if displayItem.canPlay {
-                        if isCurrent { PlaybackDock() }
-                        else if displayDetail == nil && error == nil {
-                            // While the passage loads, the player's own shape, greyed: the page prepares the player on
-                            // opening, and the "Écouter ce passage" button that flashed here first changed the bottom's
-                            // height and shape on every opening (2026-10-09).
-                            PlaybackDock().skeleton().disabled(true).accessibilityHidden(true)
-                        } else {
-                            Button { model.player.start(items: [item], app: model, podcast: false) } label: {
-                                AdaptiveRow {
-                                    Label("Écouter ce passage", systemImage: "play.fill")
-                                    if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
-                                    if item.durationSec > 0 {
-                                        Text(item.readableDuration).font(.subheadline.monospacedDigit())
-                                            .accessibilityLabel("Durée : \(item.readableDuration)")
-                                    }
+                if displayItem.isTweet, let url = displayItem.publicationURL {
+                    Link(destination: url) { Label("Voir la publication sur X", systemImage: "arrow.up.right") }
+                        .buttonStyle(ActionButtonStyle(prominent: true))
+                        .accessibilityIdentifier("open-publication")
+                        .accessibilityHint("Ouvre la publication dans X ou votre navigateur")
+                        .padding([.horizontal, .top], 16).modifier(HomeIndicatorPadding()).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+                        .background(Brand.background).overlay(alignment: .top) { AppRule() }
+                } else if displayItem.canPlay {
+                    if isCurrent { PlaybackDock() }
+                    else if displayDetail == nil && error == nil {
+                        // While the passage loads, the player's own shape, greyed: the page prepares the player on
+                        // opening, and the "Écouter ce passage" button that flashed here first changed the bottom's
+                        // height and shape on every opening (2026-10-09).
+                        PlaybackDock().skeleton().disabled(true).accessibilityHidden(true)
+                    } else {
+                        Button { model.player.start(items: [item], app: model, podcast: false) } label: {
+                            AdaptiveRow {
+                                Label("Écouter ce passage", systemImage: "play.fill")
+                                if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
+                                if item.durationSec > 0 {
+                                    Text(item.readableDuration).font(.subheadline.monospacedDigit())
+                                        .accessibilityLabel("Durée : \(item.readableDuration)")
                                 }
-                            }.buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("play-sequence")
-                                .padding([.horizontal, .top], 16).modifier(HomeIndicatorPadding()).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.background)
-                                .overlay(alignment: .top) { AppRule() }
-                        }
+                            }
+                        }.buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("play-sequence")
+                            .padding([.horizontal, .top], 16).modifier(HomeIndicatorPadding()).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.background)
+                            .overlay(alignment: .top) { AppRule() }
                     }
                 }
             }

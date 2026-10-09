@@ -33,8 +33,6 @@ struct TranscriptView: View {
     @State private var localReading = TranscriptReadingState()
     private let sharedReading: TranscriptReadingState?
     private var reading: TranscriptReadingState { sharedReading ?? localReading }
-    private let expanded: Bool
-    private let onExpand: (() -> Void)?
     let detail: SequenceDetail
     let isCurrent: Bool
     let onSeek: (Int) -> Void
@@ -42,9 +40,9 @@ struct TranscriptView: View {
     private let largeTextTimeline: TranscriptTimeline
     private var timeline: TranscriptTimeline { dynamicType.isAccessibilitySize ? largeTextTimeline : standardTimeline }
 
-    init(detail: SequenceDetail, timings: SequenceWordTimings? = nil, isCurrent: Bool, reading: TranscriptReadingState? = nil, expanded: Bool = false, onExpand: (() -> Void)? = nil, onSeek: @escaping (Int) -> Void) {
+    init(detail: SequenceDetail, timings: SequenceWordTimings? = nil, isCurrent: Bool, reading: TranscriptReadingState? = nil, onSeek: @escaping (Int) -> Void) {
         self.detail = detail; self.isCurrent = isCurrent; self.onSeek = onSeek
-        self.sharedReading = reading; self.expanded = expanded; self.onExpand = onExpand
+        self.sharedReading = reading
         standardTimeline = TranscriptTimeline(detail: detail, timings: timings)
         largeTextTimeline = TranscriptTimeline(detail: detail, timings: timings, maximumWordsPerPassage: 4)
     }
@@ -64,51 +62,21 @@ struct TranscriptView: View {
             .motion(value: notice)
     }
 
-    @ViewBuilder private var content: some View {
-        if expanded {
-            // No header: the text starts right away, and resuming sits below it as on the page.
-            VStack(alignment: .leading, spacing: 12) {
-                if let notice {
-                    Text(notice).font(.footnote).foregroundStyle(Brand.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("transcript-notice")
-                }
-                textScroll.frame(maxHeight: .infinity)
-                    .overlay(alignment: .topLeading) { positionStatus }
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 0) {
-                AppRule()
-                VStack(alignment: .leading, spacing: 0) {
-                    // No "Verbatim" title: the text follows the passage title directly; only the
-                    // fullscreen control remains, on the right.
-                    HStack(spacing: 12) {
-                        Spacer(minLength: 0)
-                        if let onExpand {
-                            Button(action: onExpand) {
-                                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                    .font(.body.weight(.semibold))
-                                    .frame(width: 44, height: 44).contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain).foregroundStyle(Brand.tint)
-                            .accessibilityLabel("Afficher le texte en plein écran")
-                            .accessibilityIdentifier("expand-transcript")
-                        }
-                    }
-                    .overlay(alignment: .topLeading) { positionStatus }
-                    // The whole text, in the page: a box scrolling inside the scrolling page was one scroll too
-                    // many (2026-10-09). The page follows the listening (`SequenceView`).
-                    textInline
-                }.padding(.top, 4)
-                if let notice {
-                    Text(notice).font(.footnote).foregroundStyle(Brand.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("transcript-notice")
+    /// The whole text, in the page: a box scrolling inside the scrolling page was one scroll too many, and the
+    /// fullscreen text went with it (2026-10-09). The page follows the listening (`SequenceView`).
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            AppRule()
+            textInline.padding(.top, 16)
+                .overlay(alignment: .topLeading) { positionStatus }
+            if let notice {
+                Text(notice).font(.footnote).foregroundStyle(Brand.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("transcript-notice")
                     .padding(.vertical, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .overlay(alignment: .top) { AppRule() }
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
-                }
             }
         }
     }
@@ -137,41 +105,28 @@ struct TranscriptView: View {
     }
 
     private var passages: some View {
-        VStack(alignment: .leading, spacing: expanded ? 24 : 16) {
+        VStack(alignment: .leading, spacing: 16) {
             ForEach(timeline.passages) { passage in
                 Text(attributed(passage))
-                    .font(expanded ? .title2.weight(.semibold) : .body)
-                    .lineSpacing(expanded ? 8 : 6)
+                    .font(.body)
+                    .lineSpacing(6)
                     .foregroundStyle(Brand.ink).tint(Brand.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .id(passage.id)
                     .accessibilityIdentifier("transcript-passage-\(passage.id)")
             }
-            if expanded, isCurrent, let error = model.player.error { ErrorNotice(message: error) }
         }
     }
 
-    /// On the passage page: the passages laid out in the page, which scrolls and follows them.
+    /// The passages laid out in the page, which scrolls and follows them.
     private var textInline: some View {
         followsListening(passages.padding(.vertical, 4)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("transcript-scroll"))
     }
 
-    /// In fullscreen: the text scrolls on its own and follows the listening itself.
-    private var textScroll: some View {
-        @Bindable var reading = reading
-        return followsListening(ScrollView {
-            passages.scrollTargetLayout().padding(.vertical, 12)
-        }
-        .scrollEdgeEffectHidden(true)
-        .accessibilityIdentifier("transcript-scroll")
-        .scrollPosition(id: $reading.visiblePassage, anchor: .top)
-        .onScrollPhaseChange { _, phase in reading.scrollPhaseChanged(to: phase) })
-    }
-
-    /// Moves the reading to the passage being heard (`visiblePassage`, which the fullscreen scroll and the passage
-    /// page both follow), and lets a tapped word seek the player.
+    /// Moves the reading to the passage being heard (`visiblePassage`, which the passage page follows), and lets a
+    /// tapped word seek the player.
     private func followsListening(_ content: some View) -> some View {
         content
             .onChange(of: timeline.passageID(forWord: activeWord)) { _, passage in
