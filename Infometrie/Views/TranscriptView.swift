@@ -11,8 +11,6 @@ struct TranscriptView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicType
-    @ScaledMetric(relativeTo: .body) private var textHeight = 250.0
-    @State private var textContentHeight: CGFloat?
     @State private var localReading = TranscriptReadingState()
     private let sharedReading: TranscriptReadingState?
     private var reading: TranscriptReadingState { sharedReading ?? localReading }
@@ -83,8 +81,9 @@ struct TranscriptView: View {
                         }
                     }
                     .overlay(alignment: .topLeading) { positionStatus }
-                    // As tall as the text, up to the former fixed height: a short verbatim leaves no gap.
-                    textScroll.frame(height: min(textContentHeight ?? textHeight, textHeight, 380))
+                    // The whole text, in the page: a box scrolling inside the scrolling page was one scroll too
+                    // many (2026-10-09). The page follows the listening (`SequenceView`).
+                    textInline
                 }.padding(.top, 4)
                 if showsResume || notice != nil {
                     VStack(alignment: .leading, spacing: 10) {
@@ -118,44 +117,61 @@ struct TranscriptView: View {
             .accessibilityIdentifier("transcript-position")
     }
 
+    private var passages: some View {
+        VStack(alignment: .leading, spacing: expanded ? 24 : 16) {
+            ForEach(timeline.passages) { passage in
+                Text(attributed(passage))
+                    .font(expanded ? .title2.weight(.semibold) : .body)
+                    .lineSpacing(expanded ? 8 : 6)
+                    .foregroundStyle(Brand.ink).tint(Brand.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .id(passage.id)
+                    .accessibilityIdentifier("transcript-passage-\(passage.id)")
+            }
+            if expanded, isCurrent, let error = model.player.error { ErrorNotice(message: error) }
+        }
+    }
+
+    /// On the passage page: the passages laid out in the page, which scrolls and follows them.
+    private var textInline: some View {
+        followsListening(passages.padding(.vertical, 4)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("transcript-scroll"))
+    }
+
+    /// In fullscreen: the text scrolls on its own and follows the listening itself.
     private var textScroll: some View {
         @Bindable var reading = reading
-        return ScrollView {
-            VStack(alignment: .leading, spacing: expanded ? 24 : 16) {
-                ForEach(timeline.passages) { passage in
-                    Text(attributed(passage))
-                        .font(expanded ? .title2.weight(.semibold) : .body)
-                        .lineSpacing(expanded ? 8 : 6)
-                        .foregroundStyle(Brand.ink).tint(Brand.ink)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .id(passage.id)
-                        .accessibilityIdentifier("transcript-passage-\(passage.id)")
-                }
-                if expanded, isCurrent, let error = model.player.error { ErrorNotice(message: error) }
-            }.scrollTargetLayout().padding(.vertical, expanded ? 12 : 4)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textContentHeight = $0 }
+        return followsListening(ScrollView {
+            passages.scrollTargetLayout().padding(.vertical, 12)
         }
         .scrollEdgeEffectHidden(true)
         .accessibilityIdentifier("transcript-scroll")
         .scrollPosition(id: $reading.visiblePassage, anchor: .top)
         .onScrollPhaseChange { _, phase in
             if phase == .interacting { reading.followsPlayback = false }
-        }
-        .onChange(of: timeline.passageID(forWord: activeWord)) { _, passage in
-            if reading.followsPlayback { follow(passage) }
-        }
-        .onChange(of: reading.followsPlayback) { _, following in
-            if following { follow(timeline.passageID(forWord: activeWord)) }
-        }
-        .onAppear { if reading.followsPlayback { follow(timeline.passageID(forWord: activeWord)) } }
-        .environment(\.openURL, OpenURLAction { url in
-            guard canSeek, url.scheme == "infometrie-transcript", url.host == "seek",
-                  url.pathComponents.count == 3, url.pathComponents[1] == String(detail.id),
-                  let word = Int(url.pathComponents[2]), timeline.words.indices.contains(word) else { return .discarded }
-            reading.followsPlayback = true
-            onSeek(word)
-            return .handled
         })
+    }
+
+    /// Moves the reading to the passage being heard (`visiblePassage`, which the fullscreen scroll and the passage
+    /// page both follow), and lets a tapped word seek the player.
+    private func followsListening(_ content: some View) -> some View {
+        content
+            .onChange(of: timeline.passageID(forWord: activeWord)) { _, passage in
+                if reading.followsPlayback { follow(passage) }
+            }
+            .onChange(of: reading.followsPlayback) { _, following in
+                if following { follow(timeline.passageID(forWord: activeWord)) }
+            }
+            .onAppear { if reading.followsPlayback { follow(timeline.passageID(forWord: activeWord)) } }
+            .environment(\.openURL, OpenURLAction { url in
+                guard canSeek, url.scheme == "infometrie-transcript", url.host == "seek",
+                      url.pathComponents.count == 3, url.pathComponents[1] == String(detail.id),
+                      let word = Int(url.pathComponents[2]), timeline.words.indices.contains(word) else { return .discarded }
+                reading.followsPlayback = true
+                onSeek(word)
+                return .handled
+            })
     }
 
     private var followButton: some View {
