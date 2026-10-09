@@ -70,7 +70,7 @@ struct RootView: View {
                     // moves beside it.
                     .tabBarMinimizeBehavior(.onScrollDown)
                     .modifier(ListenAccessoryDock(enabled: horizontalSizeClass != .regular && model.tab == .feed
-                                                  && model.isFeedRootVisible && !model.playableItems.isEmpty))
+                                                  && model.pushedPages == 0 && !model.playableItems.isEmpty))
                 }
                 .background(Brand.background)
                 .sheet(isPresented: $binding.isSearchPresented) {
@@ -106,6 +106,13 @@ struct RootView: View {
 }
 
 extension View {
+    /// A page pushed over a tab's root: hides the tab bar and, from the first frame of the push, its accessory.
+    func pushedPage(_ model: AppModel) -> some View {
+        toolbar(.hidden, for: .tabBar)
+            .onAppear { model.pushedPages += 1 }
+            .onDisappear { model.pushedPages = max(0, model.pushedPages - 1) }
+    }
+
     /// The system tab bar on iPhone; the iPad hides it for its sidebar. Pushed pages hide it themselves.
     func withMainTabBar() -> some View { modifier(MainTabBarDock()) }
 }

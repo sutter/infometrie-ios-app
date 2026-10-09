@@ -52,7 +52,7 @@ struct PersonView: View {
         .background(Brand.background)
         .scrollEdgeEffectHidden(true)
         .navigationTitle("Personnalité").navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .tabBar)
+        .pushedPage(model)
         .toolbarBackground(Brand.background, for: .navigationBar)
         .toolbarBackgroundVisibility(.visible, for: .navigationBar)
         .task(id: "\(period.rawValue)-\(reload)") { selectedDay = nil; await load() }

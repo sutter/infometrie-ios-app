@@ -88,8 +88,6 @@ struct FeedView: View {
         .onChange(of: model.period) { jumpToTop() }
         .refreshable { await model.reload() }
         .modifier(FeedScrollOverflow(clips: usesWideLayout))
-        .onAppear { model.isFeedRootVisible = true }
-        .onDisappear { model.isFeedRootVisible = false }
         // On iPhone, listening is the tab bar's accessory (`ListenAccessory`). The iPad has no tab bar: the same
         // listening bar docks at the bottom of the journal column.
         .safeAreaInset(edge: .bottom, spacing: 0) {

@@ -58,8 +58,10 @@ final class AppModel {
     var visibleItems: [FeedItem] { (period.isLive ? items : historyItems).filter(filters.accepts) }
     /// What "Tout écouter" plays: the playable passages the list has loaded, oldest first.
     var playableItems: [FeedItem] { visibleItems.filter(\.canPlay).sorted { $0.at < $1.at } }
-    /// The journal's root page is on screen (not a pushed passage or profile): the listening accessory shows only there.
-    var isFeedRootVisible = false
+    /// Pages pushed over a tab's root (passage, profile) that are on screen. Hiding the tab bar does not hide its
+    /// "Tout écouter" accessory, so it hides on this count, raised as soon as a pushed page starts appearing: the
+    /// journal's own disappearance came only at the end of the push, and the accessory lingered over it (2026-10-09).
+    var pushedPages = 0
     /// The first page of the current period is on its way.
     var isLoadingPassages: Bool { period.isLive ? isRefreshing : isLoadingHistory }
     var accountID: String { session?.email.lowercased() ?? "" }
