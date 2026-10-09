@@ -1,8 +1,8 @@
 # Contrat API utilisé par l’application iOS
 
-Source officielle : [Swagger HLS Test](https://hls-test.yacast.fr/swagger/), [spécification YAML](https://hls-test.yacast.fr/swagger/specs.yaml), actualisée le 8 octobre 2026.
+Source officielle : [Swagger HLS Test](https://hls-test.yacast.fr/swagger/), [spécification YAML](https://hls-test.yacast.fr/swagger/specs.yaml), actualisée le 9 octobre 2026.
 
-Copie locale : [openapi.yaml](openapi.yaml). Version annoncée : `0.11.0-20261008105127`. SHA-256 : `df8d99e552430a85f86f18d02b85ab9dbd62adf8a52931516a6ef693002d5228`. Pour comparer avec la version en ligne : `scripts/check_api_contract.sh`.
+Copie locale : [openapi.yaml](openapi.yaml). Version annoncée : `0.12.0-20261009083227`. SHA-256 : `65ec64538d76524f96ad9f7b6a26be385610b34414ae99bd83541b3b4e0035aa`. Pour comparer avec la version en ligne : `scripts/check_api_contract.sh`.
 
 ## Routes branchées
 
@@ -26,6 +26,13 @@ Les routes privées utilisent le JWT client dans `Authorization: Bearer …`. La
 Vérifié le 22 septembre 2026 avec le compte fourni : HTTP 409 renvoie `error: true` (booléen), `reason: "device quota reached"`, `max_devices` (entier) et `devices` (liste d’appareils). Le Swagger ne détaille pas ce corps. Le modèle iOS décode uniquement les champs utiles au remplacement et ignore `error` : l’ancien type `String` faisait échouer tout le décodage, puis affichait à tort zéro appareil et une liste vide. Une réponse incomplète produit désormais une erreur explicite, sans inventer de quota. Aucun remplacement n’est envoyé avant confirmation.
 
 La spécification 0.5.0 avait été relue le 22 septembre sans changement. La comparaison du 23 septembre avec 0.6.0 ajoute `kinds` et décrit `tweet`, `url` et `channel_key`, sans nouvelle route.
+
+### Révision du 9 octobre 2026 (0.12.0-20261009083227)
+
+Aucun changement cassant pour les routes appelées :
+
+- `/days` et `/profile` acceptent une fenêtre de jours de Paris `from` / `to` (`YYYY-MM-DD`, inclus, au plus 31 jours, pas après aujourd’hui), à la place de `days`, qu’elle exclut. `/days` peut donc compter aujourd’hui, jour en cours ; `days` seul reste fixé sur les jours complets jusqu’à hier.
+- `/sequences/{id}` déclare enfin son type de réponse `application/json`, sans schéma.
 
 ### Révision du 8 octobre 2026 (0.11.0-20261008105127)
 

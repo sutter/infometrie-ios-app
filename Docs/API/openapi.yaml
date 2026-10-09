@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: IActus
   description: "Backend IActus (Boussole) : API mobile (journal politique temps réel), portail client web et administration."
-  version: "0.11.0-20261008105127"
+  version: "0.12.0-20261009083227"
 
 servers:
   - url: "/"
@@ -163,8 +163,38 @@ paths:
       responses:
         200:
           description: "Sequence"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer, description: "Same id as in /feed and /history" }
+                  seq: { type: integer }
+                  at: { type: string, format: date-time, description: "Broadcast time (start of the intervention, instant of the mention, time of the post)" }
+                  kind: { type: string, enum: [intervention, citation, tweet] }
+                  media: { type: string, enum: [tv, radio, x] }
+                  channel: { type: string }
+                  channel_key: { type: string, description: "Key of the embedded channel logo" }
+                  show: { type: string }
+                  person: { type: string, description: "The personality: who speaks (intervention), who is named (citation), who posted (tweet)" }
+                  role: { type: string }
+                  party: { type: string }
+                  title: { type: string, description: "Title of the item: the LLM title of the intervention, (person) + the title of the covering intervention for a citation; when there is none, the start of the verbatim in « »" }
+                  cited_by: { type: string, description: "Who was speaking when the citation was made; on a retweet, whose post is relayed" }
+                  url: { type: string, description: "The post on X (tweets only)" }
+                  duration_sec: { type: integer, description: "Length of the passage played from play_from" }
+                  has_media: { type: boolean }
+                  video: { type: boolean }
+                  resume:
+                    type: string
+                    description: "Summary of the topic the item belongs to: iActusAPI's summary of the editorial sequence the item falls in (a few minutes on one subject, often with several speakers), not a summary of the item itself. Empty when there is none (ads, music, posts on X, items stored before 2026-10-08); never a copy of the verbatim."
+                  verbatim: { type: string, description: "Transcription: the whole intervention, the whole speech holding the mention for a citation, the text of a post. Empty when unknown" }
+                  play_from: { type: string, format: date-time, description: "Where the passage starts in the media" }
+                  speech_start: { type: string, format: date-time, description: "Where the verbatim starts in the media; absent without verbatim" }
+                  speech_duration_sec: { type: integer, description: "Length of the verbatim in the media" }
+                  playlist: { type: string, description: "HLS playlist path of the passage; absent without media" }
         404:
-          description: "Unknown sequence: neither in the live journal nor in the history (35 days)"
+          description: "Unknown sequence: neither in the live journal nor in the history (65 days)"
 
   /rest/v1/sequences/{id}/words:
     get:
@@ -287,7 +317,7 @@ paths:
 
   /rest/v1/days:
     get:
-      summary: "Day frise: the items of the last complete Paris days (yesterday last, today left out: the 7 and 31 days are fixed, they do not slide with the clock), oldest first, zero days included. Every kind is counted, each in its column: the app stacks the kinds it shows."
+      summary: "Day frise: the items of the last complete Paris days (yesterday last, today left out: the 7 and 31 days are fixed, they do not slide with the clock), or of the days from..to (a calendar week or month), oldest first, zero days included. Every kind is counted, each in its column: the app stacks the kinds it shows."
       operationId: "routeMobileDays"
       tags: [mobile]
       security: [{ bearerAuth: [] }]
@@ -295,6 +325,15 @@ paths:
         - name: days
           in: query
           schema: { type: integer, default: 7, minimum: 1, maximum: 31 }
+          description: "The last complete days, yesterday last. Not with from and to."
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+          description: "First Paris day, YYYY-MM-DD, included; with to"
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+          description: "Last Paris day, YYYY-MM-DD, included, not after today; 31 days at most from from"
         - name: persons
           in: query
           schema: { type: string }
@@ -322,13 +361,13 @@ paths:
                         tweets: { type: integer }
                         intervention_sec: { type: integer, description: "Seconds of the interventions" }
         400:
-          description: "days out of range"
+          description: "days out of range, from without to (or the reverse), with days, reversed, over 31 days or after today"
         503:
           description: "History unavailable"
 
   /rest/v1/profile:
     get:
-      summary: "Activity of a person of the panel over the last complete days (as /days, today left out): totals, one entry per Paris day and the 5 channels the person intervened the longest on. intervention_sec sums the interventions of the journal, not the official speaking time."
+      summary: "Activity of a person of the panel over the last complete days (as /days, today left out) or the days from..to: totals, one entry per Paris day and the 5 channels the person intervened the longest on. intervention_sec sums the interventions of the journal, not the official speaking time."
       operationId: "routeMobileProfile"
       tags: [mobile]
       security: [{ bearerAuth: [] }]
@@ -341,6 +380,15 @@ paths:
         - name: days
           in: query
           schema: { type: integer, default: 7, minimum: 1, maximum: 31 }
+          description: "The last complete days, yesterday last. Not with from and to."
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+          description: "First Paris day, YYYY-MM-DD, included; with to"
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+          description: "Last Paris day, YYYY-MM-DD, included, not after today; 31 days at most from from"
       responses:
         200:
           description: "Profile: person, totals, days, top_channels"
