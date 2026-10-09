@@ -197,27 +197,23 @@ struct PassageHeading: View {
     let titleIdentifier: String
     /// The passage page links the speaker to their profile when they belong to the panel.
     var linksPerson = false
-    /// Pinned above the passage's text, kept short for good so the text keeps room under it (2026-10-09): name and
-    /// party on one line, then who quotes them or their role on one line, the title whole at `headline` (17 pt): a
-    /// title is never cut (the user, 2026-10-09, after a two-line limit).
-    var tight = false
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        // The context (12 inside), then the title, 24 apart on the 8 pt grid; tight, 8 and 12. The title speaks
-        // for itself: no "Propos" label above it.
-        VStack(alignment: .leading, spacing: tight ? 12 : 24) {
-            VStack(alignment: .leading, spacing: tight ? 8 : 12) {
+        // The context (12 inside), then the title, 24 apart on the 8 pt grid. The title speaks for itself: no
+        // "Propos" label above it.
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 12) {
                 facts
-                VStack(alignment: .leading, spacing: tight ? 2 : 6) {
+                VStack(alignment: .leading, spacing: 6) {
                     speaker
                     if item.isCitation { CitedBy(item: item) }
                 }
             }
             // `title3` (20 pt) since 2026-10-09, `title2` before: still above the feed card's 18 pt.
             Text(item.displayTitle)
-                .font(tight ? .headline.weight(.bold) : .title3.weight(.bold))
+                .font(.title3.weight(.bold))
                 .foregroundStyle(Brand.ink)
                 .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                 .accessibilityLabel(item.displayTitle)
@@ -226,9 +222,7 @@ struct PassageHeading: View {
     }
 
     @ViewBuilder private var speaker: some View {
-        // Tight, a citation shows who quotes the person instead of their role.
-        let speaker = PassageSpeaker(item: item, nameFont: .headline, lineLimit: tight ? 1 : nil,
-                                     showsRole: !(tight && item.isCitation))
+        let speaker = PassageSpeaker(item: item, nameFont: .headline, lineLimit: nil)
         if linksPerson, model.persons.contains(where: { $0.name == item.person }) {
             NavigationLink { PersonView(name: item.person) } label: {
                 // The name keeps the full width it is offered, so its ViewThatFits wraps; in an HStack beside a

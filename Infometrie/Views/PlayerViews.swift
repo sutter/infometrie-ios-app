@@ -4,7 +4,6 @@ import AVKit
 struct SequenceView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The passage shown: it changes in place when the reader moves to the next one, so back still leads to the list.
     @State private var item: FeedItem
@@ -15,7 +14,6 @@ struct SequenceView: View {
     @State private var reload = 0
     @State private var isTranscriptExpanded = false
     @State private var transcriptReading = TranscriptReadingState()
-    @State private var contentScrolled = false
 
     init(item: FeedItem, list: [FeedItem] = []) {
         _item = State(initialValue: item)
@@ -34,7 +32,6 @@ struct SequenceView: View {
         model.player.stop()
         detail = nil; error = nil
         transcriptReading = TranscriptReadingState()
-        contentScrolled = false
         item = next
         model.markSeen(next)
     }
@@ -74,21 +71,14 @@ struct SequenceView: View {
         .accessibilityLabel("Chargement du texte")
     }
 
-    /// The heading (kind, speaker, title) and the video stay on screen while the text, its summary and the context
-    /// scroll below them (the user, 2026-10-09). At accessibility sizes, or in landscape, they would fill the screen:
-    /// there they scroll with the rest.
-    private var pinsHeader: Bool { !dynamicType.isAccessibilitySize && verticalSizeClass != .compact }
-
     private var showsVideo: Bool { isCurrent && displayItem.canPlay && displayItem.video }
 
-    /// Pinned, the heading is tight for good rather than shrinking on scroll: a heading that changed size under the
-    /// finger, restored by a gesture nobody guessed, was too many hidden states (the user, 2026-10-09).
+    /// The whole page scrolls as one, heading and video included (the user, 2026-10-09, after a day of pinned,
+    /// shrinking and tightened headings).
     @ViewBuilder private var header: some View {
-        PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true, tight: pinsHeader)
+        PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true)
         if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
         if showsVideo {
-            // Sized from the full width: pinned above the scroll, a bare aspect ratio let the page squeeze the video
-            // into a thumbnail.
             Color.clear.aspectRatio(16 / 9, contentMode: .fit).frame(maxWidth: .infinity)
                 .overlay { NativeVideo(player: model.player.player) }
                 .clipShape(RoundedRectangle(cornerRadius: 6))
@@ -97,21 +87,10 @@ struct SequenceView: View {
 
     private var sequenceContent: some View {
         VStack(spacing: 0) {
-            if pinsHeader {
-                VStack(alignment: .leading, spacing: 12) { header }
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, AppLayout.margin).padding(.top, 12).padding(.bottom, 12)
-                    .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-                    .background(Brand.background)
-                    // A hairline once the content scrolls under the heading, so the text never runs into the title.
-                    .overlay(alignment: .bottom) { if contentScrolled { AppRule() } }
-                    // Above the scroll: the content passes under the heading, never over it.
-                    .zIndex(1)
-            }
             ScrollViewReader { page in
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    if !pinsHeader { VStack(alignment: .leading, spacing: 24) { header } }
+                    header
                     if let error {
                         ErrorNotice(message: error) { self.error = nil; reload += 1 }
                     } else if let detail = displayDetail {
@@ -135,7 +114,7 @@ struct SequenceView: View {
                             NextPassage(item: next) { show(next) }
                         }
                     } else { textSkeleton }
-                }.padding(.horizontal, AppLayout.margin).padding(.top, pinsHeader ? 12 : 20).padding(.bottom, 20)
+                }.padding(.horizontal, AppLayout.margin).padding(.top, 20).padding(.bottom, 20)
                     .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
             // A new scroll per passage, so "Passage suivant" opens the next one at its top.
@@ -145,11 +124,7 @@ struct SequenceView: View {
             .onScrollPhaseChange { _, phase in
                 transcriptReading.scrollPhaseChanged(to: phase, suspends: isCurrent && model.player.isPlaying)
             }
-            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 1 } action: { _, scrolled in
-                contentScrolled = scrolled
-            }
-            // Each passage being heard comes to the top of the scroll, under the heading, like lyrics in Musique; the
-            // reader needs four or five lines to follow, not the whole text (2026-10-09).
+            // Each passage being heard comes to the top of the page, like lyrics in Musique (2026-10-09).
             .onChange(of: transcriptReading.visiblePassage) { _, passage in
                 guard let passage, isCurrent, model.player.isPlaying || model.player.position > 0 else { return }
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
