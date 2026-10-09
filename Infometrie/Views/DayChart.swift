@@ -222,15 +222,13 @@ private struct PeriodHeader: View {
         if model.periodOffset == 0 { return model.period == .week ? "7 derniers jours" : "30 derniers jours" }
         return model.period == .week ? "Semaine du \(DayLabel.dayMonth(first))" : DayLabel.month(first)
     }
-    /// The dates, or the time in interventions of the chosen day; and a warning when the history starts inside the period.
+    /// The dates (a past month needs none), or the time in interventions of the chosen day.
     private var detail: String? {
         if let day {
             guard model.filters.interventions, let seconds = model.dayCounts.first(where: { $0.day == day })?.interventionSec, seconds > 0 else { return nil }
             return "\(SpokenDuration.label(seconds: seconds)) d’interventions"
         }
         guard let first = model.historyDays.first, let last = model.historyDays.last else { return nil }
-        let oldest = FeedPeriod.oldestDay()
-        if first < oldest { return "Historique disponible à partir du \(DayLabel.dayMonth(oldest))" }
         return model.period == .month && model.periodOffset > 0 ? nil : DayLabel.range(first, last)
     }
 
