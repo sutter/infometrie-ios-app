@@ -208,6 +208,7 @@ struct DayChart: View {
 /// calendar weeks and months; once a day is chosen they step days, beside the cross that restores the period.
 private struct PeriodHeader: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dynamicTypeSize) private var dynamicType
     private static let french = Locale(identifier: "fr_FR")
 
     private var day: String? { model.selectedDay }
@@ -215,21 +216,22 @@ private struct PeriodHeader: View {
     private var total: Int { counts.reduce(0) { $0 + $1.total(for: model.filters) } }
     private var loading: Bool { model.dayCounts.isEmpty && model.isLoadingDayCounts }
 
-    /// "7 derniers jours", "Semaine du 28 septembre", "Septembre", or the chosen day.
+    /// Short enough for one line beside the arrows on a 375 pt iPhone: "7 derniers jours", "28 sept. – 4 oct.",
+    /// "Septembre", or the chosen day, "dimanche 27 sept.".
     private var title: String {
-        if let day { return DayLabel.long(day) }
-        guard let first = model.historyDays.first else { return "" }
+        if let day { return DayLabel.compact(day) }
+        guard let first = model.historyDays.first, let last = model.historyDays.last else { return "" }
         if model.periodOffset == 0 { return model.period == .week ? "7 derniers jours" : "30 derniers jours" }
-        return model.period == .week ? "Semaine du \(DayLabel.dayMonth(first))" : DayLabel.month(first)
+        return model.period == .week ? DayLabel.shortRange(first, last) : DayLabel.month(first)
     }
-    /// The dates (a past month needs none), or the time in interventions of the chosen day.
+    /// The dates of the latest days (a past week or month names them in its title), or the time in interventions of the chosen day.
     private var detail: String? {
         if let day {
             guard model.filters.interventions, let seconds = model.dayCounts.first(where: { $0.day == day })?.interventionSec, seconds > 0 else { return nil }
             return "\(SpokenDuration.label(seconds: seconds)) d’interventions"
         }
         guard let first = model.historyDays.first, let last = model.historyDays.last else { return nil }
-        return model.period == .month && model.periodOffset > 0 ? nil : DayLabel.range(first, last)
+        return model.periodOffset > 0 ? nil : DayLabel.shortRange(first, last)
     }
 
     var body: some View {
@@ -246,6 +248,9 @@ private struct PeriodHeader: View {
         return VStack(alignment: .leading, spacing: 2) {
             Text(title.prefix(1).uppercased(with: Self.french) + title.dropFirst())
                 .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
+                // One line at standard sizes, shrinking a little before it would wrap; accessibility sizes stack and wrap.
+                .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
+                .minimumScaleFactor(dynamicType.isAccessibilitySize ? 1 : 0.8)
             (Text(total.formatted(.number.locale(Self.french))).fontWeight(.semibold).foregroundStyle(Brand.ink)
                 + Text(" \(passages)").foregroundStyle(Brand.secondary))
                 .font(.subheadline.monospacedDigit())
@@ -356,11 +361,21 @@ enum DayLabel {
         let name = date.formatted(sameYear ? style.month(.wide) : style.month(.wide).year())
         return name.prefix(1).uppercased(with: french) + name.dropFirst()
     }
-    /// "du 3 au 9 octobre", or "du 28 septembre au 4 octobre" across months.
-    static func range(_ first: String, _ last: String) -> String {
+    /// "dimanche 27 sept.": the weekday whole, the month abbreviated.
+    static func compact(_ day: String) -> String {
+        guard let date = ParisDay.date(day) else { return day }
+        return "\(date.formatted(Date.FormatStyle(locale: french, timeZone: ParisDay.timeZone).weekday(.wide))) \(shortDayMonth(day))"
+    }
+    /// "27 sept.", "1er oct.", "4 mai".
+    static func shortDayMonth(_ day: String) -> String {
+        guard let date = ParisDay.date(day) else { return day }
+        return "\(dayNumber(date)) \(date.formatted(Date.FormatStyle(locale: french, timeZone: ParisDay.timeZone).month(.abbreviated)))"
+    }
+    /// "2 – 8 oct.", or "28 sept. – 4 oct." across months.
+    static func shortRange(_ first: String, _ last: String) -> String {
         guard let start = ParisDay.date(first), let end = ParisDay.date(last) else { return "\(first) – \(last)" }
         let sameMonth = ParisDay.calendar.isDate(start, equalTo: end, toGranularity: .month)
-        return "du \(sameMonth ? dayNumber(start) : dayMonth(first)) au \(dayMonth(last))"
+        return "\(sameMonth ? dayNumber(start) : shortDayMonth(first)) – \(shortDayMonth(last))"
     }
     private static func dayNumber(_ date: Date) -> String {
         let number = ParisDay.calendar.component(.day, from: date)
