@@ -16,14 +16,28 @@ struct FeedPeriodTests {
         #expect(month.last == "2026-10-07")
     }
 
-    @Test func steppingBackShiftsByWholePeriods() throws {
+    @Test func steppingBackGoesThroughCalendarWeeksAndMonths() throws {
+        // Friday, October 9, 2026.
         let now = try instant("2026-10-09T10:00:00Z")
-        #expect(FeedPeriod.week.days(before: now, back: 1) == ["2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01"])
-        let month = FeedPeriod.month.days(before: now, back: 1)
-        #expect(month.first == "2026-08-10" && month.last == "2026-09-08" && month.count == 30)
-        // The oldest step still ends within the history the server keeps.
-        #expect((FeedPeriod.historyDepth - 1) / FeedPeriod.month.rawValue == 1)
-        #expect((FeedPeriod.historyDepth - 1) / FeedPeriod.week.rawValue == 8)
+        #expect(FeedPeriod.week.days(before: now, back: 0).first == "2026-10-02")
+        #expect(FeedPeriod.week.days(before: now, back: 1) == ["2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04"])
+        #expect(FeedPeriod.week.days(before: now, back: 2).first == "2026-09-21")
+        let september = FeedPeriod.month.days(before: now, back: 1)
+        #expect(september.first == "2026-09-01" && september.last == "2026-09-30" && september.count == 30)
+        #expect(FeedPeriod.month.days(before: now, back: 2).count == 31)
+        // A Sunday belongs to the week that started the Monday before.
+        #expect(FeedPeriod.week.days(before: try instant("2026-10-04T10:00:00Z"), back: 1).first == "2026-09-21")
+        // January steps back into December of the year before.
+        #expect(FeedPeriod.month.days(before: try instant("2027-01-15T10:00:00Z"), back: 1).first == "2026-12-01")
+    }
+
+    @Test func stepsStopAtTheHistoryTheServerKeeps() throws {
+        let now = try instant("2026-10-09T10:00:00Z")
+        #expect(FeedPeriod.oldestDay(now: now) == "2026-08-10")
+        #expect(FeedPeriod.isWithinHistory(FeedPeriod.month.days(before: now, back: 2), now: now), "August still ends inside the history")
+        #expect(!FeedPeriod.isWithinHistory(FeedPeriod.month.days(before: now, back: 3), now: now))
+        #expect(FeedPeriod.isWithinHistory(FeedPeriod.week.days(before: now, back: 8), now: now), "The week of August 10")
+        #expect(!FeedPeriod.isWithinHistory(FeedPeriod.week.days(before: now, back: 9), now: now))
     }
 
     @Test func liveChartEndsWithTheParisDayInProgress() throws {

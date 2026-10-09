@@ -24,14 +24,13 @@ struct FeedDayChart: View {
 
     private var period: some View {
         VStack(alignment: .leading, spacing: 8) {
-            PeriodStepper()
+            PeriodHeader()
             DayChart(days: model.historyDays, counts: model.dayCounts, kinds: model.filters.selectedKinds,
                      loading: model.dayCounts.isEmpty && model.isLoadingDayCounts, selectedDay: model.selectedDay,
                      identifier: "feed-day") { day in
                 let next = model.selectedDay == day ? nil : day
                 Task { await model.selectDay(next) }
             }
-            if let day = model.selectedDay { DaySelection(day: day) }
         }
     }
 }
@@ -204,86 +203,132 @@ struct DayChart: View {
     }
 }
 
-/// The period's span, with the periods before and after it as 44 pt buttons: back in time on the left.
-private struct PeriodStepper: View {
+/// The period or the chosen day above the chart, the total first (the user's pick on 2026-10-09, option C of
+/// sheet 04): what it is, how many passages, when. On the right, the arrows step whole periods, back through
+/// calendar weeks and months; once a day is chosen they step days, beside the cross that restores the period.
+private struct PeriodHeader: View {
     @Environment(AppModel.self) private var model
+    private static let french = Locale(identifier: "fr_FR")
 
-    private var range: String {
-        guard let first = model.historyDays.first, let last = model.historyDays.last else { return " " }
-        return DayLabel.range(first, last)
+    private var day: String? { model.selectedDay }
+    private var counts: [DayCount] { model.dayCounts.filter { day == nil || $0.day == day } }
+    private var total: Int { counts.reduce(0) { $0 + $1.total(for: model.filters) } }
+    private var loading: Bool { model.dayCounts.isEmpty && model.isLoadingDayCounts }
+
+    /// "7 derniers jours", "Semaine du 28 septembre", "Septembre", or the chosen day.
+    private var title: String {
+        if let day { return DayLabel.long(day) }
+        guard let first = model.historyDays.first else { return "" }
+        if model.periodOffset == 0 { return model.period == .week ? "7 derniers jours" : "30 derniers jours" }
+        return model.period == .week ? "Semaine du \(DayLabel.dayMonth(first))" : DayLabel.month(first)
+    }
+    /// The dates, or the time in interventions of the chosen day; and a warning when the history starts inside the period.
+    private var detail: String? {
+        if let day {
+            guard model.filters.interventions, let seconds = model.dayCounts.first(where: { $0.day == day })?.interventionSec, seconds > 0 else { return nil }
+            return "\(SpokenDuration.label(seconds: seconds)) d’interventions"
+        }
+        guard let first = model.historyDays.first, let last = model.historyDays.last else { return nil }
+        let oldest = FeedPeriod.oldestDay()
+        if first < oldest { return "Historique disponible à partir du \(DayLabel.dayMonth(oldest))" }
+        return model.period == .month && model.periodOffset > 0 ? nil : DayLabel.range(first, last)
     }
 
     var body: some View {
-        HStack(spacing: 4) {
-            step("chevron.left", direction: "précédents", id: "feed-period-previous", delta: 1)
-            Text(range).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink)
-                .frame(maxWidth: .infinity)
-                .accessibilityIdentifier("feed-period-range")
-            step("chevron.right", direction: "suivants", id: "feed-period-next", delta: -1)
+        VStack(alignment: .leading, spacing: 8) {
+            AdaptiveRow {
+                summary.frame(maxWidth: .infinity, alignment: .leading)
+                controls
+            }
+            // Far back in weeks, one touch returns to the latest days.
+            if day == nil && model.periodOffset >= 2 {
+                Button { Task { await model.stepPeriod(-model.periodOffset) } } label: {
+                    Text("Revenir aux derniers jours").font(.footnote.weight(.semibold)).foregroundStyle(Brand.accent)
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("feed-period-latest")
+            }
         }
         .sensoryFeedback(.selection, trigger: model.periodOffset)
     }
 
-    private func step(_ icon: String, direction: String, id: String, delta: Int) -> some View {
-        let enabled = (0...model.maxPeriodOffset).contains(model.periodOffset + delta)
-        return Button { Task { await model.stepPeriod(delta) } } label: {
-            Image(systemName: icon).font(.body.weight(.semibold)).frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
+    private var summary: some View {
+        let passages = total <= 1 ? "passage" : "passages"
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(title.uppercased(with: Self.french)).font(.caption2.weight(.semibold)).tracking(0.6)
+                .foregroundStyle(Brand.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(total.formatted(.number.locale(Self.french))).font(.title.weight(.bold).monospacedDigit())
+                    .foregroundStyle(Brand.ink)
+                    .contentTransition(.numericText())
+                Text(passages).font(.subheadline).foregroundStyle(Brand.secondary)
+            }
+            .skeleton(loading)
+            if let detail { Text(detail).font(.footnote).foregroundStyle(Brand.secondary) }
         }
-        .buttonStyle(.plain).foregroundStyle(enabled ? Brand.ink : Brand.secondary.opacity(0.5))
-        .disabled(!enabled)
-        .accessibilityLabel("\(model.period.rawValue) jours \(direction)")
-        .accessibilityIdentifier(id)
+        .fixedSize(horizontal: false, vertical: true)
+        // The count leads what VoiceOver reads, like the results line it replaces in 7 j and 30 j.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(["\(total) \(passages)", title, detail].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityIdentifier(day == nil ? "feed-status" : "feed-day-selection")
+    }
+
+    @ViewBuilder private var controls: some View {
+        HStack(spacing: 4) {
+            if let day {
+                let index = model.historyDays.firstIndex(of: day)
+                ArrowPair(previous: target(index, -1).map { target in { Task { await model.selectDay(target) } } },
+                          next: target(index, 1).map { target in { Task { await model.selectDay(target) } } },
+                          previousLabel: "Jour précédent", nextLabel: "Jour suivant", id: "feed-day")
+                Button { Task { await model.selectDay(nil) } } label: {
+                    Image(systemName: "xmark").font(.footnote.weight(.bold)).foregroundStyle(Brand.ink)
+                        .frame(width: 32, height: 32).background(Circle().fill(Brand.surface))
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Toute la période")
+                .accessibilityIdentifier("feed-day-clear")
+            } else {
+                let unit = model.period == .week ? "Semaine" : "Mois"
+                ArrowPair(previous: model.canStepBack ? { Task { await model.stepPeriod(1) } } : nil,
+                          next: model.periodOffset > 0 ? { Task { await model.stepPeriod(-1) } } : nil,
+                          previousLabel: "\(unit) précédent\(unit == "Semaine" ? "e" : "")",
+                          nextLabel: model.periodOffset == 1 ? "Derniers jours" : "\(unit) suivant\(unit == "Semaine" ? "e" : "")",
+                          id: "feed-period")
+            }
+        }
+    }
+
+    private func target(_ index: Int?, _ offset: Int) -> String? {
+        index.map { $0 + offset }.flatMap { model.historyDays.indices.contains($0) ? model.historyDays[$0] : nil }
     }
 }
 
-/// The chosen day: previous and next as 44 pt buttons, since a bar of a 30-day chart is about 9 pt wide.
-private struct DaySelection: View {
-    @Environment(AppModel.self) private var model
-    let day: String
-
-    private var index: Int? { model.historyDays.firstIndex(of: day) }
-    private var counts: DayCount? { model.dayCounts.first { $0.day == day } }
-    private var total: Int? { counts?.total(for: model.filters) }
-    /// "3 h 12 d'interventions" when interventions are shown; the journal's interventions, not the official speaking time.
-    private var duration: String? {
-        guard model.filters.interventions, let seconds = counts?.interventionSec, seconds > 0 else { return nil }
-        return "\(SpokenDuration.label(seconds: seconds)) d’interventions"
-    }
+/// Back and forward as one capsule of two 44 pt buttons; a missing action disables its side.
+private struct ArrowPair: View {
+    let previous: (() -> Void)?
+    let next: (() -> Void)?
+    let previousLabel: String
+    let nextLabel: String
+    /// `<id>-previous` and `<id>-next`.
+    let id: String
 
     var body: some View {
-        HStack(spacing: 4) {
-            step("chevron.left", label: "Jour précédent", id: "feed-day-previous", offset: -1)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(DayLabel.long(day)).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink)
-                if let total {
-                    Text([total <= 1 ? "\(total) passage" : "\(total) passages", duration].compactMap { $0 }.joined(separator: " · "))
-                        .font(.footnote.monospacedDigit()).foregroundStyle(Brand.secondary)
-                }
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .combine)
-            .accessibilityIdentifier("feed-day-selection")
-            step("chevron.right", label: "Jour suivant", id: "feed-day-next", offset: 1)
-            Button { Task { await model.selectDay(nil) } } label: {
-                Image(systemName: "xmark").font(.body.weight(.semibold)).frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).foregroundStyle(Brand.ink)
-            .accessibilityLabel("Toute la période")
-            .accessibilityIdentifier("feed-day-clear")
+        HStack(spacing: 0) {
+            arrow("chevron.left", action: previous, label: previousLabel, id: "\(id)-previous")
+            Rectangle().fill(Brand.rule).frame(width: 1, height: 20).accessibilityHidden(true)
+            arrow("chevron.right", action: next, label: nextLabel, id: "\(id)-next")
         }
+        .background(Capsule().fill(Brand.surface))
     }
 
-    private func step(_ icon: String, label: String, id: String, offset: Int) -> some View {
-        let target = index.map { $0 + offset }.flatMap { model.historyDays.indices.contains($0) ? model.historyDays[$0] : nil }
-        return Button { if let target { Task { await model.selectDay(target) } } } label: {
-            Image(systemName: icon).font(.body.weight(.semibold)).frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
+    private func arrow(_ icon: String, action: (() -> Void)?, label: String, id: String) -> some View {
+        Button { action?() } label: {
+            Image(systemName: icon).font(.body.weight(.semibold)).frame(width: 44, height: 44).contentShape(Rectangle())
         }
-        .buttonStyle(.plain).foregroundStyle(target == nil ? Brand.secondary.opacity(0.5) : Brand.ink)
-        .disabled(target == nil)
+        .buttonStyle(.plain).foregroundStyle(action == nil ? Brand.secondary.opacity(0.5) : Brand.ink)
+        .disabled(action == nil)
         .accessibilityLabel(label)
         .accessibilityIdentifier(id)
     }
@@ -301,15 +346,30 @@ enum DayLabel {
     /// "mercredi 7 octobre".
     static func long(_ day: String) -> String {
         guard let date = ParisDay.date(day) else { return day }
-        return date.formatted(Date.FormatStyle(locale: french, timeZone: ParisDay.timeZone).weekday(.wide).day().month(.wide))
+        return "\(date.formatted(Date.FormatStyle(locale: french, timeZone: ParisDay.timeZone).weekday(.wide))) \(dayMonth(day))"
     }
-    /// "du 3 au 9 octobre", or "du 10 septembre au 9 octobre" across months.
+    /// "7 octobre", "1er octobre": French writes the first of the month as an ordinal.
+    static func dayMonth(_ day: String) -> String {
+        guard let date = ParisDay.date(day) else { return day }
+        return "\(dayNumber(date)) \(date.formatted(Date.FormatStyle(locale: french, timeZone: ParisDay.timeZone).month(.wide)))"
+    }
+    /// "Septembre", with the year when it is not the current one: "Décembre 2025".
+    static func month(_ day: String, now: Date = Date()) -> String {
+        guard let date = ParisDay.date(day) else { return day }
+        let style = Date.FormatStyle(locale: french, timeZone: ParisDay.timeZone)
+        let sameYear = ParisDay.calendar.isDate(date, equalTo: now, toGranularity: .year)
+        let name = date.formatted(sameYear ? style.month(.wide) : style.month(.wide).year())
+        return name.prefix(1).uppercased(with: french) + name.dropFirst()
+    }
+    /// "du 3 au 9 octobre", or "du 28 septembre au 4 octobre" across months.
     static func range(_ first: String, _ last: String) -> String {
         guard let start = ParisDay.date(first), let end = ParisDay.date(last) else { return "\(first) – \(last)" }
-        let style = Date.FormatStyle(locale: french, timeZone: ParisDay.timeZone)
         let sameMonth = ParisDay.calendar.isDate(start, equalTo: end, toGranularity: .month)
-        let from = sameMonth ? start.formatted(style.day()) : start.formatted(style.day().month(.wide))
-        return "du \(from) au \(end.formatted(style.day().month(.wide)))"
+        return "du \(sameMonth ? dayNumber(start) : dayMonth(first)) au \(dayMonth(last))"
+    }
+    private static func dayNumber(_ date: Date) -> String {
+        let number = ParisDay.calendar.component(.day, from: date)
+        return number == 1 ? "1er" : "\(number)"
     }
     /// "mercredi 7 octobre, 2 interventions, 40 citations".
     static func spoken(_ day: String, counts: DayCount?, kinds: [String]) -> String {

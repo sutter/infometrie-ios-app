@@ -10,10 +10,34 @@ enum FeedPeriod: Int, CaseIterable, Sendable {
     /// 2026-08-09 on, about 60 days back, and nothing before (rolling retention or the archive's start: not documented).
     static let historyDepth = 60
     /// The complete Paris days of the period, oldest first, yesterday last. Live has none.
-    /// `back` steps whole periods into the past: 1 is the 7 or 30 days before the latest ones.
+    /// The days `back` steps into the past, oldest first. Step 0 is the latest 7 or 30 days, up to yesterday;
+    /// further back come whole calendar weeks (Monday to Sunday) or months, which people can name.
     func days(before now: Date = Date(), back: Int = 0) -> [String] {
-        let end = ParisDay.calendar.date(byAdding: .day, value: -back * rawValue, to: now) ?? now
-        return ParisDay.days(count: rawValue, before: end)
+        guard back > 0, !isLive else { return ParisDay.days(count: rawValue, before: now) }
+        let calendar = ParisDay.calendar
+        let today = calendar.startOfDay(for: now)
+        let start: Date?, count: Int
+        if self == .week {
+            // Gregorian weekdays start on Sunday (1): Monday is 2.
+            let sinceMonday = (calendar.component(.weekday, from: today) + 5) % 7
+            start = calendar.date(byAdding: .day, value: -sinceMonday - 7 * back, to: today)
+            count = 7
+        } else {
+            let month = calendar.date(from: calendar.dateComponents([.year, .month], from: today))
+            start = month.flatMap { calendar.date(byAdding: .month, value: -back, to: $0) }
+            count = start.flatMap { calendar.range(of: .day, in: .month, for: $0)?.count } ?? 0
+        }
+        guard let start else { return [] }
+        return (0..<count).compactMap { calendar.date(byAdding: .day, value: $0, to: start).map(ParisDay.string) }
+    }
+    /// A step back is shown while some of its days are still in the history the server keeps.
+    static func isWithinHistory(_ days: [String], now: Date = Date()) -> Bool {
+        guard let last = days.last else { return false }
+        return last >= oldestDay(now: now)
+    }
+    /// The oldest Paris day the history serves.
+    static func oldestDay(now: Date = Date()) -> String {
+        ParisDay.days(count: historyDepth, before: now).first ?? ParisDay.string(now)
     }
     /// Live's chart: the last 7 complete Paris days for context, then today, still going.
     static func liveDays(now: Date = Date()) -> [String] { ParisDay.days(count: 7, before: now) + [ParisDay.string(now)] }

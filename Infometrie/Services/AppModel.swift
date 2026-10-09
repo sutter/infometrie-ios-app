@@ -28,10 +28,10 @@ final class AppModel {
     var isRefreshing = false
     /// Live (the last 24 hours, polled) or the last 7 or 30 complete Paris days (`/history`, `/days`).
     private(set) var period: FeedPeriod = .live
-    /// Whole periods back from the latest: 0 ends yesterday, 1 is the 7 or 30 days before.
+    /// Steps back from the latest days: 0 ends yesterday; 1 is the last calendar week or month, and so on.
     private(set) var periodOffset = 0
-    /// How far back the period can step: while its newest day stays within the history the server keeps.
-    var maxPeriodOffset: Int { period.isLive ? 0 : (FeedPeriod.historyDepth - 1) / period.rawValue }
+    /// One more step back still reaches the history the server keeps.
+    var canStepBack: Bool { !period.isLive && FeedPeriod.isWithinHistory(period.days(back: periodOffset + 1)) }
     /// One day of the period chosen on the chart; nil shows the whole period.
     private(set) var selectedDay: String?
     /// The Paris days the period covers, oldest first.
@@ -202,7 +202,7 @@ final class AppModel {
     /// Steps the period back (positive) or forward, within the history the server keeps.
     func stepPeriod(_ delta: Int) async {
         let offset = periodOffset + delta
-        guard !period.isLive, delta != 0, (0...maxPeriodOffset).contains(offset) else { return }
+        guard !period.isLive, delta != 0, offset >= 0, FeedPeriod.isWithinHistory(period.days(back: offset)) else { return }
         periodOffset = offset; selectedDay = nil
         await reloadHistory()
     }

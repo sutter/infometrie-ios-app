@@ -261,30 +261,25 @@ struct FeedView: View {
     }
 }
 
-/// How many results the list holds and how fresh they are, like "50 résultats · il y a 3 min".
+/// How many results Live holds and how fresh they are, like "50 résultats · il y a 3 min". 7 j and 30 j show
+/// their total in the chart's header instead, from `/days`, beyond the loaded pages.
 private struct FeedStatus: View {
     @Environment(AppModel.self) private var model
     var singleLine = true
 
     var body: some View {
-        // Re-read the age every 15 seconds; the feed itself refreshes every 30.
-        TimelineView(.periodic(from: .now, by: 15)) { context in
-            let count = total
-            // One text, so that at accessibility sizes the age wraps under the count rather than beside it.
-            // 7 j and 30 j end yesterday: their age says nothing, only Live shows it.
-            (Text(count <= 1 ? "\(count) résultat" : "\(count) résultats").fontWeight(.semibold).foregroundStyle(Brand.ink)
-                + Text(model.period.isLive ? model.lastRefresh.map { " · \(Self.age(of: $0, at: context.date))" } ?? "" : "").foregroundStyle(Brand.secondary))
-                .font(.footnote.monospacedDigit())
-                .fixedSize(horizontal: singleLine, vertical: true)
-                .accessibilityIdentifier("feed-status")
+        if model.period.isLive {
+            // Re-read the age every 15 seconds; the feed itself refreshes every 30.
+            TimelineView(.periodic(from: .now, by: 15)) { context in
+                let count = model.visibleItems.count
+                // One text, so that at accessibility sizes the age wraps under the count rather than beside it.
+                (Text(count <= 1 ? "\(count) résultat" : "\(count) résultats").fontWeight(.semibold).foregroundStyle(Brand.ink)
+                    + Text(model.lastRefresh.map { " · \(Self.age(of: $0, at: context.date))" } ?? "").foregroundStyle(Brand.secondary))
+                    .font(.footnote.monospacedDigit())
+                    .fixedSize(horizontal: singleLine, vertical: true)
+                    .accessibilityIdentifier("feed-status")
+            }
         }
-    }
-
-    /// Live counts its list; 7 j and 30 j count the period or the chosen day from `/days`, beyond the loaded pages.
-    private var total: Int {
-        guard !model.period.isLive, !model.dayCounts.isEmpty else { return model.visibleItems.count }
-        let days = model.dayCounts.filter { model.selectedDay == nil || $0.day == model.selectedDay }
-        return days.reduce(0) { $0 + $1.total(for: model.filters) }
     }
 
     /// The age of the last refresh, short enough to keep the line whole beside "Tout écouter".

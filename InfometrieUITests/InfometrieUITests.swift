@@ -666,7 +666,7 @@ final class InfometrieUITests: XCTestCase {
         // 7 j: the last 7 complete days, 8 fictional passages each, more than one 50-item page.
         app.buttons["feed-period-7"].tap()
         XCTAssertTrue(app.buttons["feed-period-7"].isSelected)
-        XCTAssertTrue(results("56 résultats", in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(results("56 passages", in: app).waitForExistence(timeout: 10))
         XCTAssertTrue(app.descendants(matching: .any)["feed-day-chart"].exists)
         XCTAssertTrue(bar(1).exists && bar(7).exists)
         XCTAssertFalse(bar(0).exists, "Aujourd’hui reste dans Live")
@@ -677,7 +677,7 @@ final class InfometrieUITests: XCTestCase {
         // Touching a bar shows that day only; previous and next move one day; the cross restores the period.
         bar(1).tap()
         XCTAssertTrue(app.descendants(matching: .any)["feed-day-selection"].waitForExistence(timeout: 5))
-        XCTAssertTrue(results("8 résultats", in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(results("8 passages", in: app).waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["feed-day-next"].isEnabled, "Hier est le dernier jour de la période")
         XCTAssertTrue(app.buttons["feed-item-1297"].waitForExistence(timeout: 5))
         capture("periode-jour-choisi", app: app)
@@ -686,7 +686,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertFalse(app.buttons["feed-item-1297"].exists)
         XCTAssertTrue(app.buttons["feed-day-next"].isEnabled)
         app.buttons["feed-day-clear"].tap()
-        XCTAssertTrue(results("56 résultats", in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(results("56 passages", in: app).waitForExistence(timeout: 5))
         XCTAssertFalse(app.descendants(matching: .any)["feed-day-selection"].exists)
 
         // The end of the first page loads the next one: the period's oldest passage appears.
@@ -702,14 +702,14 @@ final class InfometrieUITests: XCTestCase {
 
         // The type checkboxes drive the bars and the list together.
         toggleKind(2, in: app)
-        XCTAssertTrue(results("42 résultats", in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(results("42 passages", in: app).waitForExistence(timeout: 10))
         toggleKind(2, in: app)
-        XCTAssertTrue(results("56 résultats", in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(results("56 passages", in: app).waitForExistence(timeout: 10))
 
         // 30 j: thirty bars; a day without passages says so and keeps the chart.
         reveal(app.buttons["feed-period-30"], in: app, down: false)
         app.buttons["feed-period-30"].tap()
-        XCTAssertTrue(results("89 résultats", in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(results("89 passages", in: app).waitForExistence(timeout: 10))
         XCTAssertTrue(bar(30).exists && bar(1).exists)
         bar(30).tap()
         XCTAssertTrue(app.staticTexts["Aucun passage ce jour-là"].waitForExistence(timeout: 5))
@@ -993,9 +993,11 @@ final class InfometrieUITests: XCTestCase {
         return editorial.exists ? editorial : app.tabBars.buttons[title]
     }
 
-    /// The feed status line, which starts with the result count ("7 résultats · il y a …").
+    /// The count of the journal: Live's status line ("7 résultats · il y a …"), or the header of 7 j and 30 j,
+    /// for the period or the chosen day ("56 passages, 7 derniers jours, …").
     @MainActor private func results(_ count: String, in app: XCUIApplication) -> XCUIElement {
-        app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND (label == %@ OR label BEGINSWITH %@)", "feed-status", count, count + " ")).firstMatch
+        app.descendants(matching: .any).matching(NSPredicate(format: "identifier IN %@ AND (label == %@ OR label BEGINSWITH %@)",
+                                                             ["feed-status", "feed-day-selection"], count, count + " ")).firstMatch
     }
 
     /// Checks exactly the given feed types: 1 interventions, 2 citations, 3 Publications X.
