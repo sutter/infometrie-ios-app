@@ -7,6 +7,9 @@ struct FeedCard: View {
     /// Seen passages step back: name and title turn secondary and "✓ Vu" follows the date.
     var seen = false
     @Environment(\.dynamicTypeSize) private var dynamicType
+    /// 18 pt at the default size, between `headline` (17) and `title3` (20, until 2026-10-09: the user found it a
+    /// little large); it scales with Dynamic Type and the S / M / L reading size like `title3`.
+    @ScaledMetric(relativeTo: .title3) private var titleSize = 18.0
 
     var body: some View {
         // Two groups read faster than five evenly spaced lines: what and when, then who and what was said.
@@ -38,7 +41,7 @@ struct FeedCard: View {
 
     private var title: some View {
         Text(item.displayTitle)
-            .font(.title3.weight(seen ? .semibold : .bold)).foregroundStyle(seen ? Brand.secondary : Brand.ink)
+            .font(.system(size: titleSize, weight: seen ? .semibold : .bold)).foregroundStyle(seen ? Brand.secondary : Brand.ink)
             .lineLimit(dynamicType.isAccessibilitySize ? nil : 4)
             .fixedSize(horizontal: false, vertical: true)
     }
