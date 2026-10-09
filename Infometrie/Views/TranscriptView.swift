@@ -5,41 +5,6 @@ import Observation
 final class TranscriptReadingState {
     var followsPlayback = true
     var visiblePassage: Int?
-    /// The passage page's player shrinks while the reader scrolls down, the page or this text (`MinimizesPlayer`).
-    var playerMinimized = false
-}
-
-/// Shrinks the passage player while the reader scrolls down a scroll view, and restores it on scrolling up or at
-/// the top. Only a finger on the content counts: following the text while listening, the momentum after the finger
-/// lifts, the bounce at either end and the page settling when the player changes height all move the offset too,
-/// and flipped the player back and forth (2026-10-09). Applied to the page and to the text box, which scrolls on its
-/// own and takes most of the reader's scrolling.
-struct MinimizesPlayer: ViewModifier {
-    let reading: TranscriptReadingState
-    @State private var userScrolling = false
-    /// Where the current direction started: a move of 24 pt from it flips the player.
-    @State private var anchor: CGFloat = 0
-
-    private struct Position: Equatable {
-        let offset: CGFloat
-        let inside: Bool
-    }
-
-    func body(content: Content) -> some View {
-        content
-            .onScrollPhaseChange { _, phase in userScrolling = phase == .interacting }
-            .onScrollGeometryChange(for: Position.self) { geometry in
-                let offset = geometry.contentOffset.y + geometry.contentInsets.top
-                let end = geometry.contentSize.height - geometry.containerSize.height + geometry.contentInsets.top + geometry.contentInsets.bottom
-                return Position(offset: offset, inside: offset > 8 && offset < end - 8)
-            } action: { _, position in
-                let offset = position.offset
-                guard userScrolling, position.inside else { anchor = offset; return }
-                if offset > anchor + 24 { reading.playerMinimized = true; anchor = offset }
-                else if offset < anchor - 24 { reading.playerMinimized = false; anchor = offset }
-                else if reading.playerMinimized ? offset > anchor : offset < anchor { anchor = offset }
-            }
-    }
 }
 
 struct TranscriptView: View {
@@ -171,7 +136,6 @@ struct TranscriptView: View {
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textContentHeight = $0 }
         }
         .scrollEdgeEffectHidden(true)
-        .modifier(MinimizesPlayer(reading: reading))
         .accessibilityIdentifier("transcript-scroll")
         .scrollPosition(id: $reading.visiblePassage, anchor: .top)
         .onScrollPhaseChange { _, phase in
