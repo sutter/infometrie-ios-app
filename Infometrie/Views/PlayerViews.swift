@@ -4,21 +4,34 @@ import AVKit
 struct SequenceView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     let item: FeedItem
     @State private var detail: SequenceDetail?
     @State private var error: String?
     @State private var reload = 0
+    @State private var isTranscriptExpanded = false
     @State private var transcriptReading = TranscriptReadingState()
+    @State private var contentScrolled = false
     private var isCurrent: Bool { model.player.current?.id == item.id && !model.player.isPodcast }
     private var displayDetail: SequenceDetail? { isCurrent ? model.player.detail ?? detail : detail }
     private var displayItem: FeedItem { displayDetail?.item ?? item }
 
     var body: some View {
         VStack(spacing: 0) { sequenceContent }
+            // Group the scroll view and its safe-area controls before hiding the presenter.
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("sequence-content")
-            .onDisappear { if isCurrent { model.player.stop() } }
+            .accessibilityHidden(isTranscriptExpanded)
+            .fullScreenCover(isPresented: $isTranscriptExpanded) {
+                if let detail = displayDetail {
+                    TranscriptFullscreenView(detail: detail, reading: transcriptReading)
+                        .environment(model)
+                }
+            }
+            .onDisappear {
+                // Presenting the reading view must keep the existing AVPlayer alive.
+                if isCurrent && !isTranscriptExpanded { model.player.stop() }
+            }
     }
 
     /// The transcript heading and a paragraph, drawn as placeholders until the passage arrives.
@@ -35,16 +48,37 @@ struct SequenceView: View {
         .accessibilityLabel("Chargement du texte")
     }
 
+    /// The heading (kind, speaker, title) and the video stay on screen while the text, its summary and the context
+    /// scroll below them (the user, 2026-10-09). At accessibility sizes, or in landscape, they would fill the screen:
+    /// there they scroll with the rest.
+    private var pinsHeader: Bool { !dynamicType.isAccessibilitySize && verticalSizeClass != .compact }
+
+    @ViewBuilder private var header: some View {
+        PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true)
+        if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
+        if isCurrent, displayItem.canPlay, displayItem.video {
+            // Sized from the full width: pinned above the scroll, a bare aspect ratio let the page squeeze the video
+            // into a thumbnail.
+            Color.clear.aspectRatio(16 / 9, contentMode: .fit).frame(maxWidth: .infinity)
+                .overlay { NativeVideo(player: model.player.player) }
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+    }
+
     private var sequenceContent: some View {
-        ScrollViewReader { page in
+        VStack(spacing: 0) {
+            if pinsHeader {
+                VStack(alignment: .leading, spacing: 24) { header }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, AppLayout.margin).padding(.top, 20).padding(.bottom, 12)
+                    .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+                    .background(Brand.background)
+                    // A hairline once the content scrolls under the heading, so the text never runs into the title.
+                    .overlay(alignment: .bottom) { if contentScrolled { AppRule() } }
+            }
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true)
-                    if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
-                    if isCurrent, displayItem.canPlay, displayItem.video {
-                        NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
+                    if !pinsHeader { header }
                     if let error {
                         ErrorNotice(message: error) { self.error = nil; reload += 1 }
                     } else if let detail = displayDetail {
@@ -61,7 +95,7 @@ struct SequenceView: View {
                             }
                         } else if !detail.verbatim.isEmpty {
                             TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: isCurrent,
-                                           reading: transcriptReading) { word in
+                                           reading: transcriptReading, onExpand: { isTranscriptExpanded = true }) { word in
                                 if isCurrent { model.player.seekToWord(word, sequenceID: detail.id) }
                                 else { model.player.start(items: [item], app: model, podcast: false, atWord: word) }
                             }.id(detail.id).transition(.opacity)
@@ -88,9 +122,15 @@ struct SequenceView: View {
                             }.font(.subheadline).foregroundStyle(Brand.secondary)
                         }.accessibilityIdentifier("sequence-context")
                     }
-                }.padding(.horizontal, AppLayout.margin).padding(.vertical, 20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+                }.padding(.horizontal, AppLayout.margin).padding(.top, pinsHeader ? 12 : 20).padding(.bottom, 20)
+                    .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 1 } action: { _, scrolled in
+                contentScrolled = scrolled
+            }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !isTranscriptExpanded {
                 if displayItem.isTweet, let url = displayItem.publicationURL {
                     Link(destination: url) { Label("Voir la publication sur X", systemImage: "arrow.up.right") }
                         .buttonStyle(ActionButtonStyle(prominent: true))
@@ -121,21 +161,8 @@ struct SequenceView: View {
                     }
                 }
             }
-            .scrollEdgeEffectHidden(true)
-            // The text sits in the page (2026-10-09): each passage being heard comes to the upper part of the screen,
-            // like lyrics in Musique. Scrolling only as far as needed left it still while the passage stayed visible,
-            // and following read as broken. Scrolling by hand while listening suspends following for a few seconds.
-            .onChange(of: transcriptReading.visiblePassage) { _, passage in
-                guard let passage, isCurrent, model.player.isPlaying || model.player.position > 0 else { return }
-                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
-                    page.scrollTo(passage, anchor: UnitPoint(x: 0.5, y: 0.15))
-                }
-            }
-            // Before listening, scrolling the page suspends nothing.
-            .onScrollPhaseChange { _, phase in
-                transcriptReading.scrollPhaseChanged(to: phase, suspends: isCurrent && model.player.isPlaying)
-            }
         }
+        .scrollEdgeEffectHidden(true)
         .background(Brand.background).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
         // Pushed pages keep the room for their player: no tab bar, no listening accessory.
         .pushedPage(model)

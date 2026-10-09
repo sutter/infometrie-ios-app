@@ -30,9 +30,13 @@ struct TranscriptView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicType
+    @ScaledMetric(relativeTo: .body) private var textHeight = 250.0
+    @State private var textContentHeight: CGFloat?
     @State private var localReading = TranscriptReadingState()
     private let sharedReading: TranscriptReadingState?
     private var reading: TranscriptReadingState { sharedReading ?? localReading }
+    private let expanded: Bool
+    private let onExpand: (() -> Void)?
     let detail: SequenceDetail
     let isCurrent: Bool
     let onSeek: (Int) -> Void
@@ -40,9 +44,9 @@ struct TranscriptView: View {
     private let largeTextTimeline: TranscriptTimeline
     private var timeline: TranscriptTimeline { dynamicType.isAccessibilitySize ? largeTextTimeline : standardTimeline }
 
-    init(detail: SequenceDetail, timings: SequenceWordTimings? = nil, isCurrent: Bool, reading: TranscriptReadingState? = nil, onSeek: @escaping (Int) -> Void) {
+    init(detail: SequenceDetail, timings: SequenceWordTimings? = nil, isCurrent: Bool, reading: TranscriptReadingState? = nil, expanded: Bool = false, onExpand: (() -> Void)? = nil, onSeek: @escaping (Int) -> Void) {
         self.detail = detail; self.isCurrent = isCurrent; self.onSeek = onSeek
-        self.sharedReading = reading
+        self.sharedReading = reading; self.expanded = expanded; self.onExpand = onExpand
         standardTimeline = TranscriptTimeline(detail: detail, timings: timings)
         largeTextTimeline = TranscriptTimeline(detail: detail, timings: timings, maximumWordsPerPassage: 4)
     }
@@ -62,21 +66,50 @@ struct TranscriptView: View {
             .motion(value: notice)
     }
 
-    /// The whole text, in the page: a box scrolling inside the scrolling page was one scroll too many, and the
-    /// fullscreen text went with it (2026-10-09). The page follows the listening (`SequenceView`).
-    private var content: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            AppRule()
-            textInline.padding(.top, 16)
-                .overlay(alignment: .topLeading) { positionStatus }
-            if let notice {
-                Text(notice).font(.footnote).foregroundStyle(Brand.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("transcript-notice")
+    @ViewBuilder private var content: some View {
+        if expanded {
+            // No header: the text starts right away, and resuming sits below it as on the page.
+            VStack(alignment: .leading, spacing: 12) {
+                if let notice {
+                    Text(notice).font(.footnote).foregroundStyle(Brand.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("transcript-notice")
+                }
+                textScroll.frame(maxHeight: .infinity)
+                    .overlay(alignment: .topLeading) { positionStatus }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+                AppRule()
+                VStack(alignment: .leading, spacing: 0) {
+                    // No "Verbatim" title: the text follows the passage title directly; only the
+                    // fullscreen control remains, on the right.
+                    HStack(spacing: 12) {
+                        Spacer(minLength: 0)
+                        if let onExpand {
+                            Button(action: onExpand) {
+                                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                    .font(.body.weight(.semibold))
+                                    .frame(width: 44, height: 44).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain).foregroundStyle(Brand.tint)
+                            .accessibilityLabel("Afficher le texte en plein écran")
+                            .accessibilityIdentifier("expand-transcript")
+                        }
+                    }
+                    .overlay(alignment: .topLeading) { positionStatus }
+                    // As tall as the text, up to the former fixed height: a short verbatim leaves no gap.
+                    textScroll.frame(height: min(textContentHeight ?? textHeight, textHeight, 380))
+                }.padding(.top, 4)
+                if let notice {
+                    Text(notice).font(.footnote).foregroundStyle(Brand.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("transcript-notice")
                     .padding(.vertical, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .overlay(alignment: .top) { AppRule() }
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
             }
         }
     }
@@ -104,46 +137,42 @@ struct TranscriptView: View {
         }
     }
 
-    private var passages: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ForEach(timeline.passages) { passage in
-                Text(attributed(passage))
-                    .font(.body)
-                    .lineSpacing(6)
-                    .foregroundStyle(Brand.ink).tint(Brand.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .id(passage.id)
-                    .accessibilityIdentifier("transcript-passage-\(passage.id)")
-            }
+    private var textScroll: some View {
+        @Bindable var reading = reading
+        return ScrollView {
+            VStack(alignment: .leading, spacing: expanded ? 24 : 16) {
+                ForEach(timeline.passages) { passage in
+                    Text(attributed(passage))
+                        .font(expanded ? .title2.weight(.semibold) : .body)
+                        .lineSpacing(expanded ? 8 : 6)
+                        .foregroundStyle(Brand.ink).tint(Brand.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .id(passage.id)
+                        .accessibilityIdentifier("transcript-passage-\(passage.id)")
+                }
+                if expanded, isCurrent, let error = model.player.error { ErrorNotice(message: error) }
+            }.scrollTargetLayout().padding(.vertical, expanded ? 12 : 4)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textContentHeight = $0 }
         }
-    }
-
-    /// The passages laid out in the page, which scrolls and follows them.
-    private var textInline: some View {
-        followsListening(passages.padding(.vertical, 4)
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("transcript-scroll"))
-    }
-
-    /// Moves the reading to the passage being heard (`visiblePassage`, which the passage page follows), and lets a
-    /// tapped word seek the player.
-    private func followsListening(_ content: some View) -> some View {
-        content
-            .onChange(of: timeline.passageID(forWord: activeWord)) { _, passage in
-                if reading.followsPlayback { follow(passage) }
-            }
-            .onChange(of: reading.followsPlayback) { _, following in
-                if following { follow(timeline.passageID(forWord: activeWord)) }
-            }
-            .onAppear { if reading.followsPlayback { follow(timeline.passageID(forWord: activeWord)) } }
-            .environment(\.openURL, OpenURLAction { url in
-                guard canSeek, url.scheme == "infometrie-transcript", url.host == "seek",
-                      url.pathComponents.count == 3, url.pathComponents[1] == String(detail.id),
-                      let word = Int(url.pathComponents[2]), timeline.words.indices.contains(word) else { return .discarded }
-                reading.followNow()
-                onSeek(word)
-                return .handled
-            })
+        .scrollEdgeEffectHidden(true)
+        .accessibilityIdentifier("transcript-scroll")
+        .scrollPosition(id: $reading.visiblePassage, anchor: .top)
+        .onScrollPhaseChange { _, phase in reading.scrollPhaseChanged(to: phase) }
+        .onChange(of: timeline.passageID(forWord: activeWord)) { _, passage in
+            if reading.followsPlayback { follow(passage) }
+        }
+        .onChange(of: reading.followsPlayback) { _, following in
+            if following { follow(timeline.passageID(forWord: activeWord)) }
+        }
+        .onAppear { if reading.followsPlayback { follow(timeline.passageID(forWord: activeWord)) } }
+        .environment(\.openURL, OpenURLAction { url in
+            guard canSeek, url.scheme == "infometrie-transcript", url.host == "seek",
+                  url.pathComponents.count == 3, url.pathComponents[1] == String(detail.id),
+                  let word = Int(url.pathComponents[2]), timeline.words.indices.contains(word) else { return .discarded }
+            reading.followNow()
+            onSeek(word)
+            return .handled
+        })
     }
 
     private func follow(_ passage: Int?) {
