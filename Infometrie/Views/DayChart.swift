@@ -209,7 +209,7 @@ private struct PeriodHeader: View {
     private var title: String {
         if let day { return DayLabel.compact(day) }
         guard let first = model.historyDays.first, let last = model.historyDays.last else { return "" }
-        return model.period == .month && model.periodOffset > 0 ? DayLabel.month(first) : DayLabel.shortRange(first, last)
+        return DayLabel.span(first, last, period: model.period, back: model.periodOffset)
     }
 
     var body: some View {
@@ -341,7 +341,7 @@ private struct JournalHeader<Controls: View>: View {
 
 /// Back and forward as one capsule of 44 pt buttons; a missing action disables its side. With `latest`,
 /// a third button jumps to the latest days, shown only when it saves several touches.
-private struct ArrowPair: View {
+struct ArrowPair: View {
     let previous: (() -> Void)?
     let next: (() -> Void)?
     let previousLabel: String
@@ -414,6 +414,10 @@ enum DayLabel {
         return "\(dayNumber(date)) \(date.formatted(Date.FormatStyle(locale: french, timeZone: ParisDay.timeZone).month(.abbreviated)))"
     }
     /// "2 – 8 oct.", or "28 sept. – 4 oct." across months.
+    /// A period's name: the dates, or "Septembre" for a past calendar month.
+    static func span(_ first: String, _ last: String, period: FeedPeriod, back: Int) -> String {
+        period == .month && back > 0 ? month(first) : shortRange(first, last)
+    }
     static func shortRange(_ first: String, _ last: String) -> String {
         guard let start = ParisDay.date(first), let end = ParisDay.date(last) else { return "\(first) – \(last)" }
         let sameMonth = ParisDay.calendar.isDate(start, equalTo: end, toGranularity: .month)

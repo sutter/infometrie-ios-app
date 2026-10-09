@@ -6,6 +6,8 @@ struct PersonView: View {
     @Environment(AppModel.self) private var model
     let name: String
     @State private var period: FeedPeriod = .week
+    /// Steps back from the latest days, through calendar weeks and months, like the journal (2026-10-09).
+    @State private var back = 0
     @State private var profile: PersonProfile?
     @State private var error: String?
     @State private var reload = 0
@@ -13,7 +15,8 @@ struct PersonView: View {
     @State private var dayPage: HistoryResponse?
     @State private var dayError: String?
 
-    private var days: [String] { period.days() }
+    private var days: [String] { period.days(back: back) }
+    private var canStepBack: Bool { FeedPeriod.isWithinHistory(period.days(back: back + 1)) }
 
     var body: some View {
         ScrollView {
@@ -21,6 +24,7 @@ struct PersonView: View {
                 heading
                 VStack(alignment: .leading, spacing: 16) {
                     periods
+                    stepper
                     if let error {
                         ErrorNotice(message: error) { reload += 1 }
                     } else {
@@ -55,7 +59,7 @@ struct PersonView: View {
         .pushedPage(model)
         .toolbarBackground(Brand.background, for: .navigationBar)
         .toolbarBackgroundVisibility(.visible, for: .navigationBar)
-        .task(id: "\(period.rawValue)-\(reload)") { selectedDay = nil; await load() }
+        .task(id: "\(period.rawValue)-\(back)-\(reload)") { selectedDay = nil; await load() }
         .task(id: selectedDay) { await loadDay() }
     }
 
@@ -86,9 +90,31 @@ struct PersonView: View {
     }
 
     private func tab(_ value: FeedPeriod, title: String, label: String) -> some View {
-        AppTabButton(title: title, selected: period == value, compact: true) { period = value }
+        AppTabButton(title: title, selected: period == value, compact: true) { period = value; back = 0 }
             .accessibilityLabel(label)
             .accessibilityIdentifier("person-period-\(value.rawValue)")
+    }
+
+    /// The period shown and the arrows to the ones before and after it, as in the journal.
+    private var stepper: some View {
+        let unit = period == .week ? "Semaine" : "Mois"
+        let feminine = period == .week ? "e" : ""
+        return HStack(spacing: 8) {
+            if let first = days.first, let last = days.last {
+                Text(DayLabel.span(first, last, period: period, back: back).capitalizedFirst)
+                    .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .accessibilityIdentifier("person-period-range")
+            }
+            Spacer(minLength: 0)
+            ArrowPair(previous: canStepBack ? { back += 1 } : nil,
+                      next: back > 0 ? { back -= 1 } : nil,
+                      previousLabel: "\(unit) précédent\(feminine)",
+                      nextLabel: back == 1 ? "Derniers jours" : "\(unit) suivant\(feminine)",
+                      latest: back >= 2 ? { back = 0 } : nil,
+                      id: "person-period")
+        }
+        .sensoryFeedback(.selection, trigger: back)
     }
 
     /// The three counts, then the time spent in interventions.
@@ -121,7 +147,9 @@ struct PersonView: View {
         guard let token = model.session?.token else { return }
         error = nil
         do {
-            profile = try await model.api.profile(token: token, person: name, days: period.rawValue)
+            guard let first = days.first, let last = days.last else { return }
+            profile = nil
+            profile = try await model.api.profile(token: token, person: name, from: first, to: last)
         } catch is CancellationError {
         } catch APIError.notFound {
             profile = nil; error = "Cette personnalité ne fait pas partie du panel suivi."
@@ -215,4 +243,8 @@ private struct ChannelRow: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(channel.channel), \(channel.interventions) interventions, \(SpokenDuration.label(seconds: channel.interventionSec))")
     }
+}
+
+private extension String {
+    var capitalizedFirst: String { prefix(1).uppercased(with: Locale(identifier: "fr_FR")) + dropFirst() }
 }

@@ -180,12 +180,18 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
     /// A person's history totals, days and top channels, shaped like the real answer.
     private func respondToProfile(_ url: URL) {
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        let count = query.first { $0.name == "days" }?.value.flatMap { Int($0) } ?? 7
-        guard let name = query.first(where: { $0.name == "person" })?.value, !name.isEmpty, (1...31).contains(count) else { respond(400); return }
+        func value(_ name: String) -> String? { query.first { $0.name == name }?.value }
+        let count = value("days").flatMap { Int($0) } ?? 7
+        guard let name = value("person"), !name.isEmpty, (1...31).contains(count) else { respond(400); return }
         guard let person = FixtureContent.persons.first(where: { $0.name == name }) else {
             respond(404, ["error": true, "reason": "Unknown person"]); return
         }
-        let days = ParisDay.days(count: count, before: Date())
+        // The days `from` to `to` (API 0.12), or the last `days` complete ones.
+        var days = ParisDay.days(count: count, before: Date())
+        if let from = value("from"), let to = value("to"), let first = ParisDay.date(from), let last = ParisDay.date(to),
+           let span = ParisDay.calendar.dateComponents([.day], from: first, to: last).day, span >= 0, span < 31 {
+            days = (0...span).compactMap { ParisDay.calendar.date(byAdding: .day, value: $0, to: first).map(ParisDay.string) }
+        }
         let items = FixtureContent.history.filter { $0.person == name && $0.date.map(ParisDay.string).map(days.contains) == true }
         let interventions = items.filter { $0.kind == "intervention" }
         func counts(_ passages: [FeedItem]) -> [String: Any] {

@@ -94,6 +94,12 @@ final class APIClient: @unchecked Sendable {
         let query = [URLQueryItem(name: "person", value: person), URLQueryItem(name: "days", value: String(days))]
         return try await historySend(request(path: "rest/v1/profile", token: token, query: query))
     }
+    /// A person's activity over the Paris days `from` to `to`, both included (API 0.12).
+    func profile(token: String, person: String, from: String, to: String) async throws -> PersonProfile {
+        let query = [URLQueryItem(name: "person", value: person), URLQueryItem(name: "from", value: from),
+                     URLQueryItem(name: "to", value: to)]
+        return try await historySend(request(path: "rest/v1/profile", token: token, query: query))
+    }
     private func historySend<T: Decodable>(_ request: URLRequest) async throws -> T {
         do { return try await send(request) }
         catch APIError.server(503) { throw APIError.historyUnavailable }

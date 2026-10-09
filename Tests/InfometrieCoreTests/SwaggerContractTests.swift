@@ -175,6 +175,14 @@ struct SwaggerContractTests {
         #expect(empty.days.isEmpty && empty.topChannels.isEmpty && empty.totals.interventions == 0)
     }
 
+    @Test func profileOfAWindowSendsFromAndToWithoutACount() async throws {
+        let client = client(routes: ["/rest/v1/profile": (200, #"{"person":{"name":"Camille Martin"}}"#)])
+        _ = try await client.profile(token: "fixture-jwt", person: "Camille Martin", from: "2026-09-01", to: "2026-09-30")
+        let sent = query(of: ContractProtocol.requests[0])
+        #expect(sent["person"] == "Camille Martin" && sent["from"] == "2026-09-01" && sent["to"] == "2026-09-30")
+        #expect(sent["days"] == nil)
+    }
+
     @Test func profileOfAPersonOutsideThePanelIsNotFound() async {
         let client = client(routes: ["/rest/v1/profile": (404, #"{"error":true,"reason":"Unknown person"}"#)])
         do { _ = try await client.profile(token: "fixture-jwt", person: "Inconnu", days: 7); Issue.record("Expected not found") }
