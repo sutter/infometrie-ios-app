@@ -14,11 +14,6 @@ struct SequenceView: View {
     @State private var reload = 0
     @State private var isTranscriptExpanded = false
     @State private var transcriptReading = TranscriptReadingState()
-    /// The video of the page is on screen; once it is not, a small copy floats in a corner.
-    @State private var videoInView = true
-    private static let pageTop = "page-top"
-    private static let floatingVideoWidth: CGFloat = 150
-    private static let floatingVideoHeight: CGFloat = floatingVideoWidth * 9 / 16
 
     init(item: FeedItem, list: [FeedItem] = []) {
         _item = State(initialValue: item)
@@ -37,7 +32,6 @@ struct SequenceView: View {
         model.player.stop()
         detail = nil; error = nil
         transcriptReading = TranscriptReadingState()
-        videoInView = true
         item = next
         model.markSeen(next)
     }
@@ -77,35 +71,21 @@ struct SequenceView: View {
         .accessibilityLabel("Chargement du texte")
     }
 
-    private func followHeardPassage(_ page: ScrollViewProxy) {
-        guard let passage = transcriptReading.visiblePassage, isCurrent, model.player.isPlaying else { return }
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
-            page.scrollTo(passage, anchor: UnitPoint(x: 0.5, y: 0.05))
-        }
-    }
-
     private var showsVideo: Bool { isCurrent && displayItem.canPlay && displayItem.video }
 
     /// The whole page scrolls as one, heading and video included (the user, 2026-10-09, after a day of pinned,
     /// shrinking and tightened headings).
-    @ViewBuilder private var header: some View {
+    @ViewBuilder private func header(_ video: PageVideo) -> some View {
         PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true)
-            .id(Self.pageTop)
         if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
-        if showsVideo {
-            Color.clear.aspectRatio(16 / 9, contentMode: .fit).frame(maxWidth: .infinity)
-                .overlay { NativeVideo(player: model.player.player) }
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .onScrollVisibilityChange(threshold: 0.3) { videoInView = $0 }
-        }
+        if showsVideo { video }
     }
 
     private var sequenceContent: some View {
         VStack(spacing: 0) {
-            ScrollViewReader { page in
-            ScrollView {
+            ListeningScroll(reading: transcriptReading, following: isCurrent, showsVideo: showsVideo, pageID: item.id) { video in
                 VStack(alignment: .leading, spacing: 24) {
-                    header
+                    header(video)
                     if let error {
                         ErrorNotice(message: error) { self.error = nil; reload += 1 }
                     } else if let detail = displayDetail {
@@ -129,51 +109,8 @@ struct SequenceView: View {
                             NextPassage(item: next) { show(next) }
                         }
                     } else { textSkeleton }
-                }.padding(.horizontal, AppLayout.margin).padding(.top, 20)
-                    // On a video passage, room under "Passage suivant" for the floating video, which covered it
-                    // at the end of the page (2026-10-09).
-                    .padding(.bottom, showsVideo ? 20 + Self.floatingVideoHeight + 12 : 20)
+                }.padding(.horizontal, AppLayout.margin).padding(.top, 20).padding(.bottom, 20)
                     .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-            }
-            // A new scroll per passage, so "Passage suivant" opens the next one at its top.
-            .id(item.id)
-            .clipped()
-            // Scrolling by hand while listening suspends following for a few seconds; before listening, nothing.
-            .onScrollPhaseChange { _, phase in
-                transcriptReading.scrollPhaseChanged(to: phase, suspends: isCurrent && model.player.isPlaying)
-            }
-            // Each passage being heard comes to the top of the page, like lyrics in Musique (2026-10-09), only while
-            // playing: the player opens a passage at the start of the speech, past 0, and following that position
-            // landed "Passage suivant" on the highlighted word instead of the page's top.
-            // Not on `visiblePassage` changing: starting to listen, or following resuming after a manual scroll,
-            // asks for the same passage again, and the page stayed put (2026-10-09).
-            .onChange(of: transcriptReading.followRequests) { followHeardPassage(page) }
-            .onChange(of: model.player.isPlaying) { _, playing in
-                if playing, transcriptReading.followsPlayback { followHeardPassage(page) }
-            }
-            // Once the video scrolls out of view (following the listening takes it there), a small copy floats in a
-            // corner, like YouTube; touching it brings the page back to its top (the user's pick on 2026-10-09).
-            .overlay(alignment: .bottomTrailing) {
-                if showsVideo, !videoInView {
-                    Button {
-                        transcriptReading.holdForVideo()
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { page.scrollTo(Self.pageTop, anchor: .top) }
-                    } label: {
-                        VideoLayer(player: model.player.player)
-                            .frame(width: Self.floatingVideoWidth, height: Self.floatingVideoHeight)
-                            .background(Color.black)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
-                    }
-                    .buttonStyle(PressableStyle())
-                    .padding(.trailing, AppLayout.margin).padding(.bottom, 12)
-                    .transition(.scale(scale: 0.6, anchor: .bottomTrailing).combined(with: .opacity))
-                    .accessibilityLabel("Vidéo du passage")
-                    .accessibilityHint("Remonte en haut de la page")
-                    .accessibilityIdentifier("floating-video")
-                }
-            }
-            .motion(value: showsVideo && !videoInView)
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -518,20 +455,23 @@ struct PlaybackDock: View {
 
 struct PodcastView: View {
     @Environment(AppModel.self) private var model
+    /// The text's following, shared with the page so it scrolls to the passage being heard, as on a passage page;
+    /// a fresh one per passage of the queue.
+    @State private var reading = TranscriptReadingState()
+    private var showsVideo: Bool { model.player.current?.video == true && model.player.current?.canPlay == true }
+
     var body: some View {
         NavigationStack {
-            ScrollView {
+            ListeningScroll(reading: reading, following: true, showsVideo: showsVideo, pageID: model.player.current?.id ?? 0) { video in
                 VStack(alignment: .leading, spacing: 24) {
                     if let item = model.player.current {
                         PassageHeading(item: item, titleIdentifier: "podcast-title")
                             .id(item.id).transition(.opacity)
                     }
                     if let error = model.player.error { ErrorNotice(message: error) }
-                    if model.player.current?.video == true {
-                        NativeVideo(player: model.player.player).aspectRatio(16 / 9, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
+                    if showsVideo { video }
                     if let detail = model.player.detail, !detail.verbatim.isEmpty {
-                        TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: true) { word in
+                        TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: true, reading: reading) { word in
                             model.player.seekToWord(word, sequenceID: detail.id)
                         }.id(detail.id).transition(.opacity)
                     }
@@ -539,6 +479,7 @@ struct PodcastView: View {
                     .motion(value: model.player.current?.id)
                     .motion(value: model.player.detail?.id)
             }
+            .onChange(of: model.player.current?.id) { reading = TranscriptReadingState() }
             .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock(queue: true) }
             .background(Brand.background).appNavigationTitle("Tout écouter")
             // Each passage the queue plays counts as seen, like an opened page.
@@ -564,6 +505,93 @@ struct PodcastView: View {
                 }
             }
         }.presentationDragIndicator(.visible)
+    }
+}
+
+/// A passage's page that follows the listening: each passage being heard comes to the top while playing, a manual
+/// scroll suspends following for a few seconds, and on a video passage a small copy of the video floats in a corner
+/// once the page's video scrolls away; touching it brings the page back to its top and holds following there. Shared
+/// by the passage page and "Tout écouter" (2026-10-09).
+struct ListeningScroll<Content: View>: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let reading: TranscriptReadingState
+    /// The player plays this page's passage.
+    let following: Bool
+    let showsVideo: Bool
+    /// A new scroll per passage, so a new passage opens at its top.
+    let pageID: AnyHashable
+    @ViewBuilder let content: (PageVideo) -> Content
+    @State private var videoInView = true
+    private static var top: String { "listening-page-top" }
+    static var floatingWidth: CGFloat { 150 }
+    static var floatingHeight: CGFloat { floatingWidth * 9 / 16 }
+
+    var body: some View {
+        ScrollViewReader { page in
+            ScrollView {
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: 0).id(Self.top)
+                    content(PageVideo(player: model.player.player, inView: $videoInView))
+                    // Room at the end for the floating video, which covered the last row (2026-10-09).
+                    if showsVideo { Color.clear.frame(height: Self.floatingHeight + 12) }
+                }
+            }
+            .id(pageID)
+            .clipped()
+            .onChange(of: pageID) { videoInView = true }
+            // Scrolling by hand while listening suspends following for a few seconds; before listening, nothing.
+            .onScrollPhaseChange { _, phase in
+                reading.scrollPhaseChanged(to: phase, suspends: following && model.player.isPlaying)
+            }
+            // On every follow request and on starting to listen, not on the passage changing: resuming or starting
+            // asks for the same passage again. Only while playing: a passage opens past 0, at the speech's start.
+            .onChange(of: reading.followRequests) { follow(page) }
+            .onChange(of: model.player.isPlaying) { _, playing in
+                if playing, reading.followsPlayback { follow(page) }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if showsVideo, !videoInView {
+                    Button {
+                        reading.holdForVideo()
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { page.scrollTo(Self.top, anchor: .top) }
+                    } label: {
+                        VideoLayer(player: model.player.player)
+                            .frame(width: Self.floatingWidth, height: Self.floatingHeight)
+                            .background(Color.black)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
+                    }
+                    .buttonStyle(PressableStyle())
+                    .padding(.trailing, AppLayout.margin).padding(.bottom, 12)
+                    .transition(.scale(scale: 0.6, anchor: .bottomTrailing).combined(with: .opacity))
+                    .accessibilityLabel("Vidéo du passage")
+                    .accessibilityHint("Remonte en haut de la page")
+                    .accessibilityIdentifier("floating-video")
+                }
+            }
+            .motion(value: showsVideo && !videoInView)
+        }
+    }
+
+    private func follow(_ page: ScrollViewProxy) {
+        guard let passage = reading.visiblePassage, following, model.player.isPlaying else { return }
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
+            page.scrollTo(passage, anchor: UnitPoint(x: 0.5, y: 0.05))
+        }
+    }
+}
+
+/// The page's full-width video, reporting whether it is on screen so the floating copy shows only once it is not.
+struct PageVideo: View {
+    let player: AVPlayer
+    @Binding var inView: Bool
+
+    var body: some View {
+        Color.clear.aspectRatio(16 / 9, contentMode: .fit).frame(maxWidth: .infinity)
+            .overlay { NativeVideo(player: player) }
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .onScrollVisibilityChange(threshold: 0.3) { inView = $0 }
     }
 }
 
