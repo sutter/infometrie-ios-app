@@ -318,7 +318,7 @@ struct PlaybackDock: View {
                         // Where the person speaks: a darker gray on the track itself, the rest being the context the
                         // API adds around the passage (2026-10-09: "0:13" at rest read as listening started; a pale
                         // vermillon band under the track was found ugly the same day).
-                        .overlay { speechBand }
+                        .background { speechBand }
                         .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
                         .accessibilityLabel("Position dans le passage")
                         .accessibilityValue(speechValue)
@@ -360,21 +360,20 @@ struct PlaybackDock: View {
         .background(Brand.background).overlay(alignment: .top) { AppRule() }
         .sensoryFeedback(.impact(weight: .light), trigger: presses)
     }
-    /// Drawn over the system slider's track, which stays the native control the UI tests drive: only the part of
-    /// the speech not yet heard (the heard part is the vermillon fill), and never over the thumb.
+    /// Drawn behind the system slider: its unfilled track is translucent, so the gray shows through it, while the
+    /// vermillon fill and the thumb, glass or not, lie over it with no seam (2026-10-09: drawn over the track, it
+    /// left a gap beside the thumb once the thumb turned to glass under the finger). The slider stays the native
+    /// control the UI tests drive.
     @ViewBuilder private var speechBand: some View {
         if let range = playback.speechRange, playback.duration > 0 {
             GeometryReader { geometry in
                 // The thumb's center travels inside the track, half a thumb (about 19 pt on iOS 26) from each end.
                 let inset: CGFloat = 19, span = max(0, geometry.size.width - 2 * inset)
                 let x = { (seconds: Double) in inset + span * min(1, max(0, seconds / playback.duration)) }
-                let start = max(x(range.lowerBound), x(min(playback.position, playback.duration)) + inset)
-                let end = x(range.upperBound)
-                if end > start {
-                    Capsule().fill(Brand.secondary.opacity(0.55))
-                        .frame(width: end - start, height: 6)
-                        .position(x: (start + end) / 2, y: geometry.size.height / 2)
-                }
+                let start = x(range.lowerBound), end = x(range.upperBound)
+                Capsule().fill(Brand.secondary.opacity(0.55))
+                    .frame(width: max(6, end - start), height: 6)
+                    .position(x: (start + end) / 2, y: geometry.size.height / 2)
             }
             .allowsHitTesting(false)
             .accessibilityHidden(true)
