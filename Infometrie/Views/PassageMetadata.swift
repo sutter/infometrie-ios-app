@@ -198,7 +198,8 @@ struct PassageHeading: View {
     /// The passage page links the speaker to their profile when they belong to the panel.
     var linksPerson = false
     /// Pinned above the passage's text, kept short for good so the text keeps room under it (2026-10-09): name and
-    /// party on one line, then who quotes them or their role on one line, the title on two at most.
+    /// party on one line, then who quotes them or their role on one line, the title whole at `headline` (17 pt): a
+    /// title is never cut (the user, 2026-10-09, after a two-line limit).
     var tight = false
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
@@ -216,9 +217,8 @@ struct PassageHeading: View {
             }
             // `title3` (20 pt) since 2026-10-09, `title2` before: still above the feed card's 18 pt.
             Text(item.displayTitle)
-                .font(.title3.weight(.bold))
+                .font(tight ? .headline.weight(.bold) : .title3.weight(.bold))
                 .foregroundStyle(Brand.ink)
-                .lineLimit(tight ? 2 : nil)
                 .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                 .accessibilityLabel(item.displayTitle)
                 .accessibilityIdentifier(titleIdentifier)
