@@ -16,6 +16,16 @@ struct FeedPeriodTests {
         #expect(month.last == "2026-10-07")
     }
 
+    @Test func steppingBackShiftsByWholePeriods() throws {
+        let now = try instant("2026-10-09T10:00:00Z")
+        #expect(FeedPeriod.week.days(before: now, back: 1) == ["2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01"])
+        let month = FeedPeriod.month.days(before: now, back: 1)
+        #expect(month.first == "2026-08-10" && month.last == "2026-09-08" && month.count == 30)
+        // The oldest step still ends within the history the server keeps.
+        #expect((FeedPeriod.historyDepth - 1) / FeedPeriod.month.rawValue == 1)
+        #expect((FeedPeriod.historyDepth - 1) / FeedPeriod.week.rawValue == 8)
+    }
+
     @Test func liveChartEndsWithTheParisDayInProgress() throws {
         let days = FeedPeriod.liveDays(now: try instant("2026-10-07T22:30:00Z"))
         #expect(days == ["2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08"])

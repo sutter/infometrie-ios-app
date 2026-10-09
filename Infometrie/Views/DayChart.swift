@@ -24,6 +24,7 @@ struct FeedDayChart: View {
 
     private var period: some View {
         VStack(alignment: .leading, spacing: 8) {
+            PeriodStepper()
             DayChart(days: model.historyDays, counts: model.dayCounts, kinds: model.filters.selectedKinds,
                      loading: model.dayCounts.isEmpty && model.isLoadingDayCounts, selectedDay: model.selectedDay,
                      identifier: "feed-day") { day in
@@ -91,7 +92,8 @@ struct DayChart: View {
     /// A week, plus today in Live, labels every day.
     private var isWeek: Bool { days.count <= 8 }
     private var labelStride: Int { isWeek ? 1 : 7 }
-    private var yesterday: String? { today == nil ? days.last : days.dropLast().last }
+    /// Only the real yesterday reads "hier": a period stepped back ends earlier.
+    private var yesterday: String? { ParisDay.days(count: 1, before: Date()).first }
     /// Sparse or very large labels at the edges grow inward, or the screen edge cuts them ("09/…").
     private var anchorsEdges: Bool { labelStride > 1 || dynamicType.isAccessibilitySize }
 
@@ -202,6 +204,39 @@ struct DayChart: View {
     }
 }
 
+/// The period's span, with the periods before and after it as 44 pt buttons: back in time on the left.
+private struct PeriodStepper: View {
+    @Environment(AppModel.self) private var model
+
+    private var range: String {
+        guard let first = model.historyDays.first, let last = model.historyDays.last else { return " " }
+        return DayLabel.range(first, last)
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            step("chevron.left", direction: "précédents", id: "feed-period-previous", delta: 1)
+            Text(range).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink)
+                .frame(maxWidth: .infinity)
+                .accessibilityIdentifier("feed-period-range")
+            step("chevron.right", direction: "suivants", id: "feed-period-next", delta: -1)
+        }
+        .sensoryFeedback(.selection, trigger: model.periodOffset)
+    }
+
+    private func step(_ icon: String, direction: String, id: String, delta: Int) -> some View {
+        let enabled = (0...model.maxPeriodOffset).contains(model.periodOffset + delta)
+        return Button { Task { await model.stepPeriod(delta) } } label: {
+            Image(systemName: icon).font(.body.weight(.semibold)).frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).foregroundStyle(enabled ? Brand.ink : Brand.secondary.opacity(0.5))
+        .disabled(!enabled)
+        .accessibilityLabel("\(model.period.rawValue) jours \(direction)")
+        .accessibilityIdentifier(id)
+    }
+}
+
 /// The chosen day: previous and next as 44 pt buttons, since a bar of a 30-day chart is about 9 pt wide.
 private struct DaySelection: View {
     @Environment(AppModel.self) private var model
@@ -267,6 +302,14 @@ enum DayLabel {
     static func long(_ day: String) -> String {
         guard let date = ParisDay.date(day) else { return day }
         return date.formatted(Date.FormatStyle(locale: french, timeZone: ParisDay.timeZone).weekday(.wide).day().month(.wide))
+    }
+    /// "du 3 au 9 octobre", or "du 10 septembre au 9 octobre" across months.
+    static func range(_ first: String, _ last: String) -> String {
+        guard let start = ParisDay.date(first), let end = ParisDay.date(last) else { return "\(first) – \(last)" }
+        let style = Date.FormatStyle(locale: french, timeZone: ParisDay.timeZone)
+        let sameMonth = ParisDay.calendar.isDate(start, equalTo: end, toGranularity: .month)
+        let from = sameMonth ? start.formatted(style.day()) : start.formatted(style.day().month(.wide))
+        return "du \(from) au \(end.formatted(style.day().month(.wide)))"
     }
     /// "mercredi 7 octobre, 2 interventions, 40 citations".
     static func spoken(_ day: String, counts: DayCount?, kinds: [String]) -> String {

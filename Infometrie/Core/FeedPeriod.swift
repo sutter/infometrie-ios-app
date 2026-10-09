@@ -6,8 +6,15 @@ enum FeedPeriod: Int, CaseIterable, Sendable {
     case live = 0, week = 7, month = 30
 
     var isLive: Bool { self == .live }
+    /// Paris days of history the server serves: on 2026-10-09 `/days` and `/history` held passages from
+    /// 2026-08-09 on, about 60 days back, and nothing before (rolling retention or the archive's start: not documented).
+    static let historyDepth = 60
     /// The complete Paris days of the period, oldest first, yesterday last. Live has none.
-    func days(before now: Date = Date()) -> [String] { ParisDay.days(count: rawValue, before: now) }
+    /// `back` steps whole periods into the past: 1 is the 7 or 30 days before the latest ones.
+    func days(before now: Date = Date(), back: Int = 0) -> [String] {
+        let end = ParisDay.calendar.date(byAdding: .day, value: -back * rawValue, to: now) ?? now
+        return ParisDay.days(count: rawValue, before: end)
+    }
     /// Live's chart: the last 7 complete Paris days for context, then today, still going.
     static func liveDays(now: Date = Date()) -> [String] { ParisDay.days(count: 7, before: now) + [ParisDay.string(now)] }
 }

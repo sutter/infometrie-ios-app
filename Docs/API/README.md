@@ -42,7 +42,7 @@ Même version, sans nouvelle route ni changement cassant ; le Swagger précise :
 - `parties` attend partout le code de `/parties`, qui est le libellé du parti. C’est déjà ce que l’application envoie (`Party.code`), et `/history` et `/days` disaient auparavant « labels ».
 - `/history` peut répondre 502 (historique illisible) : l’application affiche alors le message générique de serveur indisponible, pas celui d’historique indisponible réservé au 503.
 - `/days` répond 400 hors de 1 à 31 jours ; l’application n’envoie que 7 ou 30.
-- `/sequences/{id}` répond 404 pour un passage absent du journal en direct et de l’historique, qui garde 35 jours : les passages de 30 j restent ouvrables.
+- `/sequences/{id}` répond 404 pour un passage absent du journal en direct et de l’historique. Le 9 octobre 2026, `/days` et `/history` servaient des passages à partir du 8 août 2026 au soir (heure de Paris, le 9 août) et rien avant, soit environ 60 jours : rétention glissante ou début de l’archive, le Swagger ne le dit pas. L’application recule de 7 j ou 30 j sans dépasser 60 jours (`FeedPeriod.historyDepth`).
 
 ### Routes ajoutées en 0.11.0
 

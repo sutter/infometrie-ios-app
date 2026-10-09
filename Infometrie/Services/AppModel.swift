@@ -28,6 +28,10 @@ final class AppModel {
     var isRefreshing = false
     /// Live (the last 24 hours, polled) or the last 7 or 30 complete Paris days (`/history`, `/days`).
     private(set) var period: FeedPeriod = .live
+    /// Whole periods back from the latest: 0 ends yesterday, 1 is the 7 or 30 days before.
+    private(set) var periodOffset = 0
+    /// How far back the period can step: while its newest day stays within the history the server keeps.
+    var maxPeriodOffset: Int { period.isLive ? 0 : (FeedPeriod.historyDepth - 1) / period.rawValue }
     /// One day of the period chosen on the chart; nil shows the whole period.
     private(set) var selectedDay: String?
     /// The Paris days the period covers, oldest first.
@@ -128,7 +132,7 @@ final class AppModel {
         items = []; persons = []; parties = []; savedSearches = []; seen = [:]; trends = [:]; trendsDay = ""
         filters = SearchFilters(); draft = SearchFilters(); tab = .feed; isSearchPresented = false
         lastSeq = 0; lastRefresh = nil; feedError = nil; choicesError = nil
-        resetHistory(); period = .live; selectedDay = nil; liveHasMore = false; liveGeneration = UUID()
+        resetHistory(); period = .live; periodOffset = 0; selectedDay = nil; liveHasMore = false; liveGeneration = UUID()
         liveDays = []; liveDayCounts = []
         isRefreshing = false; quota = nil; notice = nil
     }
@@ -189,11 +193,18 @@ final class AppModel {
     /// With `day`, opens the period on that day: Live's chart sends a past day to 7 j.
     func selectPeriod(_ value: FeedPeriod, day: String? = nil) async {
         guard value != period else { return }
-        period = value; selectedDay = day; feedError = nil
+        period = value; periodOffset = 0; selectedDay = day; feedError = nil
         if value.isLive {
             resetHistory()
             await refresh(reset: items.isEmpty)
         } else { await reloadHistory() }
+    }
+    /// Steps the period back (positive) or forward, within the history the server keeps.
+    func stepPeriod(_ delta: Int) async {
+        let offset = periodOffset + delta
+        guard !period.isLive, delta != 0, (0...maxPeriodOffset).contains(offset) else { return }
+        periodOffset = offset; selectedDay = nil
+        await reloadHistory()
     }
     /// Shows one day of the period, or the whole period with nil.
     func selectDay(_ day: String?) async {
@@ -210,20 +221,21 @@ final class AppModel {
     }
     /// Back in the foreground: a 7 or 30 day period moves on once a new day has started in Paris.
     func reloadHistoryIfDayChanged(now: Date = Date()) async {
-        guard !period.isLive, period.days(before: now) != historyDays else { return }
+        guard !period.isLive, period.days(before: now, back: periodOffset) != historyDays else { return }
         await reloadHistory(now: now)
     }
     func reloadHistory(now: Date = Date()) async {
         guard let session, !period.isLive else { return }
         let id = UUID(); historyRequestID = id
         let criteria = filters, span = period
-        historyDays = span.days(before: now)
+        historyDays = span.days(before: now, back: periodOffset)
+        guard let first = historyDays.first, let last = historyDays.last else { return }
         if let day = selectedDay, !historyDays.contains(day) { selectedDay = nil }
         dayCounts = []; historyItems = []; historyHasMore = false; isLoadingMore = false; feedError = nil
         // Loading from now on: the pages start a moment later, and the empty states must not flash meanwhile.
         isLoadingHistory = true; isLoadingDayCounts = true
         defer { if historyRequestID == id { isLoadingDayCounts = false } }
-        async let counts = api.days(token: session.token, filters: criteria, count: span.rawValue)
+        async let counts = api.days(token: session.token, filters: criteria, from: first, to: last)
         async let page: Void = loadHistoryPage(id: id)
         do {
             let result = try await counts
