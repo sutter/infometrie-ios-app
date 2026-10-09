@@ -136,11 +136,14 @@ struct SequenceView: View {
                 }
             }
             .scrollEdgeEffectHidden(true)
-            // The text sits in the page (2026-10-09): the page follows the passage being heard, scrolling only as far
-            // as it takes to bring it into view; scrolling it by hand while listening suspends following for a few seconds.
+            // The text sits in the page (2026-10-09): each passage being heard comes to the upper part of the screen,
+            // like lyrics in Musique. Scrolling only as far as needed left it still while the passage stayed visible,
+            // and following read as broken. Scrolling by hand while listening suspends following for a few seconds.
             .onChange(of: transcriptReading.visiblePassage) { _, passage in
-                guard let passage else { return }
-                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { page.scrollTo(passage) }
+                guard let passage, isCurrent, model.player.isPlaying || model.player.position > 0 else { return }
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
+                    page.scrollTo(passage, anchor: UnitPoint(x: 0.5, y: 0.15))
+                }
             }
             // Before listening, scrolling the page suspends nothing.
             .onScrollPhaseChange { _, phase in
