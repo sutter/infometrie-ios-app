@@ -218,7 +218,6 @@ private struct PeriodHeader: View {
 
     private var summary: some View {
         HeaderSummary(title: title, total: total, loading: loading,
-                      detail: InterventionTime.label(counts, filters: model.filters),
                       identifier: day == nil ? "feed-status" : "feed-day-selection")
     }
 
@@ -256,7 +255,7 @@ private struct PeriodHeader: View {
 }
 
 /// Live's header, in the period header's look: "Aujourd'hui" and how fresh the list is, today's passages since
-/// midnight in Paris from `/days`, and their time in interventions. No arrows: the past is in 7 j and 30 j.
+/// midnight in Paris from `/days`. No arrows: the past is in 7 j and 30 j.
 private struct LiveHeader: View {
     @Environment(AppModel.self) private var model
 
@@ -265,20 +264,9 @@ private struct LiveHeader: View {
         TimelineView(.periodic(from: .now, by: 15)) { context in
             HeaderSummary(title: "Aujourd’hui", note: model.lastRefresh.map { LiveAge.label(of: $0, at: context.date) },
                           total: model.todayCounts?.total(for: model.filters) ?? 0, loading: model.todayCounts == nil,
-                          detail: InterventionTime.label(model.todayCounts.map { [$0] } ?? [], filters: model.filters),
                           identifier: "feed-status")
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-}
-
-/// "3 h 12 d’interventions" over some days, when interventions are checked: the journal's interventions, not
-/// the official speaking time.
-enum InterventionTime {
-    static func label(_ days: [DayCount], filters: SearchFilters) -> String? {
-        let seconds = days.reduce(0) { $0 + $1.interventionSec }
-        guard filters.interventions, seconds > 0 else { return nil }
-        return "\(SpokenDuration.label(seconds: seconds)) d’interventions"
     }
 }
 
@@ -292,15 +280,14 @@ enum LiveAge {
     }
 }
 
-/// Three lines in every period, so the header keeps its height from one to the other (the user, 2026-10-09):
-/// when (bold, one line), how many passages, how long in interventions. The date leads, the count follows.
+/// Two lines in every period and for a chosen day, so the header keeps its height (the user, 2026-10-09): when
+/// (bold, one line), then how many passages. The time in interventions was removed the same day.
 private struct HeaderSummary: View {
     let title: String
     /// Small and gray after the title: Live's freshness.
     var note: String?
     let total: Int
     let loading: Bool
-    let detail: String?
     let identifier: String
     @Environment(\.dynamicTypeSize) private var dynamicType
     private static let french = Locale(identifier: "fr_FR")
@@ -318,11 +305,10 @@ private struct HeaderSummary: View {
                 .font(.subheadline.monospacedDigit())
                 .contentTransition(.numericText())
                 .skeleton(loading)
-            if let detail { Text(detail).font(.footnote).foregroundStyle(Brand.secondary) }
         }
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel([title, note, "\(total) \(passages)", detail].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityLabel([title, note, "\(total) \(passages)"].compactMap { $0 }.joined(separator: ", "))
         .accessibilityIdentifier(identifier)
     }
 }
