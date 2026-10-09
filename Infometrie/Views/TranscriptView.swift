@@ -5,6 +5,9 @@ import Observation
 final class TranscriptReadingState {
     var followsPlayback = true
     var visiblePassage: Int?
+    /// Counts every request to bring the passage being heard into view, even the same passage again (resuming after
+    /// a manual scroll, starting to listen): the passage page scrolls on it, not on `visiblePassage` changing.
+    var followRequests = 0
     @ObservationIgnored private var resume: Task<Void, Never>?
 
     /// Scrolling by hand suspends following, which comes back on its own a few seconds after the finger lifts, like
@@ -193,6 +196,7 @@ struct TranscriptView: View {
     private func follow(_ passage: Int?) {
         guard let passage else { return }
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { reading.visiblePassage = passage }
+        reading.followRequests += 1
     }
 
     private func attributed(_ passage: TranscriptTimeline.Passage) -> AttributedString {

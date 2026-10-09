@@ -71,6 +71,13 @@ struct SequenceView: View {
         .accessibilityLabel("Chargement du texte")
     }
 
+    private func followHeardPassage(_ page: ScrollViewProxy) {
+        guard let passage = transcriptReading.visiblePassage, isCurrent, model.player.isPlaying else { return }
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
+            page.scrollTo(passage, anchor: UnitPoint(x: 0.5, y: 0.05))
+        }
+    }
+
     private var showsVideo: Bool { isCurrent && displayItem.canPlay && displayItem.video }
 
     /// The whole page scrolls as one, heading and video included (the user, 2026-10-09, after a day of pinned,
@@ -127,11 +134,11 @@ struct SequenceView: View {
             // Each passage being heard comes to the top of the page, like lyrics in Musique (2026-10-09), only while
             // playing: the player opens a passage at the start of the speech, past 0, and following that position
             // landed "Passage suivant" on the highlighted word instead of the page's top.
-            .onChange(of: transcriptReading.visiblePassage) { _, passage in
-                guard let passage, isCurrent, model.player.isPlaying else { return }
-                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
-                    page.scrollTo(passage, anchor: UnitPoint(x: 0.5, y: 0.05))
-                }
+            // Not on `visiblePassage` changing: starting to listen, or following resuming after a manual scroll,
+            // asks for the same passage again, and the page stayed put (2026-10-09).
+            .onChange(of: transcriptReading.followRequests) { followHeardPassage(page) }
+            .onChange(of: model.player.isPlaying) { _, playing in
+                if playing, transcriptReading.followsPlayback { followHeardPassage(page) }
             }
             }
         }
