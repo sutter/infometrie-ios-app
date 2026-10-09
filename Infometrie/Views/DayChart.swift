@@ -6,9 +6,9 @@ import SwiftUI
 /// Live has no chart (2026-10-09): its 7-day strip repeated 7 j's with other rules and jumped to 7 j on a touch.
 struct FeedDayChart: View {
     @Environment(AppModel.self) private var model
-    /// "Tout écouter" (and "Rechercher" on iPad), at the end of the count's line: on a row of its own it cost
-    /// about 60 pt above the cards (2026-10-09).
-    let listen: AnyView
+    /// On iPad only, "Rechercher" and "Tout écouter" at the end of the count's line: the journal has no navigation
+    /// bar there. On iPhone both sit in the navigation bar.
+    let listen: AnyView?
 
     var body: some View {
         if model.period.isLive { LiveHeader(listen: listen) } else { period }
@@ -198,7 +198,7 @@ struct DayChart: View {
 /// calendar weeks and months; once a day is chosen they step days, beside the cross that restores the period.
 private struct PeriodHeader: View {
     @Environment(AppModel.self) private var model
-    let listen: AnyView
+    let listen: AnyView?
 
     private var day: String? { model.selectedDay }
     private var counts: [DayCount] { model.dayCounts.filter { day == nil || $0.day == day } }
@@ -256,7 +256,7 @@ private struct PeriodHeader: View {
 /// midnight in Paris from `/days`. No arrows: the past is in 7 j and 30 j.
 private struct LiveHeader: View {
     @Environment(AppModel.self) private var model
-    let listen: AnyView
+    let listen: AnyView?
 
     var body: some View {
         // Re-read the age every 15 seconds; the feed itself refreshes every 30.
@@ -279,7 +279,7 @@ enum LiveAge {
 }
 
 /// Two lines in every period and for a chosen day, so the header keeps its height (the user, 2026-10-09): when,
-/// bold on one line, with the arrows at its end; then how many passages, with "Tout écouter" at its end. The time
+/// bold on one line, with the arrows at its end; then how many passages (with "Tout écouter" at its end on iPad). The time
 /// in interventions was removed the same day. At accessibility sizes everything stacks.
 private struct JournalHeader<Controls: View>: View {
     let title: String
@@ -288,7 +288,7 @@ private struct JournalHeader<Controls: View>: View {
     let total: Int
     let loading: Bool
     let identifier: String
-    let listen: AnyView
+    let listen: AnyView?
     @ViewBuilder let controls: Controls
     @Environment(\.dynamicTypeSize) private var dynamicType
     private static var french: Locale { Locale(identifier: "fr_FR") }
@@ -306,7 +306,7 @@ private struct JournalHeader<Controls: View>: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 8) { titleText; Spacer(minLength: 0); controls }
                 // The button keeps its 44 pt to touch but not in the layout, so the line stays as tall as its text.
-                HStack(spacing: 8) { countText; Spacer(minLength: 0); listen.padding(.vertical, -8) }
+                HStack(spacing: 8) { countText; Spacer(minLength: 0); listen?.padding(.vertical, -8) }
             }
         }
     }

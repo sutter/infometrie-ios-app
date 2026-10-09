@@ -19,7 +19,7 @@ struct FeedView: View {
                 Section {
                     // Period and display scroll with the list: only the types stay pinned, so the cards get the room.
                     FeedViewOptions().padding(.top, 8)
-                    FeedDayChart(listen: AnyView(listenControls)).padding(.top, 8).padding(.bottom, 16)
+                    FeedDayChart(listen: usesWideLayout ? AnyView(listenControls) : nil).padding(.top, 8).padding(.bottom, 16)
                     if hasAudienceFilters { selectionSummary.padding(.bottom, 8) }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.reload() } }
@@ -98,6 +98,10 @@ struct FeedView: View {
             if !usesWideLayout {
                 ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
+                // "Tout écouter" acts on the results like "Rechercher", so both live in the bar, reachable after
+                // scrolling; in the period header it read as one more figure (the user, 2026-10-09).
+                ToolbarItem(placement: .topBarTrailing) { toolbarListenButton(scheme: colorScheme) }
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
                 ToolbarItem(placement: .topBarTrailing) { filtersButton(scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
             }
@@ -123,7 +127,7 @@ struct FeedView: View {
         return "Aucun résultat du \(DayLabel.short(first)) au \(DayLabel.short(last)) avec ces critères. Les passages d’aujourd’hui sont dans Live."
     }
 
-    /// "Tout écouter" at the end of the header's count line; "Rechercher" too on iPad.
+    /// On iPad, where the journal has no navigation bar, "Rechercher" and "Tout écouter" end the header's count line.
     private var listenControls: some View {
         HStack(spacing: 12) {
             if usesWideLayout { filtersButton() }
@@ -229,6 +233,17 @@ struct FeedView: View {
         .buttonStyle(.plain).foregroundStyle(Brand.fixed(Brand.tint, for: scheme))
         .accessibilityIdentifier("edit-filters")
         .accessibilityValue(hasAudienceFilters ? "Recherche active" : "")
+    }
+
+    /// Icon only in the navigation bar, in the system's glass circle like other icon actions; VoiceOver reads "Tout écouter".
+    private func toolbarListenButton(scheme: ColorScheme?) -> some View {
+        Button { model.player.start(items: playable, app: model, podcast: true) } label: {
+            Image(systemName: "play.fill").font(.body.weight(.semibold))
+                .foregroundStyle(Brand.fixed(playable.isEmpty ? Brand.secondary : Brand.accent, for: scheme))
+        }
+        .disabled(playable.isEmpty)
+        .accessibilityLabel("Tout écouter")
+        .accessibilityIdentifier("start-podcast")
     }
 
     private var listenButton: some View {
