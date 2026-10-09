@@ -107,7 +107,7 @@ struct SequenceView: View {
                         .buttonStyle(ActionButtonStyle(prominent: true))
                         .accessibilityIdentifier("open-publication")
                         .accessibilityHint("Ouvre la publication dans X ou votre navigateur")
-                        .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+                        .padding([.horizontal, .top], 16).modifier(HomeIndicatorPadding()).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                         .background(Brand.background).overlay(alignment: .top) { AppRule() }
                 } else if displayItem.canPlay {
                     if isCurrent { PlaybackDock() }
@@ -127,7 +127,7 @@ struct SequenceView: View {
                                 }
                             }
                         }.buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("play-sequence")
-                            .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.background)
+                            .padding([.horizontal, .top], 16).modifier(HomeIndicatorPadding()).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.background)
                             .overlay(alignment: .top) { AppRule() }
                     }
                 }
@@ -204,6 +204,18 @@ private struct SequenceSectionLabel: View {
     }
 }
 
+/// The bottom bars of a passage page (player, "Voir la publication sur X", "Écouter ce passage"): no margin under
+/// them where the home indicator's 34 pt safe area already clears them, 12 pt on a phone with a home button, which
+/// has none (2026-10-09: the 12 to 16 pt they added left a gap the user found too wide).
+struct HomeIndicatorPadding: ViewModifier {
+    @State private var inset: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        content.padding(.bottom, max(0, 12 - inset))
+            .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { inset = $0 }
+    }
+}
+
 /// The text can scroll independently; the timeline and transport stay within reach.
 struct PlaybackDock: View {
     @Environment(AppModel.self) private var model
@@ -215,7 +227,6 @@ struct PlaybackDock: View {
     @ScaledMetric(relativeTo: .title2) private var playCircleSize = 56.0
     /// Counts the user's own presses so a haptic follows them, never automatic queue moves.
     @State private var presses = 0
-    @State private var bottomSafeArea: CGFloat = 0
     private var playback: PlaybackModel { model.player }
     var body: some View {
         VStack(spacing: 10) {
@@ -267,10 +278,7 @@ struct PlaybackDock: View {
                 }
             }
         }
-        // No bottom margin of its own where the home indicator's safe area already leaves 34 pt under the buttons
-        // (2026-10-09); 12 pt on a phone with a home button, which has none.
-        .padding(.horizontal, AppLayout.margin).padding(.top, 8).padding(.bottom, max(0, 12 - bottomSafeArea))
-        .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { bottomSafeArea = $0 }
+        .padding(.horizontal, AppLayout.margin).padding(.top, 8).modifier(HomeIndicatorPadding())
         .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         .background(Brand.background).overlay(alignment: .top) { AppRule() }
         .sensoryFeedback(.impact(weight: .light), trigger: presses)
