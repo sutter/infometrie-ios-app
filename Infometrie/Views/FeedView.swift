@@ -97,9 +97,12 @@ struct FeedView: View {
                     .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
         }
-        // No scroll edge effect: the pinned type row already covers the cards under the bar, and on
-        // iOS 27 the hard effect drew a hairline and a different tint under the bar at rest.
-        .scrollEdgeEffectHidden(true)
+        // No scroll edge effect at the top: the pinned type row already covers the cards under the bar, and on
+        // iOS 27 the hard effect drew a hairline and a different tint under the bar at rest. At the bottom the soft
+        // effect stays: it fades the cards under the glass tab bar and "Tout écouter", which were unreadable over
+        // sharp text without it (2026-10-09).
+        .scrollEdgeEffectHidden(true, for: .top)
+        .scrollEdgeEffectStyle(.soft, for: .bottom)
         .background(Brand.background)
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbar(usesWideLayout ? .hidden : .visible, for: .navigationBar)
