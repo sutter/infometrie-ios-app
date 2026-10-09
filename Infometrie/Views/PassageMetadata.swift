@@ -146,7 +146,9 @@ struct PassageSpeaker: View {
                 }
             }
             if !role.isEmpty && (party.isEmpty || !repeatsParty) {
-                Text(role).font(.footnote).foregroundStyle(Brand.secondary).lineLimit(lineLimit)
+                // The role takes the name's color (the user, 2026-10-09): who speaks reads as one block, the party
+                // stays gray between them.
+                Text(role).font(.footnote).foregroundStyle(dimmed ? Brand.secondary : Brand.ink).lineLimit(lineLimit)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
