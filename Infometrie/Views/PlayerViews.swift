@@ -14,6 +14,9 @@ struct SequenceView: View {
     @State private var reload = 0
     @State private var isTranscriptExpanded = false
     @State private var transcriptReading = TranscriptReadingState()
+    /// The video of the page is on screen; once it is not, a small copy floats in a corner.
+    @State private var videoInView = true
+    private static let pageTop = "page-top"
 
     init(item: FeedItem, list: [FeedItem] = []) {
         _item = State(initialValue: item)
@@ -32,6 +35,7 @@ struct SequenceView: View {
         model.player.stop()
         detail = nil; error = nil
         transcriptReading = TranscriptReadingState()
+        videoInView = true
         item = next
         model.markSeen(next)
     }
@@ -84,11 +88,13 @@ struct SequenceView: View {
     /// shrinking and tightened headings).
     @ViewBuilder private var header: some View {
         PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true)
+            .id(Self.pageTop)
         if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
         if showsVideo {
             Color.clear.aspectRatio(16 / 9, contentMode: .fit).frame(maxWidth: .infinity)
                 .overlay { NativeVideo(player: model.player.player) }
                 .clipShape(RoundedRectangle(cornerRadius: 6))
+                .onScrollVisibilityChange(threshold: 0.3) { videoInView = $0 }
         }
     }
 
@@ -140,6 +146,28 @@ struct SequenceView: View {
             .onChange(of: model.player.isPlaying) { _, playing in
                 if playing, transcriptReading.followsPlayback { followHeardPassage(page) }
             }
+            // Once the video scrolls out of view (following the listening takes it there), a small copy floats in a
+            // corner, like YouTube; touching it brings the page back to its top (the user's pick on 2026-10-09).
+            .overlay(alignment: .bottomTrailing) {
+                if showsVideo, !videoInView {
+                    Button {
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { page.scrollTo(Self.pageTop, anchor: .top) }
+                    } label: {
+                        VideoLayer(player: model.player.player)
+                            .aspectRatio(16 / 9, contentMode: .fit).frame(width: 150)
+                            .background(Color.black)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
+                    }
+                    .buttonStyle(PressableStyle())
+                    .padding(.trailing, AppLayout.margin).padding(.bottom, 12)
+                    .transition(.scale(scale: 0.6, anchor: .bottomTrailing).combined(with: .opacity))
+                    .accessibilityLabel("Vidéo du passage")
+                    .accessibilityHint("Remonte en haut de la page")
+                    .accessibilityIdentifier("floating-video")
+                }
+            }
+            .motion(value: showsVideo && !videoInView)
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -531,6 +559,25 @@ struct PodcastView: View {
             }
         }.presentationDragIndicator(.visible)
     }
+}
+
+/// A bare video picture on the shared player, for the floating copy: an `AVPlayerLayer`, since a second
+/// `AVPlayerViewController` on the same player is not supported, while several layers are.
+struct VideoLayer: UIViewRepresentable {
+    let player: AVPlayer
+
+    final class LayerView: UIView {
+        override class var layerClass: AnyClass { AVPlayerLayer.self }
+        var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+    }
+
+    func makeUIView(context: Context) -> LayerView {
+        let view = LayerView()
+        view.playerLayer.videoGravity = .resizeAspect
+        view.playerLayer.player = player
+        return view
+    }
+    func updateUIView(_ view: LayerView, context: Context) { view.playerLayer.player = player }
 }
 
 struct NativeVideo: UIViewControllerRepresentable {
