@@ -215,6 +215,7 @@ struct PlaybackDock: View {
     @ScaledMetric(relativeTo: .title2) private var playCircleSize = 56.0
     /// Counts the user's own presses so a haptic follows them, never automatic queue moves.
     @State private var presses = 0
+    @State private var bottomSafeArea: CGFloat = 0
     private var playback: PlaybackModel { model.player }
     var body: some View {
         VStack(spacing: 10) {
@@ -266,7 +267,10 @@ struct PlaybackDock: View {
                 }
             }
         }
-        .padding(.horizontal, AppLayout.margin).padding(.top, 8).padding(.bottom, 12)
+        // No bottom margin of its own where the home indicator's safe area already leaves 34 pt under the buttons
+        // (2026-10-09); 12 pt on a phone with a home button, which has none.
+        .padding(.horizontal, AppLayout.margin).padding(.top, 8).padding(.bottom, max(0, 12 - bottomSafeArea))
+        .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { bottomSafeArea = $0 }
         .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         .background(Brand.background).overlay(alignment: .top) { AppRule() }
         .sensoryFeedback(.impact(weight: .light), trigger: presses)
