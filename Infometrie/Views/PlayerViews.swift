@@ -84,18 +84,21 @@ struct SequenceView: View {
                         }.accessibilityIdentifier("sequence-summary")
                     }
                 } else { textSkeleton }
-                SequenceDisclosure(title: "À propos du passage", icon: "info.circle") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        KindBadge(item: item)
-                        if !item.party.isEmpty { Text(item.party) }
-                        if !item.role.isEmpty { Text(item.role) }
-                        if !item.show.isEmpty { Label(item.show, systemImage: "antenna.radiowaves.left.and.right") }
-                        if let date = item.date { Label(date.formatted(date: .long, time: .shortened), systemImage: "calendar") }
-                        if item.isCitation && !item.citedBy.isEmpty { Label("Mention par \(item.citedBy)", systemImage: "quote.bubble") }
-                    }.font(.subheadline).foregroundStyle(Brand.secondary)
-                }.accessibilityIdentifier("sequence-context")
+                // Only once the passage has loaded: shown under the short skeleton, it slid down when the text and
+                // the summary arrived (2026-10-09).
+                if displayDetail != nil || error != nil {
+                    SequenceDisclosure(title: "À propos du passage", icon: "info.circle") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            KindBadge(item: item)
+                            if !item.party.isEmpty { Text(item.party) }
+                            if !item.role.isEmpty { Text(item.role) }
+                            if !item.show.isEmpty { Label(item.show, systemImage: "antenna.radiowaves.left.and.right") }
+                            if let date = item.date { Label(date.formatted(date: .long, time: .shortened), systemImage: "calendar") }
+                            if item.isCitation && !item.citedBy.isEmpty { Label("Mention par \(item.citedBy)", systemImage: "quote.bubble") }
+                        }.font(.subheadline).foregroundStyle(Brand.secondary)
+                    }.accessibilityIdentifier("sequence-context")
+                }
             }.padding(.horizontal, AppLayout.margin).padding(.vertical, 20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-                .motion(value: displayDetail?.id)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !isTranscriptExpanded {
@@ -108,7 +111,12 @@ struct SequenceView: View {
                         .background(Brand.background).overlay(alignment: .top) { AppRule() }
                 } else if displayItem.canPlay {
                     if isCurrent { PlaybackDock() }
-                    else {
+                    else if displayDetail == nil && error == nil {
+                        // While the passage loads, the player's own shape, greyed: the page prepares the player on
+                        // opening, and the "Écouter ce passage" button that flashed here first changed the bottom's
+                        // height and shape on every opening (2026-10-09).
+                        PlaybackDock().skeleton().disabled(true).accessibilityHidden(true)
+                    } else {
                         Button { model.player.start(items: [item], app: model, podcast: false) } label: {
                             AdaptiveRow {
                                 Label("Écouter ce passage", systemImage: "play.fill")
