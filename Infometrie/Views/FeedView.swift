@@ -19,7 +19,7 @@ struct FeedView: View {
                 Section {
                     // Period and display scroll with the list: only the types stay pinned, so the cards get the room.
                     FeedViewOptions().padding(.top, 8)
-                    FeedDayChart(search: usesWideLayout ? AnyView(filtersButton()) : nil).padding(.top, 8).padding(.bottom, 16)
+                    FeedDayChart(search: usesWideLayout ? AnyView(filtersButton()) : nil).padding(.top, 16).padding(.bottom, 8)
                     if hasAudienceFilters { selectionSummary.padding(.bottom, 8) }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.reload() } }

@@ -14,7 +14,7 @@ struct FeedDayChart: View {
     }
 
     private var period: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 16) {
             PeriodHeader(search: search)
             DayChart(days: model.historyDays, counts: model.dayCounts, kinds: model.filters.selectedKinds,
                      loading: model.dayCounts.isEmpty && model.isLoadingDayCounts, selectedDay: model.selectedDay,
@@ -278,7 +278,7 @@ enum LiveAge {
 }
 
 /// Two lines in every period and for a chosen day, so the header keeps its height (the user, 2026-10-09): when,
-/// bold on one line, with the arrows at its end; then how many passages (with "Rechercher" at its end on iPad). The time
+/// bold on one line, then how many passages; the arrows (and "Rechercher" on iPad) centered on their right. The time
 /// in interventions was removed the same day. At accessibility sizes everything stacks.
 private struct JournalHeader<Controls: View>: View {
     let title: String
@@ -302,10 +302,13 @@ private struct JournalHeader<Controls: View>: View {
                 search
             }
         } else {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 8) { titleText; Spacer(minLength: 0); controls }
-                // The button keeps its 44 pt to touch but not in the layout, so the line stays as tall as its text.
-                HStack(spacing: 8) { countText; Spacer(minLength: 0); search?.padding(.vertical, -8) }
+            // The controls center on the two lines instead of setting the title line's height: the date and the
+            // count keep the same 4 pt in every period, arrows or not (the user, 2026-10-09).
+            HStack(alignment: .center, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) { titleText; countText }
+                Spacer(minLength: 0)
+                controls
+                search
             }
         }
     }
