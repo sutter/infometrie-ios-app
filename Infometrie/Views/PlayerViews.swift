@@ -17,6 +17,8 @@ struct SequenceView: View {
     /// The video of the page is on screen; once it is not, a small copy floats in a corner.
     @State private var videoInView = true
     private static let pageTop = "page-top"
+    private static let floatingVideoWidth: CGFloat = 150
+    private static let floatingVideoHeight: CGFloat = floatingVideoWidth * 9 / 16
 
     init(item: FeedItem, list: [FeedItem] = []) {
         _item = State(initialValue: item)
@@ -127,7 +129,10 @@ struct SequenceView: View {
                             NextPassage(item: next) { show(next) }
                         }
                     } else { textSkeleton }
-                }.padding(.horizontal, AppLayout.margin).padding(.top, 20).padding(.bottom, 20)
+                }.padding(.horizontal, AppLayout.margin).padding(.top, 20)
+                    // On a video passage, room under "Passage suivant" for the floating video, which covered it
+                    // at the end of the page (2026-10-09).
+                    .padding(.bottom, showsVideo ? 20 + Self.floatingVideoHeight + 12 : 20)
                     .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
             // A new scroll per passage, so "Passage suivant" opens the next one at its top.
@@ -155,7 +160,7 @@ struct SequenceView: View {
                         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { page.scrollTo(Self.pageTop, anchor: .top) }
                     } label: {
                         VideoLayer(player: model.player.player)
-                            .aspectRatio(16 / 9, contentMode: .fit).frame(width: 150)
+                            .frame(width: Self.floatingVideoWidth, height: Self.floatingVideoHeight)
                             .background(Color.black)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                             .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
