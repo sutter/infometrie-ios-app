@@ -124,9 +124,11 @@ struct SequenceView: View {
             .onScrollPhaseChange { _, phase in
                 transcriptReading.scrollPhaseChanged(to: phase, suspends: isCurrent && model.player.isPlaying)
             }
-            // Each passage being heard comes to the top of the page, like lyrics in Musique (2026-10-09).
+            // Each passage being heard comes to the top of the page, like lyrics in Musique (2026-10-09), only while
+            // playing: the player opens a passage at the start of the speech, past 0, and following that position
+            // landed "Passage suivant" on the highlighted word instead of the page's top.
             .onChange(of: transcriptReading.visiblePassage) { _, passage in
-                guard let passage, isCurrent, model.player.isPlaying || model.player.position > 0 else { return }
+                guard let passage, isCurrent, model.player.isPlaying else { return }
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
                     page.scrollTo(passage, anchor: UnitPoint(x: 0.5, y: 0.05))
                 }
