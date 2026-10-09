@@ -10,6 +10,8 @@ struct FeedView: View {
     /// A person whose profile a long press asked for.
     @State private var profileName: String?
     private var playable: [FeedItem] { model.playableItems }
+    /// The day the list is about, whose passages show their time alone: today in Live, or the chosen day.
+    private var listDay: String? { model.period.isLive ? ParisDay.string(Date()) : model.selectedDay }
     private var hasAudienceFilters: Bool { !model.filters.isEmpty }
     private var usesWideLayout: Bool { horizontalSizeClass == .regular }
 
@@ -51,7 +53,7 @@ struct FeedView: View {
                         } else {
                             ForEach(model.visibleItems) { item in
                                 NavigationLink { SequenceView(item: item) } label: {
-                                    FeedCard(item: item, seen: model.isSeen(item))
+                                    FeedCard(item: item, seen: model.isSeen(item), day: listDay)
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")

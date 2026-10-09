@@ -6,6 +6,8 @@ struct FeedCard: View {
     let item: FeedItem
     /// Seen passages step back: name and title turn secondary and "✓ Vu" follows the date.
     var seen = false
+    /// The Paris day the list is about: its passages show their time alone ("14:52", not "09/10 14:52").
+    var day: String?
     @Environment(\.dynamicTypeSize) private var dynamicType
     /// 18 pt at the default size, between `headline` (17) and `title3` (20, until 2026-10-09: the user found it a
     /// little large); it scales with Dynamic Type and the S / M / L reading size like `title3`.
@@ -14,10 +16,7 @@ struct FeedCard: View {
     var body: some View {
         // Two groups read faster than five evenly spaced lines: what and when, then who and what was said.
         VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                header
-                source
-            }
+            header
             VStack(alignment: .leading, spacing: 4) {
                 PassageSpeaker(item: item, dimmed: seen)
                 title
@@ -46,39 +45,55 @@ struct FeedCard: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// The kind, and the channel logo on the right.
-    private var header: some View {
-        AdaptiveRow {
-            KindTag(item: item)
-            if !dynamicType.isAccessibilitySize { Spacer(minLength: 0) }
-            // Logos are the only color on the card: large enough to recognize at a glance.
-            ChannelMark(item: item, size: 24)
+    /// One line (the user, 2026-10-09; it took two): the kind, when, how long, then the channel logo on the right.
+    /// A publication X shows no tile there: its tag and its bar already say X. Too long for the line, the facts move
+    /// under the tag; at accessibility sizes everything stacks.
+    @ViewBuilder private var header: some View {
+        if dynamicType.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 6) {
+                KindTag(item: item)
+                facts
+                logo
+            }
+        } else {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { KindTag(item: item); facts.fixedSize(); Spacer(minLength: 0); logo }
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) { KindTag(item: item); Spacer(minLength: 0); logo }
+                    facts
+                }
+            }
         }
     }
 
-    /// Date on the left, listening duration on the right.
-    /// A channel too long for the line moves below the date instead of squeezing beside it.
-    @ViewBuilder private var source: some View {
-        Group {
-            if dynamicType.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 6) { PassageDate(item: item); channel; seenMark; PassageDuration(item: item) }
-            } else {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) { PassageDate(item: item); channel; seenMark; Spacer(minLength: 0); PassageDuration(item: item) }
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) { PassageDate(item: item); seenMark; Spacer(minLength: 0); PassageDuration(item: item) }
-                        channel
-                    }
-                }
+    /// "14:52 · 47 s", then "· ✓ Vu", then the channel's name when no logo shows it.
+    private var facts: some View {
+        HStack(spacing: 6) {
+            PassageDate(item: item, day: day)
+            if item.canPlay && item.durationSec > 0 {
+                separator
+                PassageDuration(item: item)
+            }
+            seenMark
+            if !channelLine.isEmpty {
+                separator
+                Text(channelLine).foregroundStyle(Brand.secondary).lineLimit(1)
             }
         }
         .font(.footnote)
     }
 
+    private var separator: some View { Text("·").foregroundStyle(Brand.secondary).accessibilityHidden(true) }
+
+    /// Logos are the only color on the card: large enough to recognize at a glance.
+    @ViewBuilder private var logo: some View {
+        if !item.isTweet { ChannelMark(item: item, size: 24) }
+    }
+
     /// "· ✓ Vu" after the date (and the channel name when no logo shows it): the state never rests on color alone. VoiceOver reads the row's value instead.
     @ViewBuilder private var seenMark: some View {
         if seen {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 Text("·")
                 Label("Vu", systemImage: "checkmark").fontWeight(.semibold)
             }
@@ -88,13 +103,7 @@ struct FeedCard: View {
         }
     }
 
-    @ViewBuilder private var channel: some View {
-        if !channelLine.isEmpty {
-            Text(channelLine).foregroundStyle(Brand.secondary).fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    /// The logo at the top names the channel; its name shows here only when no logo is bundled.
+    /// The logo names the channel; its name shows in the facts only when no logo is bundled.
     private var channelLine: String { ChannelMark.hasLogo(for: item) ? "" : item.channel }
 }
 

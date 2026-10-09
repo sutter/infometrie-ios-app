@@ -3,9 +3,14 @@ import SwiftUI
 /// The passage date as every variant writes it: `25/09 14:39`.
 struct PassageDate: View {
     let item: FeedItem
+    /// The Paris day the list is about (today in Live, a chosen day): a passage of that day shows its time alone.
+    var day: String?
 
     var body: some View {
-        if let date = item.date {
+        if let date = item.date, day != nil, ParisDay.string(date) == day {
+            Text(date, style: .time).foregroundStyle(Brand.secondary).monospacedDigit()
+                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
+        } else if let date = item.date {
             Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) \(date, style: .time)")
                 .foregroundStyle(Brand.secondary).monospacedDigit()
                 .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
