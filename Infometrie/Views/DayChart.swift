@@ -200,22 +200,12 @@ private struct PeriodHeader: View {
     private var total: Int { counts.reduce(0) { $0 + $1.total(for: model.filters) } }
     private var loading: Bool { model.dayCounts.isEmpty && model.isLoadingDayCounts }
 
-    /// Short enough for one line beside the arrows on a 375 pt iPhone: "7 derniers jours", "28 sept. – 4 oct.",
-    /// "Septembre", or the chosen day, "dimanche 27 sept.".
+    /// When, short enough for one line beside the arrows on a 375 pt iPhone: the dates ("2 – 8 oct.", the tab
+    /// already says 7 j), "Septembre" for a past month, or the chosen day, "dimanche 27 sept.".
     private var title: String {
         if let day { return DayLabel.compact(day) }
         guard let first = model.historyDays.first, let last = model.historyDays.last else { return "" }
-        if model.periodOffset == 0 { return model.period == .week ? "7 derniers jours" : "30 derniers jours" }
-        return model.period == .week ? DayLabel.shortRange(first, last) : DayLabel.month(first)
-    }
-    /// The dates of the latest days (a past week or month names them in its title), or the time in interventions of the chosen day.
-    private var detail: String? {
-        if let day {
-            guard model.filters.interventions, let seconds = model.dayCounts.first(where: { $0.day == day })?.interventionSec, seconds > 0 else { return nil }
-            return "\(SpokenDuration.label(seconds: seconds)) d’interventions"
-        }
-        guard let first = model.historyDays.first, let last = model.historyDays.last else { return nil }
-        return model.periodOffset > 0 ? nil : DayLabel.shortRange(first, last)
+        return model.period == .month && model.periodOffset > 0 ? DayLabel.month(first) : DayLabel.shortRange(first, last)
     }
 
     var body: some View {
@@ -227,7 +217,8 @@ private struct PeriodHeader: View {
     }
 
     private var summary: some View {
-        HeaderSummary(title: title, total: total, loading: loading, detail: detail,
+        HeaderSummary(title: title, total: total, loading: loading,
+                      detail: InterventionTime.label(counts, filters: model.filters),
                       identifier: day == nil ? "feed-status" : "feed-day-selection")
     }
 
@@ -264,20 +255,30 @@ private struct PeriodHeader: View {
     }
 }
 
-/// Live's header, in the period header's look: "Aujourd'hui", today's passages since midnight in Paris from
-/// `/days`, and how fresh the list is. No arrows: the past is in 7 j and 30 j.
+/// Live's header, in the period header's look: "Aujourd'hui" and how fresh the list is, today's passages since
+/// midnight in Paris from `/days`, and their time in interventions. No arrows: the past is in 7 j and 30 j.
 private struct LiveHeader: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
         // Re-read the age every 15 seconds; the feed itself refreshes every 30.
         TimelineView(.periodic(from: .now, by: 15)) { context in
-            HeaderSummary(title: "Aujourd’hui", total: model.todayCounts?.total(for: model.filters) ?? 0,
-                          loading: model.todayCounts == nil,
-                          detail: ["En direct", model.lastRefresh.map { LiveAge.label(of: $0, at: context.date) }].compactMap { $0 }.joined(separator: " · "),
+            HeaderSummary(title: "Aujourd’hui", note: model.lastRefresh.map { LiveAge.label(of: $0, at: context.date) },
+                          total: model.todayCounts?.total(for: model.filters) ?? 0, loading: model.todayCounts == nil,
+                          detail: InterventionTime.label(model.todayCounts.map { [$0] } ?? [], filters: model.filters),
                           identifier: "feed-status")
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+/// "3 h 12 d’interventions" over some days, when interventions are checked: the journal's interventions, not
+/// the official speaking time.
+enum InterventionTime {
+    static func label(_ days: [DayCount], filters: SearchFilters) -> String? {
+        let seconds = days.reduce(0) { $0 + $1.interventionSec }
+        guard filters.interventions, seconds > 0 else { return nil }
+        return "\(SpokenDuration.label(seconds: seconds)) d’interventions"
     }
 }
 
@@ -291,10 +292,12 @@ enum LiveAge {
     }
 }
 
-/// The span as a bold one-line title, its passages, then a detail line. The date leads, the count follows
-/// (the user, 2026-10-09: when matters more than how many).
+/// Three lines in every period, so the header keeps its height from one to the other (the user, 2026-10-09):
+/// when (bold, one line), how many passages, how long in interventions. The date leads, the count follows.
 private struct HeaderSummary: View {
     let title: String
+    /// Small and gray after the title: Live's freshness.
+    var note: String?
     let total: Int
     let loading: Bool
     let detail: String?
@@ -305,8 +308,8 @@ private struct HeaderSummary: View {
     var body: some View {
         let passages = total <= 1 ? "passage" : "passages"
         VStack(alignment: .leading, spacing: 2) {
-            Text(title.prefix(1).uppercased(with: Self.french) + title.dropFirst())
-                .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
+            (Text(title.prefix(1).uppercased(with: Self.french) + title.dropFirst()).font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
+                + Text(note.map { "  \($0)" } ?? "").font(.footnote).foregroundStyle(Brand.secondary))
                 // One line at standard sizes, shrinking a little before it would wrap; accessibility sizes stack and wrap.
                 .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
                 .minimumScaleFactor(dynamicType.isAccessibilitySize ? 1 : 0.8)
@@ -319,7 +322,7 @@ private struct HeaderSummary: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel([title, "\(total) \(passages)", detail].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityLabel([title, note, "\(total) \(passages)", detail].compactMap { $0 }.joined(separator: ", "))
         .accessibilityIdentifier(identifier)
     }
 }

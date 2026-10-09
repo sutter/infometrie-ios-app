@@ -993,8 +993,8 @@ final class InfometrieUITests: XCTestCase {
         return editorial.exists ? editorial : app.tabBars.buttons[title]
     }
 
-    /// The count in the journal's header: today in Live ("Aujourd’hui, 7 passages, En direct · …"), the period
-    /// or the chosen day in 7 j and 30 j ("7 derniers jours, 56 passages, …").
+    /// The count in the journal's header: today in Live ("Aujourd’hui, à l’instant, 7 passages, …"), the period
+    /// or the chosen day in 7 j and 30 j ("2 – 8 oct., 56 passages, …").
     @MainActor private func results(_ count: String, in app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(format: "identifier IN %@ AND (label == %@ OR label BEGINSWITH %@ OR label CONTAINS %@)",
                                                              ["feed-status", "feed-day-selection"], count, count + " ", ", " + count)).firstMatch
