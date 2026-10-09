@@ -235,20 +235,9 @@ private struct PeriodHeader: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            AdaptiveRow {
-                summary.frame(maxWidth: .infinity, alignment: .leading)
-                controls
-            }
-            // Far back in weeks, one touch returns to the latest days.
-            if day == nil && model.periodOffset >= 2 {
-                Button { Task { await model.stepPeriod(-model.periodOffset) } } label: {
-                    Text("Revenir aux derniers jours").font(.footnote.weight(.semibold)).foregroundStyle(Brand.accent)
-                        .frame(minHeight: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("feed-period-latest")
-            }
+        AdaptiveRow {
+            summary.frame(maxWidth: .infinity, alignment: .leading)
+            controls
         }
         .sensoryFeedback(.selection, trigger: model.periodOffset)
     }
@@ -295,6 +284,8 @@ private struct PeriodHeader: View {
                           next: model.periodOffset > 0 ? { Task { await model.stepPeriod(-1) } } : nil,
                           previousLabel: "\(unit) précédent\(unit == "Semaine" ? "e" : "")",
                           nextLabel: model.periodOffset == 1 ? "Derniers jours" : "\(unit) suivant\(unit == "Semaine" ? "e" : "")",
+                          // Far back in weeks, a third button returns to the latest days in one touch.
+                          latest: model.periodOffset >= 2 ? { Task { await model.stepPeriod(-model.periodOffset) } } : nil,
                           id: "feed-period")
             }
         }
@@ -305,23 +296,31 @@ private struct PeriodHeader: View {
     }
 }
 
-/// Back and forward as one capsule of two 44 pt buttons; a missing action disables its side.
+/// Back and forward as one capsule of 44 pt buttons; a missing action disables its side. With `latest`,
+/// a third button jumps to the latest days, shown only when it saves several touches.
 private struct ArrowPair: View {
     let previous: (() -> Void)?
     let next: (() -> Void)?
     let previousLabel: String
     let nextLabel: String
-    /// `<id>-previous` and `<id>-next`.
+    var latest: (() -> Void)?
+    /// `<id>-previous`, `<id>-next` and `<id>-latest`.
     let id: String
 
     var body: some View {
         HStack(spacing: 0) {
             arrow("chevron.left", action: previous, label: previousLabel, id: "\(id)-previous")
-            Rectangle().fill(Brand.rule).frame(width: 1, height: 20).accessibilityHidden(true)
+            divider
             arrow("chevron.right", action: next, label: nextLabel, id: "\(id)-next")
+            if let latest {
+                divider
+                arrow("forward.end", action: latest, label: "Revenir aux derniers jours", id: "\(id)-latest")
+            }
         }
         .background(Capsule().fill(Brand.surface))
     }
+
+    private var divider: some View { Rectangle().fill(Brand.rule).frame(width: 1, height: 20).accessibilityHidden(true) }
 
     private func arrow(_ icon: String, action: (() -> Void)?, label: String, id: String) -> some View {
         Button { action?() } label: {
