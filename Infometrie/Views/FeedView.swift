@@ -483,7 +483,8 @@ struct ListenAccessory: View {
     var body: some View {
         Button { model.player.start(items: items, app: model, podcast: true) } label: {
             HStack(spacing: 10) {
-                Image(systemName: "play.fill").font(.body.weight(.semibold)).foregroundStyle(Brand.accent)
+                // White play on a vermillon disc: on the glass a bare vermillon triangle was too faint (2026-10-09).
+                Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(.white, Brand.accent)
                     .accessibilityHidden(true)
                 Text("Tout écouter").font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink).lineLimit(1)
                 if placement != .inline {
