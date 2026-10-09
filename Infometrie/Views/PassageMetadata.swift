@@ -162,6 +162,27 @@ struct PassageSpeaker: View {
     }
 }
 
+/// On a citation, who speaks: the person shown is quoted, not heard (the user, 2026-10-09: "Jordan Bardella" above a
+/// journalist's voice read as Bardella speaking). `cited_by` names the speaker on air, without the channel, which the
+/// logo already gives; about a third of real citations leave it empty, and then the line still says the person is
+/// quoted.
+struct CitedBy: View {
+    let item: FeedItem
+
+    private var text: String {
+        let speaker = item.citedBy.trimmingCharacters(in: .whitespacesAndNewlines)
+        return speaker.isEmpty ? "Cité à l’antenne" : "Cité par \(speaker)"
+    }
+
+    var body: some View {
+        Label(text, systemImage: "quote.bubble")
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(Brand.citationLabel)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("sequence-cited-by")
+    }
+}
+
 /// The top of a passage page, in the order of the user's reference: kind, date and duration with the
 /// channel logo on the right; the person, party and role; then the title.
 struct PassageHeading: View {
@@ -178,7 +199,10 @@ struct PassageHeading: View {
         VStack(alignment: .leading, spacing: 24) {
             VStack(alignment: .leading, spacing: 12) {
                 facts
-                speaker
+                VStack(alignment: .leading, spacing: 6) {
+                    speaker
+                    if item.isCitation { CitedBy(item: item) }
+                }
             }
             // `title3` (20 pt) since 2026-10-09, `title2` before: still above the feed card's 18 pt.
             Text(item.displayTitle)

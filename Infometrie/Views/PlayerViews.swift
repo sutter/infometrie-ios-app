@@ -157,8 +157,7 @@ struct SequenceView: View {
                                 if !item.role.isEmpty { Text(item.role) }
                                 if !item.show.isEmpty { Label(item.show, systemImage: "antenna.radiowaves.left.and.right") }
                                 if let date = item.date { Label(date.formatted(date: .long, time: .shortened), systemImage: "calendar") }
-                                if item.isCitation && !item.citedBy.isEmpty { Label("Mention par \(item.citedBy)", systemImage: "quote.bubble") }
-                            }.font(.subheadline).foregroundStyle(Brand.secondary)
+                                }.font(.subheadline).foregroundStyle(Brand.secondary)
                         }.accessibilityIdentifier("sequence-context")
                     }
                 }.padding(.horizontal, AppLayout.margin).padding(.top, pinsHeader ? 12 : 20).padding(.bottom, 20)
