@@ -1,10 +1,29 @@
 import SwiftUI
 import Observation
 
-@Observable
+@MainActor @Observable
 final class TranscriptReadingState {
     var followsPlayback = true
     var visiblePassage: Int?
+    @ObservationIgnored private var resume: Task<Void, Never>?
+
+    /// Scrolling by hand suspends following, which comes back on its own a few seconds after the finger lifts, like
+    /// the lyrics in Musique (2026-10-09: the "Reprendre le suivi" button was removed at the user's request).
+    func scrollPhaseChanged(to phase: ScrollPhase, suspends: Bool = true) {
+        if phase == .interacting {
+            resume?.cancel()
+            if suspends { followsPlayback = false }
+        } else if phase == .idle, !followsPlayback {
+            resume?.cancel()
+            resume = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(4))
+                guard !Task.isCancelled else { return }
+                self?.followsPlayback = true
+            }
+        }
+    }
+    /// A tapped word brings following back at once.
+    func followNow() { resume?.cancel(); followsPlayback = true }
 }
 
 struct TranscriptView: View {
@@ -36,15 +55,12 @@ struct TranscriptView: View {
         return timeline.wordIndex(at: model.player.instant)
     }
     private var canSeek: Bool { detail.item.canPlay && timeline.canSynchronize }
-    /// Following is on by default and says nothing; the control appears only once scrolling suspended it.
-    private var showsResume: Bool { canSeek && isCurrent && !reading.followsPlayback }
     /// Feedback to a word the user just tapped, such as one outside the available excerpt.
     private var notice: String? { isCurrent ? model.player.transcriptNotice : nil }
 
     var body: some View {
         content
-            // "Reprendre le suivi" and tapped-word feedback slide in rather than pop.
-            .motion(value: showsResume)
+            // Tapped-word feedback slides in rather than pops.
             .motion(value: notice)
     }
 
@@ -59,7 +75,6 @@ struct TranscriptView: View {
                 }
                 textScroll.frame(maxHeight: .infinity)
                     .overlay(alignment: .topLeading) { positionStatus }
-                if showsResume { followButton.transition(.opacity.combined(with: .move(edge: .bottom))) }
             }
         } else {
             VStack(alignment: .leading, spacing: 0) {
@@ -85,15 +100,10 @@ struct TranscriptView: View {
                     // many (2026-10-09). The page follows the listening (`SequenceView`).
                     textInline
                 }.padding(.top, 4)
-                if showsResume || notice != nil {
-                    VStack(alignment: .leading, spacing: 10) {
-                        if showsResume { followButton }
-                        if let notice {
-                            Text(notice).font(.footnote).foregroundStyle(Brand.ink)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .accessibilityIdentifier("transcript-notice")
-                        }
-                    }
+                if let notice {
+                    Text(notice).font(.footnote).foregroundStyle(Brand.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("transcript-notice")
                     .padding(.vertical, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .overlay(alignment: .top) { AppRule() }
@@ -107,14 +117,23 @@ struct TranscriptView: View {
         activeWord.map { "Mot \($0 + 1) sur \(timeline.words.count)" } ?? (isCurrent ? "Aucun mot actif" : "En attente de lecture")
     }
 
-    /// No position label is drawn; VoiceOver still reads where listening stands in the text.
+    /// No position label is drawn; VoiceOver still reads where listening stands in the text, and whether the text
+    /// follows it.
     private var positionStatus: some View {
-        Color.clear.frame(width: 1, height: 1)
-            .accessibilityElement()
-            .accessibilityLabel("Le texte")
-            .accessibilityValue(positionValue)
-            .accessibilityAddTraits(.isStaticText)
-            .accessibilityIdentifier("transcript-position")
+        ZStack {
+            Color.clear.frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityLabel("Le texte")
+                .accessibilityValue(positionValue)
+                .accessibilityAddTraits(.isStaticText)
+                .accessibilityIdentifier("transcript-position")
+            Color.clear.frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityLabel("Suivi de l’écoute")
+                .accessibilityValue(reading.followsPlayback ? "Activé" : "Désactivé")
+                .accessibilityAddTraits(.isStaticText)
+                .accessibilityIdentifier("transcript-follow")
+        }
     }
 
     private var passages: some View {
@@ -148,9 +167,7 @@ struct TranscriptView: View {
         .scrollEdgeEffectHidden(true)
         .accessibilityIdentifier("transcript-scroll")
         .scrollPosition(id: $reading.visiblePassage, anchor: .top)
-        .onScrollPhaseChange { _, phase in
-            if phase == .interacting { reading.followsPlayback = false }
-        })
+        .onScrollPhaseChange { _, phase in reading.scrollPhaseChanged(to: phase) })
     }
 
     /// Moves the reading to the passage being heard (`visiblePassage`, which the fullscreen scroll and the passage
@@ -168,22 +185,10 @@ struct TranscriptView: View {
                 guard canSeek, url.scheme == "infometrie-transcript", url.host == "seek",
                       url.pathComponents.count == 3, url.pathComponents[1] == String(detail.id),
                       let word = Int(url.pathComponents[2]), timeline.words.indices.contains(word) else { return .discarded }
-                reading.followsPlayback = true
+                reading.followNow()
                 onSeek(word)
                 return .handled
             })
-    }
-
-    private var followButton: some View {
-        Button { reading.followsPlayback = true } label: {
-            Label("Reprendre le suivi", systemImage: "arrow.down.to.line")
-                .font(.subheadline.weight(.medium))
-                .frame(minWidth: 44, maxWidth: expanded ? nil : .infinity, minHeight: 44, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain).foregroundStyle(Brand.tint)
-        .accessibilityIdentifier("transcript-follow")
-        .accessibilityValue(reading.followsPlayback ? "Activé" : "Désactivé")
     }
 
     private func follow(_ passage: Int?) {

@@ -137,13 +137,14 @@ struct SequenceView: View {
             }
             .scrollEdgeEffectHidden(true)
             // The text sits in the page (2026-10-09): the page follows the passage being heard, scrolling only as far
-            // as it takes to bring it into view, and scrolling it by hand while listening suspends following.
+            // as it takes to bring it into view; scrolling it by hand while listening suspends following for a few seconds.
             .onChange(of: transcriptReading.visiblePassage) { _, passage in
                 guard let passage else { return }
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { page.scrollTo(passage) }
             }
+            // Before listening, scrolling the page suspends nothing.
             .onScrollPhaseChange { _, phase in
-                if phase == .interacting, isCurrent, model.player.isPlaying { transcriptReading.followsPlayback = false }
+                transcriptReading.scrollPhaseChanged(to: phase, suspends: isCurrent && model.player.isPlaying)
             }
         }
         .background(Brand.background).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence")

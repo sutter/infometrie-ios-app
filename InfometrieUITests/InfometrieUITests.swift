@@ -834,19 +834,17 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertNotEqual(fullStatus.value as? String, "Mot 19 sur 41", "Le curseur met aussi à jour le texte")
         XCTAssertEqual(fullToggle.label, "Écouter", "Déplacer le curseur conserve la pause")
         let pausedPosition = fullElapsed.label
+        // Scrolling by hand suspends following, which comes back on its own a few seconds later (no button since 2026-10-09).
         scroll.swipeUp()
-        let follow = fullscreen.buttons["transcript-follow"]
+        let follow = fullscreen.staticTexts["transcript-follow"]
         wait(follow, key: "value", equals: "Désactivé")
+        wait(follow, key: "value", equals: "Activé")
         close.tap()
         XCTAssertTrue(expand.waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["player-elapsed"].label, pausedPosition)
         XCTAssertEqual(toggle.label, "Écouter")
-        XCTAssertEqual(app.buttons["transcript-follow"].value as? String, "Désactivé", "Le choix de suivi est partagé entre les deux vues")
         expand.tap()
         XCTAssertTrue(close.waitForExistence(timeout: 5))
-        XCTAssertEqual(follow.value as? String, "Désactivé")
-        follow.tap()
-        XCTAssertTrue(follow.waitForNonExistence(timeout: 3), "Reprendre le suivi disparaît une fois le suivi repris")
         for _ in 0..<4 {
             if fullscreen.links["Cette"].isHittable { break }
             scroll.swipeDown()
@@ -902,10 +900,9 @@ final class InfometrieUITests: XCTestCase {
             XCTAssertLessThanOrEqual(control.frame.maxX, app.frame.maxX)
         }
         scroll.swipeUp()
-        let follow = fullscreen.buttons["transcript-follow"]
+        let follow = fullscreen.staticTexts["transcript-follow"]
         wait(follow, key: "value", equals: "Désactivé")
-        follow.tap()
-        XCTAssertTrue(follow.waitForNonExistence(timeout: 3), "Reprendre le suivi disparaît une fois le suivi repris")
+        wait(follow, key: "value", equals: "Activé")
         capture("25-texte-plein-ecran-accessibilite", app: app)
         close.tap()
         XCTAssertTrue(expand.waitForExistence(timeout: 5))
@@ -957,9 +954,8 @@ final class InfometrieUITests: XCTestCase {
         let changed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value != %@", before), object: status)
         XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 4), .completed)
         toggle.tap()
-        // The fixture text fits its frame, so it cannot be scrolled to suspend following here;
-        // the fullscreen journeys cover suspending and resuming.
-        XCTAssertFalse(app.buttons["transcript-follow"].exists, "Le suivi actif n’affiche aucune commande")
+        // The fullscreen journeys cover suspending and resuming.
+        XCTAssertEqual(app.staticTexts["transcript-follow"].value as? String, "Activé")
         capture("08-verbatim-suivi-lecteur", app: app)
     }
 
