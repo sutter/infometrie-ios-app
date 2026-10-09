@@ -52,8 +52,9 @@ struct ChannelSource: View {
     }
 }
 
-/// The passage kind as a ghost tag: its pictogram and its name in small spaced capitals, in the kind's color,
-/// on a light tint of it, with no outline. The solid bar beside each row already carries the color; the tag stays light.
+/// The passage kind as a ghost tag: its pictogram and its name in the kind's color, on a light tint of it, with no
+/// outline. The solid bar beside each row already carries the color; the tag stays light. The name is in lowercase
+/// since 2026-10-09: spaced capitals read letter by letter, competed with the speaker's name and widened the line.
 struct KindTag: View {
     let label: String
     let kind: String
@@ -66,7 +67,7 @@ struct KindTag: View {
     var body: some View {
         HStack(spacing: 6) {
             pictogram.font(.caption2.weight(.bold))
-            Text(label.uppercased()).font(.caption.weight(.bold)).tracking(1)
+            Text(label).font(.footnote.weight(.semibold))
                 // Shrinks only when the tag would not fit: at accessibility sizes "INTERVENTION" grew wider than
                 // an iPhone 13 mini and, fixed at its ideal width, pushed the whole page off the left edge.
                 .lineLimit(1).minimumScaleFactor(0.5)
