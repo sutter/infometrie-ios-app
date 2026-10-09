@@ -180,8 +180,9 @@ struct PassageHeading: View {
                 facts
                 speaker
             }
+            // `title3` (20 pt) since 2026-10-09, `title2` before: still above the feed card's 18 pt.
             Text(item.displayTitle)
-                .font(.title2.weight(.bold))
+                .font(.title3.weight(.bold))
                 .foregroundStyle(Brand.ink)
                 .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(titleIdentifier)
