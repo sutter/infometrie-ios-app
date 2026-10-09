@@ -20,7 +20,7 @@ struct FeedDayChart: View {
 }
 
 /// Passages per complete Paris day, the given kinds stacked in their colors. With `select`, touching a bar
-/// reports its day; without it, the chart only reads.
+/// reports its day, and sliding across the bars reports each new day under the finger; without it, the chart only reads.
 struct DayChart: View {
     let days: [String]
     let counts: [DayCount]
@@ -34,6 +34,8 @@ struct DayChart: View {
     /// Compact, the user's pick on 2026-10-08 (option A of a sheet of four): at 120 pt the chart crowded out the cards.
     @ScaledMetric(relativeTo: .body) private var height = 64.0
     @ScaledMetric(relativeTo: .caption2) private var labelHeight = 18.0
+    /// The last day a slide reached: the selection given back may lag behind, and reporting that day again would unselect it.
+    @State private var slidDay: String?
 
     private struct Segment: Identifiable {
         let day: String
@@ -111,12 +113,21 @@ struct DayChart: View {
         .chartOverlay { proxy in
             if let select {
                 GeometryReader { geometry in
+                    let day = { (location: CGPoint) -> String? in
+                        guard let plot = proxy.plotFrame else { return nil }
+                        return proxy.value(atX: location.x - geometry[plot].origin.x, as: String.self)
+                    }
                     Rectangle().fill(.clear).contentShape(Rectangle())
-                        .onTapGesture { location in
-                            guard let plot = proxy.plotFrame else { return }
-                            let x = location.x - geometry[plot].origin.x
-                            if let day = proxy.value(atX: x, as: String.self) { select(day) }
+                        .onTapGesture { location in if let day = day(location) { select(day) } }
+                        // Sliding across the bars selects the day under the finger. Only a horizontal slide
+                        // counts, so the journal still scrolls vertically from the chart.
+                        .simultaneousGesture(DragGesture(minimumDistance: 8).onChanged { drag in
+                            guard abs(drag.translation.width) > abs(drag.translation.height),
+                                  let day = day(drag.location), day != (slidDay ?? selectedDay) else { return }
+                            slidDay = day
+                            select(day)
                         }
+                        .onEnded { _ in slidDay = nil })
                 }
             }
         }
