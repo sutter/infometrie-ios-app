@@ -113,8 +113,9 @@ extension View {
 private struct MainTabBarDock: ViewModifier {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    func body(content: Content) -> some View {
-        content.toolbar(horizontalSizeClass == .regular ? .hidden : .visible, for: .tabBar)
+    // No explicit `.visible` on iPhone: it outranked the pushed pages' `.hidden`, and the tab bar stayed on the passage.
+    @ViewBuilder func body(content: Content) -> some View {
+        if horizontalSizeClass == .regular { content.toolbar(.hidden, for: .tabBar) } else { content }
     }
 }
 

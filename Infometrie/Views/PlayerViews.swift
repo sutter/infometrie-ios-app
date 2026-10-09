@@ -10,11 +10,6 @@ struct SequenceView: View {
     @State private var reload = 0
     @State private var isTranscriptExpanded = false
     @State private var transcriptReading = TranscriptReadingState()
-    /// The player shrinks to one line while the reader scrolls down, like "Tout écouter" in the journal.
-    @State private var dockMinimized = false
-    @State private var userScrolling = false
-    /// Where the current scroll direction started: a move of 24 pt from it flips the player.
-    @State private var scrollAnchor: CGFloat = 0
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
     /// VoiceOver keeps the full player, its slider always reachable. UI tests too: they reach the slider after
     /// scrolling the page.
@@ -116,7 +111,7 @@ struct SequenceView: View {
                         .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                         .background(Brand.background).overlay(alignment: .top) { AppRule() }
                 } else if displayItem.canPlay {
-                    if isCurrent { PlaybackDock(minimized: dockMinimized && minimizesDock) { dockMinimized = false } }
+                    if isCurrent { PlaybackDock(minimized: transcriptReading.playerMinimized && minimizesDock) { transcriptReading.playerMinimized = false } }
                     else {
                         Button { model.player.start(items: [item], app: model, podcast: false) } label: {
                             AdaptiveRow {
@@ -135,17 +130,12 @@ struct SequenceView: View {
             }
         }
         .scrollEdgeEffectHidden(true)
-        // Only the reader's own scrolling moves the player: following the text while listening scrolls the
-        // transcript, and a change of the player's height shifts the page, neither of which must flip it.
-        .onScrollPhaseChange { _, phase in userScrolling = phase == .interacting || phase == .decelerating }
-        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
-            guard userScrolling else { scrollAnchor = offset; return }
-            if offset <= 0 { dockMinimized = false; scrollAnchor = offset }
-            else if offset > scrollAnchor + 24 { dockMinimized = true; scrollAnchor = offset }
-            else if offset < scrollAnchor - 24 { dockMinimized = false; scrollAnchor = offset }
-            else if dockMinimized ? offset > scrollAnchor : offset < scrollAnchor { scrollAnchor = offset }
+        // Like "Tout écouter" in the journal, the player shrinks while the reader scrolls down, the page or its text.
+        .modifier(MinimizesPlayer(reading: transcriptReading))
+        .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top <= 0 } action: { _, atTop in
+            if atTop { transcriptReading.playerMinimized = false }
         }
-        .motion(value: dockMinimized)
+        .motion(value: transcriptReading.playerMinimized)
         .background(Brand.background).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
         // Pushed pages keep the room for their player: no tab bar, so no listening accessory either.
         .toolbar(.hidden, for: .tabBar)
@@ -224,7 +214,7 @@ struct PlaybackDock: View {
     /// "Tout écouter": previous and next lead, as prominent buttons around a round play button,
     /// and replace the 10-second skips.
     var queue = false
-    /// One line while the reader scrolls down a passage: play or pause, the progress, the time.
+    /// One line while the reader scrolls down a passage: the progress, the time, the skips and play or pause.
     var minimized = false
     /// Touching the minimized player restores it.
     var expand: (() -> Void)?
@@ -236,40 +226,51 @@ struct PlaybackDock: View {
         if minimized && playback.error == nil { minimizedBar } else { fullDock }
     }
 
-    /// White play on a vermillon disc, as in the journal's "Tout écouter", then a thin progress and the time.
+    /// A thin progress on top, then the elapsed time, back 10 s, a white play on a vermillon disc as in the
+    /// journal's "Tout écouter", forward 10 s and the duration: the slider and the big "Écouter" go, the skips stay.
     private var minimizedBar: some View {
-        HStack(spacing: 12) {
-            Button { presses += 1; playback.toggle() } label: {
-                Image(systemName: playSymbol).font(.body.weight(.bold)).foregroundStyle(.white)
-                    .contentTransition(.symbolEffect(.replace))
-                    .frame(width: 44, height: 44).background(Brand.accent, in: Circle())
-                    .contentShape(Circle())
-            }
-            .buttonStyle(PressableStyle())
-            .disabled(playback.isLoading)
-            .accessibilityLabel(playLabel)
-            .accessibilityIdentifier("player-toggle")
-            VStack(spacing: 6) {
-                ProgressView(value: min(playback.position, max(1, playback.duration)), total: max(1, playback.duration))
-                    .tint(Brand.accent)
-                HStack {
-                    Text(clock(playback.position))
-                    Spacer()
-                    Text(clock(playback.duration))
+        VStack(spacing: 6) {
+            ProgressView(value: min(playback.position, max(1, playback.duration)), total: max(1, playback.duration))
+                .tint(Brand.accent)
+                .accessibilityHidden(true)
+            HStack(spacing: 8) {
+                Text(clock(playback.position)).frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityLabel("Position, \(clock(playback.position))")
+                compactSkip(forward: false)
+                Button { presses += 1; playback.toggle() } label: {
+                    Image(systemName: playSymbol).font(.body.weight(.bold)).foregroundStyle(.white)
+                        .contentTransition(.symbolEffect(.replace))
+                        .frame(width: 44, height: 44).background(Brand.accent, in: Circle())
+                        .contentShape(Circle())
                 }
-                .font(.caption.monospacedDigit()).foregroundStyle(Brand.secondary)
+                .buttonStyle(PressableStyle())
+                .disabled(playback.isLoading)
+                .accessibilityLabel(playLabel)
+                .accessibilityIdentifier("player-toggle")
+                compactSkip(forward: true)
+                Text(clock(playback.duration)).frame(maxWidth: .infinity, alignment: .trailing)
+                    .accessibilityLabel("Durée totale, \(clock(playback.duration))")
             }
-            .contentShape(Rectangle())
-            .onTapGesture { expand?() }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Lecteur réduit, \(clock(playback.position)) sur \(clock(playback.duration))")
-            .accessibilityAddTraits(.isButton)
-            .accessibilityAction { expand?() }
+            .font(.caption.monospacedDigit()).foregroundStyle(Brand.secondary)
         }
-        .padding(.horizontal, AppLayout.margin).padding(.vertical, 8)
+        .padding(.horizontal, AppLayout.margin).padding(.top, 8).padding(.bottom, 6)
         .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         .background(Brand.background).overlay(alignment: .top) { AppRule() }
+        // Touching the bar outside its buttons restores the full player.
+        .contentShape(Rectangle())
+        .onTapGesture { expand?() }
+        .accessibilityAction(named: "Afficher le lecteur complet") { expand?() }
         .sensoryFeedback(.impact(weight: .light), trigger: presses)
+    }
+
+    private func compactSkip(forward: Bool) -> some View {
+        Button { presses += 1; playback.seek(playback.position + (forward ? 10 : -10)) } label: {
+            Image(systemName: forward ? "goforward.10" : "gobackward.10").font(.title3)
+                .frame(width: 48, height: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle()).foregroundStyle(Brand.actionText)
+        .disabled(playback.isLoading)
+        .accessibilityLabel(forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes")
     }
 
     private var fullDock: some View {
