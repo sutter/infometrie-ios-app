@@ -133,6 +133,7 @@ struct PassageSpeaker: View {
     var lineLimit: Int? = 2
     /// A seen passage steps back: the name turns secondary like the title.
     var dimmed = false
+    var showsRole = true
     /// 14 pt at the default size, a step under the name, scaled like `footnote` (13 until 2026-10-09).
     @ScaledMetric(relativeTo: .footnote) private var roleSize = 14.0
 
@@ -146,15 +147,21 @@ struct PassageSpeaker: View {
         let partyText = Text(party).font(nameFont).foregroundStyle(dimmed ? Brand.secondary : Brand.ink)
         VStack(alignment: .leading, spacing: 1) {
             // Name · party on one line when it fits; otherwise the party moves below, never leaving a lone "·".
-            ViewThatFits(in: .horizontal) {
+            // Held to one line, the pair is cut at its end instead.
+            if lineLimit == 1 {
                 (party.isEmpty ? name : name + Text(" · ").font(nameFont).foregroundStyle(Brand.secondary) + partyText)
-                    .fixedSize(horizontal: true, vertical: false)
-                VStack(alignment: .leading, spacing: 1) {
-                    name.lineLimit(lineLimit)
-                    if !party.isEmpty { partyText.lineLimit(lineLimit) }
+                    .lineLimit(1)
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    (party.isEmpty ? name : name + Text(" · ").font(nameFont).foregroundStyle(Brand.secondary) + partyText)
+                        .fixedSize(horizontal: true, vertical: false)
+                    VStack(alignment: .leading, spacing: 1) {
+                        name.lineLimit(lineLimit)
+                        if !party.isEmpty { partyText.lineLimit(lineLimit) }
+                    }
                 }
             }
-            if !role.isEmpty && (party.isEmpty || !repeatsParty) {
+            if showsRole, !role.isEmpty && (party.isEmpty || !repeatsParty) {
                 Text(role).font(.system(size: roleSize)).foregroundStyle(Brand.secondary).lineLimit(lineLimit)
             }
         }
@@ -190,16 +197,19 @@ struct PassageHeading: View {
     let titleIdentifier: String
     /// The passage page links the speaker to their profile when they belong to the panel.
     var linksPerson = false
+    /// Pinned above the passage's text, kept short for good so the text keeps room under it (2026-10-09): name and
+    /// party on one line, then who quotes them or their role on one line, the title on two at most.
+    var tight = false
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        // The context (12 inside), then the title, 24 apart on the 8 pt grid. The title speaks for
-        // itself: no "Propos" label above it.
-        VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 12) {
+        // The context (12 inside), then the title, 24 apart on the 8 pt grid; tight, 8 and 12. The title speaks
+        // for itself: no "Propos" label above it.
+        VStack(alignment: .leading, spacing: tight ? 12 : 24) {
+            VStack(alignment: .leading, spacing: tight ? 8 : 12) {
                 facts
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: tight ? 2 : 6) {
                     speaker
                     if item.isCitation { CitedBy(item: item) }
                 }
@@ -208,13 +218,17 @@ struct PassageHeading: View {
             Text(item.displayTitle)
                 .font(.title3.weight(.bold))
                 .foregroundStyle(Brand.ink)
+                .lineLimit(tight ? 2 : nil)
                 .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+                .accessibilityLabel(item.displayTitle)
                 .accessibilityIdentifier(titleIdentifier)
         }
     }
 
     @ViewBuilder private var speaker: some View {
-        let speaker = PassageSpeaker(item: item, nameFont: .headline, lineLimit: nil)
+        // Tight, a citation shows who quotes the person instead of their role.
+        let speaker = PassageSpeaker(item: item, nameFont: .headline, lineLimit: tight ? 1 : nil,
+                                     showsRole: !(tight && item.isCitation))
         if linksPerson, model.persons.contains(where: { $0.name == item.person }) {
             NavigationLink { PersonView(name: item.person) } label: {
                 // The name keeps the full width it is offered, so its ViewThatFits wraps; in an HStack beside a

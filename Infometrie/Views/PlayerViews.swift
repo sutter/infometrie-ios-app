@@ -5,6 +5,7 @@ struct SequenceView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The passage shown: it changes in place when the reader moves to the next one, so back still leads to the list.
     @State private var item: FeedItem
     /// The list the passage was opened from (the journal as filtered, or a profile's day), for "Passage suivant".
@@ -15,8 +16,6 @@ struct SequenceView: View {
     @State private var isTranscriptExpanded = false
     @State private var transcriptReading = TranscriptReadingState()
     @State private var contentScrolled = false
-    @State private var pageScrolledByReader = false
-    @State private var pageInteracting = false
 
     init(item: FeedItem, list: [FeedItem] = []) {
         _item = State(initialValue: item)
@@ -35,7 +34,7 @@ struct SequenceView: View {
         model.player.stop()
         detail = nil; error = nil
         transcriptReading = TranscriptReadingState()
-        pageScrolledByReader = false; contentScrolled = false
+        contentScrolled = false
         item = next
         model.markSeen(next)
     }
@@ -80,68 +79,36 @@ struct SequenceView: View {
     /// there they scroll with the rest.
     private var pinsHeader: Bool { !dynamicType.isAccessibilitySize && verticalSizeClass != .compact }
 
-    /// The pinned heading shrinks while the reader scrolls the page or the text down: the title on one or two
-    /// lines beside a video thumbnail, so the text keeps the screen (the user's pick on 2026-10-09; a long title and
-    /// a full-width video left two lines of text). Following the listening never shrinks it, nor would the video
-    /// shrink while it is watched; scrolling back to the top, or touching it, restores it.
-    private var compactHeader: Bool { pinsHeader && (pageScrolledByReader || transcriptReading.textScrolledByReader) }
-
     private var showsVideo: Bool { isCurrent && displayItem.canPlay && displayItem.video }
 
-    /// One video view in both states, resized rather than replaced, so the picture never cuts out.
-    private var video: some View {
-        Color.clear.aspectRatio(16 / 9, contentMode: .fit)
-            .frame(width: compactHeader ? 112 : nil)
-            .frame(maxWidth: compactHeader ? nil : .infinity)
-            .overlay { NativeVideo(player: model.player.player) }
-            .clipShape(RoundedRectangle(cornerRadius: compactHeader ? 4 : 6))
-    }
-
+    /// Pinned, the heading is tight for good rather than shrinking on scroll: a heading that changed size under the
+    /// finger, restored by a gesture nobody guessed, was too many hidden states (the user, 2026-10-09).
     @ViewBuilder private var header: some View {
-        let layout = compactHeader
-            ? AnyLayout(HStackLayout(alignment: .center, spacing: 12))
-            : AnyLayout(VStackLayout(alignment: .leading, spacing: 24))
-        layout {
-            if compactHeader { compactHeading } else {
-                PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true)
-            }
-            if isCurrent, !compactHeader, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
-            if showsVideo { video.layoutPriority(compactHeader ? 1 : 0) }
+        PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true, tight: pinsHeader)
+        if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
+        if showsVideo {
+            // Sized from the full width: pinned above the scroll, a bare aspect ratio let the page squeeze the video
+            // into a thumbnail.
+            Color.clear.aspectRatio(16 / 9, contentMode: .fit).frame(maxWidth: .infinity)
+                .overlay { NativeVideo(player: model.player.player) }
+                .clipShape(RoundedRectangle(cornerRadius: 6))
         }
-    }
-
-    /// The speaker and the title, short: touching it brings the full heading back.
-    private var compactHeading: some View {
-        Button {
-            pageScrolledByReader = false; transcriptReading.textScrolledByReader = false
-        } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(displayItem.person).font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary).lineLimit(1)
-                Text(displayItem.displayTitle).font(.subheadline.weight(.bold)).foregroundStyle(Brand.ink)
-                    .lineLimit(2).multilineTextAlignment(.leading)
-                    .accessibilityIdentifier("sequence-title")
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint("Affiche l’en-tête complet")
     }
 
     private var sequenceContent: some View {
         VStack(spacing: 0) {
             if pinsHeader {
-                header
+                VStack(alignment: .leading, spacing: 12) { header }
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, AppLayout.margin).padding(.top, compactHeader ? 8 : 20).padding(.bottom, 12)
+                    .padding(.horizontal, AppLayout.margin).padding(.top, 12).padding(.bottom, 12)
                     .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                     .background(Brand.background)
                     // A hairline once the content scrolls under the heading, so the text never runs into the title.
                     .overlay(alignment: .bottom) { if contentScrolled { AppRule() } }
-                    .motion(value: compactHeader)
                     // Above the scroll: the content passes under the heading, never over it.
                     .zIndex(1)
             }
+            ScrollViewReader { page in
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     if !pinsHeader { VStack(alignment: .leading, spacing: 24) { header } }
@@ -174,14 +141,21 @@ struct SequenceView: View {
             // A new scroll per passage, so "Passage suivant" opens the next one at its top.
             .id(item.id)
             .clipped()
-            .onScrollPhaseChange { _, phase in pageInteracting = phase == .interacting || phase == .decelerating }
-            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
-                contentScrolled = offset > 1
-                // Shrinks past 8 pt; restores only when the reader pulls the page down at its top. Shrinking the
-                // heading lets the scroll grow and settle back to 0, and restoring at 0 looped: shrink, restore,
-                // shrink, with the content flickering over the heading (2026-10-09).
-                if offset > 8, pageInteracting { pageScrolledByReader = true }
-                else if offset < -8, pageInteracting { pageScrolledByReader = false }
+            // Scrolling by hand while listening suspends following for a few seconds; before listening, nothing.
+            .onScrollPhaseChange { _, phase in
+                transcriptReading.scrollPhaseChanged(to: phase, suspends: isCurrent && model.player.isPlaying)
+            }
+            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 1 } action: { _, scrolled in
+                contentScrolled = scrolled
+            }
+            // Each passage being heard comes to the top of the scroll, under the heading, like lyrics in Musique; the
+            // reader needs four or five lines to follow, not the whole text (2026-10-09).
+            .onChange(of: transcriptReading.visiblePassage) { _, passage in
+                guard let passage, isCurrent, model.player.isPlaying || model.player.position > 0 else { return }
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
+                    page.scrollTo(passage, anchor: UnitPoint(x: 0.5, y: 0.05))
+                }
+            }
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -374,29 +348,16 @@ struct PlaybackDock: View {
                 // A passage that fails must not block the queue.
                 if queue { HStack(spacing: 12) { queueButton(forward: false); queueButton(forward: true) } }
             } else {
-                VStack(spacing: 0) {
-                    Slider(value: Binding(get: { min(playback.position, max(1, playback.duration)) }, set: { playback.scrub(to: $0) }), in: 0...max(1, playback.duration), onEditingChanged: { editing in
-                        if editing { playback.beginScrubbing() } else { playback.endScrubbing() }
-                    })
-                        .frame(minHeight: 44)
-                        .tint(Brand.accent)
-                        // Where the person speaks: a darker gray on the track itself, the rest being the context the
-                        // API adds around the passage (2026-10-09: "0:13" at rest read as listening started; a pale
-                        // vermillon band under the track was found ugly the same day).
-                        .background { speechBand }
-                        .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
-                        .accessibilityLabel("Position dans le passage")
-                        .accessibilityValue(speechValue)
-                        .accessibilityHint(playback.isLoading ? "Préparation de l’écoute" : "")
-                        .accessibilityIdentifier("player-position")
-                    HStack {
-                        Text(clock(playback.position)).accessibilityIdentifier("player-elapsed")
-                        Spacer()
-                        Text(clock(playback.duration)).accessibilityLabel("Durée totale, \(clock(playback.duration))")
-                    }.font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
-                        .contentTransition(.numericText())
-                        .motion(Motion.quick, value: clock(playback.position) + clock(playback.duration))
-                        .skeleton(playback.isLoading)
+                // The times at both ends of the slider rather than on a line of their own: 20 pt more for the text
+                // above (2026-10-09). At accessibility sizes they would squeeze the track: they go under it.
+                let times = dynamicType.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(spacing: 0)) : AnyLayout(HStackLayout(spacing: 10))
+                times {
+                    if !dynamicType.isAccessibilitySize { elapsedTime }
+                    slider
+                    if dynamicType.isAccessibilitySize {
+                        HStack { elapsedTime; Spacer(); totalTime }
+                    } else { totalTime }
                 }
                 if queue {
                     // Past XL, "Précédent" no longer fits beside the play button: stack rather than split the word.
@@ -425,6 +386,38 @@ struct PlaybackDock: View {
         .background(Brand.background).overlay(alignment: .top) { AppRule() }
         .sensoryFeedback(.impact(weight: .light), trigger: presses)
     }
+    private var slider: some View {
+        Slider(value: Binding(get: { min(playback.position, max(1, playback.duration)) }, set: { playback.scrub(to: $0) }), in: 0...max(1, playback.duration), onEditingChanged: { editing in
+            if editing { playback.beginScrubbing() } else { playback.endScrubbing() }
+        })
+            .frame(minHeight: 44)
+            .tint(Brand.accent)
+            // Where the person speaks: a darker gray on the track itself, the rest being the context the API adds
+            // around the passage (2026-10-09: "0:13" at rest read as listening started).
+            .background { speechBand }
+            .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
+            .accessibilityLabel("Position dans le passage")
+            .accessibilityValue(speechValue)
+            .accessibilityHint(playback.isLoading ? "Préparation de l’écoute" : "")
+            .accessibilityIdentifier("player-position")
+    }
+
+    private var elapsedTime: some View {
+        timeText(clock(playback.position)).accessibilityIdentifier("player-elapsed")
+    }
+
+    private var totalTime: some View {
+        timeText(clock(playback.duration)).accessibilityLabel("Durée totale, \(clock(playback.duration))")
+    }
+
+    private func timeText(_ value: String) -> some View {
+        Text(value).font(.subheadline.monospacedDigit()).foregroundStyle(Brand.secondary)
+            .fixedSize()
+            .contentTransition(.numericText())
+            .motion(Motion.quick, value: value)
+            .skeleton(playback.isLoading)
+    }
+
     /// Drawn behind the system slider: its unfilled track is translucent, so the gray shows through it, while the
     /// vermillon fill and the thumb, glass or not, lie over it with no seam (2026-10-09: drawn over the track, it
     /// left a gap beside the thumb once the thumb turned to glass under the finger). The slider stays the native
