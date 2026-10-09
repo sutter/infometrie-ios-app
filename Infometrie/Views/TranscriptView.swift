@@ -5,6 +5,8 @@ import Observation
 final class TranscriptReadingState {
     var followsPlayback = true
     var visiblePassage: Int?
+    /// The reader scrolled the text box down by hand; back at its top, false. Shrinks the passage page's heading.
+    var textScrolledByReader = false
     @ObservationIgnored private var resume: Task<Void, Never>?
 
     /// Scrolling by hand suspends following, which comes back on its own a few seconds after the finger lifts, like
@@ -32,6 +34,7 @@ struct TranscriptView: View {
     @Environment(\.dynamicTypeSize) private var dynamicType
     @ScaledMetric(relativeTo: .body) private var textHeight = 250.0
     @State private var textContentHeight: CGFloat?
+    @State private var textInteracting = false
     @State private var localReading = TranscriptReadingState()
     private let sharedReading: TranscriptReadingState?
     private var reading: TranscriptReadingState { sharedReading ?? localReading }
@@ -157,7 +160,14 @@ struct TranscriptView: View {
         .scrollEdgeEffectHidden(true)
         .accessibilityIdentifier("transcript-scroll")
         .scrollPosition(id: $reading.visiblePassage, anchor: .top)
-        .onScrollPhaseChange { _, phase in reading.scrollPhaseChanged(to: phase) }
+        .onScrollPhaseChange { _, phase in
+            reading.scrollPhaseChanged(to: phase)
+            textInteracting = phase == .interacting || phase == .decelerating
+        }
+        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
+            guard !expanded, textInteracting else { return }
+            if offset > 8 { reading.textScrolledByReader = true } else if offset <= 0 { reading.textScrolledByReader = false }
+        }
         .onChange(of: timeline.passageID(forWord: activeWord)) { _, passage in
             if reading.followsPlayback { follow(passage) }
         }

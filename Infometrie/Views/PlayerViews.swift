@@ -12,6 +12,8 @@ struct SequenceView: View {
     @State private var isTranscriptExpanded = false
     @State private var transcriptReading = TranscriptReadingState()
     @State private var contentScrolled = false
+    @State private var pageScrolledByReader = false
+    @State private var pageInteracting = false
     private var isCurrent: Bool { model.player.current?.id == item.id && !model.player.isPodcast }
     private var displayDetail: SequenceDetail? { isCurrent ? model.player.detail ?? detail : detail }
     private var displayItem: FeedItem { displayDetail?.item ?? item }
@@ -53,32 +55,69 @@ struct SequenceView: View {
     /// there they scroll with the rest.
     private var pinsHeader: Bool { !dynamicType.isAccessibilitySize && verticalSizeClass != .compact }
 
+    /// The pinned heading shrinks while the reader scrolls the page or the text down: the title on one or two
+    /// lines beside a video thumbnail, so the text keeps the screen (the user's pick on 2026-10-09; a long title and
+    /// a full-width video left two lines of text). Following the listening never shrinks it, nor would the video
+    /// shrink while it is watched; scrolling back to the top, or touching it, restores it.
+    private var compactHeader: Bool { pinsHeader && (pageScrolledByReader || transcriptReading.textScrolledByReader) }
+
+    private var showsVideo: Bool { isCurrent && displayItem.canPlay && displayItem.video }
+
+    /// One video view in both states, resized rather than replaced, so the picture never cuts out.
+    private var video: some View {
+        Color.clear.aspectRatio(16 / 9, contentMode: .fit)
+            .frame(width: compactHeader ? 112 : nil)
+            .frame(maxWidth: compactHeader ? nil : .infinity)
+            .overlay { NativeVideo(player: model.player.player) }
+            .clipShape(RoundedRectangle(cornerRadius: compactHeader ? 4 : 6))
+    }
+
     @ViewBuilder private var header: some View {
-        PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true)
-        if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
-        if isCurrent, displayItem.canPlay, displayItem.video {
-            // Sized from the full width: pinned above the scroll, a bare aspect ratio let the page squeeze the video
-            // into a thumbnail.
-            Color.clear.aspectRatio(16 / 9, contentMode: .fit).frame(maxWidth: .infinity)
-                .overlay { NativeVideo(player: model.player.player) }
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+        let layout = compactHeader
+            ? AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+            : AnyLayout(VStackLayout(alignment: .leading, spacing: 24))
+        layout {
+            if compactHeader { compactHeading } else {
+                PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true)
+            }
+            if isCurrent, !compactHeader, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
+            if showsVideo { video.layoutPriority(compactHeader ? 1 : 0) }
         }
+    }
+
+    /// The speaker and the title, short: touching it brings the full heading back.
+    private var compactHeading: some View {
+        Button {
+            pageScrolledByReader = false; transcriptReading.textScrolledByReader = false
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(displayItem.person).font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary).lineLimit(1)
+                Text(displayItem.displayTitle).font(.subheadline.weight(.bold)).foregroundStyle(Brand.ink)
+                    .lineLimit(2).multilineTextAlignment(.leading)
+                    .accessibilityIdentifier("sequence-title")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Affiche l’en-tête complet")
     }
 
     private var sequenceContent: some View {
         VStack(spacing: 0) {
             if pinsHeader {
-                VStack(alignment: .leading, spacing: 24) { header }
+                header
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, AppLayout.margin).padding(.top, 20).padding(.bottom, 12)
+                    .padding(.horizontal, AppLayout.margin).padding(.top, compactHeader ? 8 : 20).padding(.bottom, 12)
                     .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
                     .background(Brand.background)
                     // A hairline once the content scrolls under the heading, so the text never runs into the title.
                     .overlay(alignment: .bottom) { if contentScrolled { AppRule() } }
+                    .motion(value: compactHeader)
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    if !pinsHeader { header }
+                    if !pinsHeader { VStack(alignment: .leading, spacing: 24) { header } }
                     if let error {
                         ErrorNotice(message: error) { self.error = nil; reload += 1 }
                     } else if let detail = displayDetail {
@@ -125,8 +164,13 @@ struct SequenceView: View {
                 }.padding(.horizontal, AppLayout.margin).padding(.top, pinsHeader ? 12 : 20).padding(.bottom, 20)
                     .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
-            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 1 } action: { _, scrolled in
-                contentScrolled = scrolled
+            .onScrollPhaseChange { _, phase in pageInteracting = phase == .interacting || phase == .decelerating }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
+                contentScrolled = offset > 1
+                // Shrinks past 8 pt; restores only when the reader brings the page back to the top, not when the
+                // page settles after the heading's own change of height.
+                if offset > 8, pageInteracting { pageScrolledByReader = true }
+                else if offset <= 0, pageInteracting { pageScrolledByReader = false }
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
