@@ -314,10 +314,11 @@ struct PlaybackDock: View {
                         if editing { playback.beginScrubbing() } else { playback.endScrubbing() }
                     })
                         .frame(minHeight: 44)
-                        // Where the person speaks: a pale vermillon band under the track, the rest being the context
-                        // the API adds around the passage (2026-10-09: "0:13" at rest read as listening started).
-                        .background { speechBand }
                         .tint(Brand.accent)
+                        // Where the person speaks: a darker gray on the track itself, the rest being the context the
+                        // API adds around the passage (2026-10-09: "0:13" at rest read as listening started; a pale
+                        // vermillon band under the track was found ugly the same day).
+                        .overlay { speechBand }
                         .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
                         .accessibilityLabel("Position dans le passage")
                         .accessibilityValue(speechValue)
@@ -359,18 +360,23 @@ struct PlaybackDock: View {
         .background(Brand.background).overlay(alignment: .top) { AppRule() }
         .sensoryFeedback(.impact(weight: .light), trigger: presses)
     }
-    /// Drawn under the system slider rather than on it: the slider stays the native control the UI tests drive.
+    /// Drawn over the system slider's track, which stays the native control the UI tests drive: only the part of
+    /// the speech not yet heard (the heard part is the vermillon fill), and never over the thumb.
     @ViewBuilder private var speechBand: some View {
         if let range = playback.speechRange, playback.duration > 0 {
             GeometryReader { geometry in
                 // The thumb's center travels inside the track, half a thumb (about 19 pt on iOS 26) from each end.
                 let inset: CGFloat = 19, span = max(0, geometry.size.width - 2 * inset)
-                Capsule().fill(Brand.accent.opacity(0.35))
-                    .frame(width: max(4, span * (range.upperBound - range.lowerBound) / playback.duration), height: 4)
-                    .offset(x: inset + span * range.lowerBound / playback.duration)
+                let x = { (seconds: Double) in inset + span * min(1, max(0, seconds / playback.duration)) }
+                let start = max(x(range.lowerBound), x(min(playback.position, playback.duration)) + inset)
+                let end = x(range.upperBound)
+                if end > start {
+                    Capsule().fill(Brand.secondary.opacity(0.55))
+                        .frame(width: end - start, height: 6)
+                        .position(x: (start + end) / 2, y: geometry.size.height / 2)
+                }
             }
-            // Just under the track, which sits at the middle of the 44 pt slider.
-            .frame(height: 4).offset(y: 8)
+            .allowsHitTesting(false)
             .accessibilityHidden(true)
         }
     }
