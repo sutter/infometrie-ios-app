@@ -134,7 +134,8 @@ struct PassageSpeaker: View {
         let repeatsParty = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
             || party.range(of: role, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
         let name = Text(item.person).font(nameFont.weight(.semibold)).foregroundStyle(dimmed ? Brand.secondary : Brand.ink)
-        let partyText = Text(party).font(nameFont).foregroundStyle(Brand.secondary)
+        // Name, party and role share one color (the user, 2026-10-09); only the separator stays gray.
+        let partyText = Text(party).font(nameFont).foregroundStyle(dimmed ? Brand.secondary : Brand.ink)
         VStack(alignment: .leading, spacing: 1) {
             // Name · party on one line when it fits; otherwise the party moves below, never leaving a lone "·".
             ViewThatFits(in: .horizontal) {
@@ -146,8 +147,6 @@ struct PassageSpeaker: View {
                 }
             }
             if !role.isEmpty && (party.isEmpty || !repeatsParty) {
-                // The role takes the name's color (the user, 2026-10-09): who speaks reads as one block, the party
-                // stays gray between them.
                 Text(role).font(.footnote).foregroundStyle(dimmed ? Brand.secondary : Brand.ink).lineLimit(lineLimit)
             }
         }
