@@ -148,15 +148,6 @@ struct AdaptiveRow<Content: View>: View {
     }
 }
 
-struct KindBadge: View {
-    let item: FeedItem
-    var body: some View {
-        Label(item.kindLabel, systemImage: item.kindSymbol)
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(Brand.ink)
-    }
-}
-
 /// App motion: short, soft springs that make changes feel continuous without drawing attention.
 enum Motion {
     static let standard: Animation = .smooth(duration: 0.32)

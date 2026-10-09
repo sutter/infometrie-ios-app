@@ -295,16 +295,8 @@ final class InfometrieUITests: XCTestCase {
         reveal(summary, in: app, down: false)
         XCTAssertFalse(app.buttons["sequence-summary"].exists, "Le résumé n’est plus un bouton à déplier")
         capture("03-sequence-resume", app: app)
-        let context = app.buttons["sequence-context"]
-        reveal(context, in: app, down: false)
-        context.tap()
-        XCTAssertEqual(toggle.label, "Écouter", "Le contexte s’ouvre indépendamment du lecteur")
-        XCTAssertTrue(app.staticTexts["Personnalité fictive"].waitForExistence(timeout: 3))
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.75))
-            .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.45)))
-        capture("03-sequence-contexte", app: app)
-        reveal(context, in: app, down: false)
-        context.tap()
+        // "À propos du passage" was removed on 2026-10-09: its facts were all in the heading already.
+        XCTAssertFalse(app.buttons["sequence-context"].exists)
         reveal(app.staticTexts["sequence-title"], in: app, down: true)
         listen(toggle)
         capture("03-sequence", app: app)
@@ -1117,7 +1109,7 @@ final class InfometrieUITests: XCTestCase {
             let dockBottom = listen.exists && listen.isHittable ? listen.frame.minY - 12 : nil
             let bottom = slider.exists ? slider.frame.minY - 12 : filterBottom ?? dockBottom ?? bounds.maxY - 150
             if element.exists && element.isHittable {
-                let contentControl = ["sequence-summary", "sequence-context", "transcript-follow", "expand-transcript", "transcript-scroll"].contains(identifier)
+                let contentControl = ["sequence-summary", "transcript-follow", "expand-transcript", "transcript-scroll"].contains(identifier)
                     || ["save-search", "reset-search", "clear-choices", "start-podcast", "logout"].contains(identifier)
                     || ["filter-kind-", "feed-kind-", "feed-item-", "choice-", "pick-"].contains { identifier.hasPrefix($0) }
                 if element.elementType != .link && !contentControl { return }

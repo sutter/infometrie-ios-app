@@ -258,9 +258,13 @@ struct PassageHeading: View {
         .font(.footnote)
     }
 
-    /// The logo names the channel; its name shows only when no logo is bundled.
+    /// The logo names the channel; its name shows only when no logo is bundled. The programme follows when the
+    /// API gives one (it was in "À propos du passage", removed on 2026-10-09; `show` was empty on every real passage
+    /// that day).
     @ViewBuilder private var channelName: some View {
         if !ChannelMark.hasLogo(for: item) { Text(item.channel).foregroundStyle(Brand.secondary) }
+        let show = item.show.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !show.isEmpty { Text(show).foregroundStyle(Brand.secondary).lineLimit(1) }
     }
 }
 

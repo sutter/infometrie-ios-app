@@ -147,19 +147,6 @@ struct SequenceView: View {
                             }.accessibilityIdentifier("sequence-summary")
                         }
                     } else { textSkeleton }
-                    // Only once the passage has loaded: shown under the short skeleton, it slid down when the text and
-                    // the summary arrived (2026-10-09).
-                    if displayDetail != nil || error != nil {
-                        SequenceDisclosure(title: "À propos du passage", icon: "info.circle") {
-                            VStack(alignment: .leading, spacing: 12) {
-                                KindBadge(item: item)
-                                if !item.party.isEmpty { Text(item.party) }
-                                if !item.role.isEmpty { Text(item.role) }
-                                if !item.show.isEmpty { Label(item.show, systemImage: "antenna.radiowaves.left.and.right") }
-                                if let date = item.date { Label(date.formatted(date: .long, time: .shortened), systemImage: "calendar") }
-                                }.font(.subheadline).foregroundStyle(Brand.secondary)
-                        }.accessibilityIdentifier("sequence-context")
-                    }
                 }.padding(.horizontal, AppLayout.margin).padding(.top, pinsHeader ? 12 : 20).padding(.bottom, 20)
                     .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
@@ -226,24 +213,7 @@ struct SequenceView: View {
     }
 }
 
-private struct SequenceDisclosure<Content: View>: View {
-    let title: String
-    let icon: String
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        DisclosureGroup {
-            content().frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 4).padding(.bottom, 20)
-        } label: {
-            SequenceSectionLabel(title: title, icon: icon)
-        }
-        .tint(Brand.tint)
-        .overlay(alignment: .top) { AppRule() }
-    }
-}
-
-/// The same header as `SequenceDisclosure`, over content that stays open.
+/// A section of the passage page under an icon header, its content always open.
 private struct SequenceSection<Content: View>: View {
     let title: String
     let icon: String
