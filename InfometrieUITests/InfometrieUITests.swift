@@ -1159,14 +1159,16 @@ final class InfometrieUITests: XCTestCase {
 
     @MainActor private func auditVisibleFeed(_ app: XCUIApplication) throws {
         var covered: [String] = []
-        let tabBar = app.otherElements["main-tab-bar"]
+        // The system tab bar, and "Tout écouter" docked above it, cover the bottom of the reading area.
+        let tabBar = app.tabBars.firstMatch
+        let listen = app.buttons["start-podcast"]
         let navigationBar = app.navigationBars.firstMatch
         let mainNavigation = app.otherElements["primary-navigation"]
         let sidebar = mainNavigation.exists && mainNavigation.frame.height > mainNavigation.frame.width
         let navigationTop = mainNavigation.exists && !sidebar ? mainNavigation.frame.maxY : (navigationBar.exists ? navigationBar.frame.maxY : app.frame.minY)
         let picker = app.otherElements["feed-filter-bar"]
         let top = picker.exists && picker.isHittable ? max(navigationTop, picker.frame.maxY) : navigationTop
-        let bottom = tabBar.exists ? tabBar.frame.minY : app.frame.maxY
+        let bottom = min(tabBar.exists ? tabBar.frame.minY : app.frame.maxY, listen.exists ? listen.frame.minY : app.frame.maxY)
         let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "feed-item-")).allElementsBoundByIndex.map(\.frame)
         let leading = sidebar ? mainNavigation.frame.maxX : app.frame.minX
         let readingArea = CGRect(x: leading, y: top, width: app.frame.maxX - leading, height: bottom - top)

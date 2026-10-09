@@ -127,6 +127,8 @@ struct SequenceView: View {
         }
         .scrollEdgeEffectHidden(true)
         .background(Brand.background).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
+        // Pushed pages keep the room for their player: no tab bar, so no listening accessory either.
+        .toolbar(.hidden, for: .tabBar)
         .toolbar(.hidden, for: .tabBar)
         .onAppear { model.markSeen(item) }
         .task(id: reload) {

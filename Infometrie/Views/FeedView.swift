@@ -9,7 +9,7 @@ struct FeedView: View {
     @State private var scrollPosition = ScrollPosition(edge: .top)
     /// A person whose profile a long press asked for.
     @State private var profileName: String?
-    private var playable: [FeedItem] { model.visibleItems.filter(\.canPlay).sorted { $0.at < $1.at } }
+    private var playable: [FeedItem] { model.playableItems }
     private var hasAudienceFilters: Bool { !model.filters.isEmpty }
     private var usesWideLayout: Bool { horizontalSizeClass == .regular }
 
@@ -75,10 +75,9 @@ struct FeedView: View {
                     }
                 } header: { filterControls }
             }
-            // The iPhone tab bar, and the listening bar above it, float over the scroll view. Leave enough
-            // scrollable tail space to bring the final card clear of them.
+            // The system tab bar and its accessory inset the scroll view themselves; the iPad's listening bar does not.
             .padding(.horizontal, AppLayout.margin)
-            .padding(.bottom, (usesWideLayout ? 24 : 112) + (playable.isEmpty ? 0 : ListenBar.height + 8))
+            .padding(.bottom, 24 + (usesWideLayout && !playable.isEmpty ? ListenBar.height + 8 : 0))
             .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .scrollPosition($scrollPosition)
@@ -86,11 +85,13 @@ struct FeedView: View {
         .onChange(of: model.filters) { jumpToTop() }
         .onChange(of: model.period) { jumpToTop() }
         .refreshable { await model.reload() }
-        .modifier(FeedScrollOverflow(overTabBar: !usesWideLayout))
-        // Listening is a mode of the journal, not a button of one of its parts: it docks above the tab bar, like
-        // the player of Musique and Podcasts, and says what it will play (the user, 2026-10-09).
+        .modifier(FeedScrollOverflow(clips: usesWideLayout))
+        .onAppear { model.isFeedRootVisible = true }
+        .onDisappear { model.isFeedRootVisible = false }
+        // On iPhone, listening is the tab bar's accessory (`ListenAccessory`). The iPad has no tab bar: the same
+        // listening bar docks at the bottom of the journal column.
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !playable.isEmpty {
+            if usesWideLayout && !playable.isEmpty {
                 ListenBar(items: playable)
                     .padding(.horizontal, AppLayout.margin).padding(.bottom, 8)
                     .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
@@ -264,15 +265,12 @@ private struct NoKindState: View {
 /// On iPhone, extend the scroll viewport behind the floating system tab bar.
 /// On iPad, keep the feed clipped to its column so it stays below the status bar.
 private struct FeedScrollOverflow: ViewModifier {
-    let overTabBar: Bool
+    /// The iPad clips the journal column; on iPhone the cards scroll under the system tab bar's glass.
+    let clips: Bool
 
     @ViewBuilder
     func body(content: Content) -> some View {
-        if overTabBar {
-            content.ignoresSafeArea(.container, edges: .bottom)
-        } else {
-            content.clipped()
-        }
+        if clips { content.clipped() } else { content }
     }
 }
 
@@ -430,10 +428,8 @@ private struct FeedViewOptions: View {
     }
 }
 
-/// The journal's listening bar: "Écouter ces 48 passages" and how long they last, above the tab bar, in the tab
-/// bar's gris clair capsule so it reads as the same family, with the brand's vermillon play. It plays what the list
-/// has loaded and says so: "Tout écouter" promised everything while 7 j counted tens of thousands of passages.
-/// Hidden when nothing is playable (only Publications X).
+/// The iPad's listening bar, at the bottom of the journal column: "Écouter ces 48 passages" and how long they
+/// last, in a gris clair capsule with the brand's vermillon play. Hidden when nothing is playable.
 struct ListenBar: View {
     static let height: CGFloat = 56
     @Environment(AppModel.self) private var model
@@ -464,6 +460,41 @@ struct ListenBar: View {
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .accessibilityLabel("\(label), \(duration)")
         .accessibilityHint("Lance la lecture à la suite, du plus ancien au plus récent")
+        .accessibilityIdentifier("start-podcast")
+    }
+}
+
+/// "Tout écouter" as the iPhone tab bar's accessory, like the player of Musique: a full row above the tab bar
+/// with what it will play ("42 passages · 16 min"), then, once the bar minimizes on scrolling down, a compact
+/// "Tout écouter" beside the current tab (the user's pick on 2026-10-09). Shown only on the journal's root.
+struct ListenAccessory: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
+    private var items: [FeedItem] { model.playableItems }
+    private var summary: String {
+        let count = items.count == 1 ? "1 passage" : "\(items.count) passages"
+        return "\(count) · \(SpokenDuration.label(seconds: items.reduce(0) { $0 + $1.durationSec }))"
+    }
+
+    var body: some View {
+        Button { model.player.start(items: items, app: model, podcast: true) } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "play.fill").font(.body.weight(.semibold)).foregroundStyle(Brand.accent)
+                    .accessibilityHidden(true)
+                Text("Tout écouter").font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink).lineLimit(1)
+                if placement != .inline {
+                    Spacer(minLength: 8)
+                    Text(summary).font(.footnote.monospacedDigit()).foregroundStyle(Brand.secondary).lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(items.isEmpty)
+        .accessibilityLabel("Tout écouter, \(summary)")
         .accessibilityIdentifier("start-podcast")
     }
 }

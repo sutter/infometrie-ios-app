@@ -56,6 +56,10 @@ final class AppModel {
     private(set) var wordTimingStates: [Int64: WordTimingState] = [:]
     var isAuthenticated: Bool { session != nil }
     var visibleItems: [FeedItem] { (period.isLive ? items : historyItems).filter(filters.accepts) }
+    /// What "Tout écouter" plays: the playable passages the list has loaded, oldest first.
+    var playableItems: [FeedItem] { visibleItems.filter(\.canPlay).sorted { $0.at < $1.at } }
+    /// The journal's root page is on screen (not a pushed passage or profile): the listening accessory shows only there.
+    var isFeedRootVisible = false
     /// The first page of the current period is on its way.
     var isLoadingPassages: Bool { period.isLive ? isRefreshing : isLoadingHistory }
     var accountID: String { session?.email.lowercased() ?? "" }

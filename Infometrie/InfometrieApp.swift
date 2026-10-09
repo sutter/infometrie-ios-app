@@ -54,8 +54,7 @@ struct RootView: View {
                 layout {
                     if horizontalSizeClass == .regular { MainNavigation() }
                     TabView(selection: $binding.tab) {
-                        // The system tab bar stays hidden: the iPhone shows `MainTabBar` under each root page,
-                        // the iPad the sidebar.
+                        // The iPhone shows the system tab bar (Liquid Glass, since 2026-10-09), the iPad the sidebar.
                         Tab("Le journal", systemImage: "house", value: AppModel.Tab.feed) {
                             NavigationStack { FeedView().withMainTabBar() }.id(model.feedStackID).tint(Brand.tint)
                         }
@@ -67,6 +66,11 @@ struct RootView: View {
                         }
                     }
                     .tint(Brand.tint)
+                    // Like Musique: the tab bar shrinks to the current tab on scrolling down, and "Tout écouter"
+                    // moves beside it.
+                    .tabBarMinimizeBehavior(.onScrollDown)
+                    .modifier(ListenAccessoryDock(enabled: horizontalSizeClass != .regular && model.tab == .feed
+                                                  && model.isFeedRootVisible && !model.playableItems.isEmpty))
                 }
                 .background(Brand.background)
                 .sheet(isPresented: $binding.isSearchPresented) {
@@ -102,8 +106,7 @@ struct RootView: View {
 }
 
 extension View {
-    /// Hides the system tab bar and docks `MainTabBar` under a root page at compact width. Pushed pages have no
-    /// bar, like the passage page, which needs the room for its player.
+    /// The system tab bar on iPhone; the iPad hides it for its sidebar. Pushed pages hide it themselves.
     func withMainTabBar() -> some View { modifier(MainTabBarDock()) }
 }
 
@@ -111,65 +114,21 @@ private struct MainTabBarDock: ViewModifier {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     func body(content: Content) -> some View {
-        content
-            .toolbar(.hidden, for: .tabBar)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if horizontalSizeClass != .regular { MainTabBar() }
-            }
+        content.toolbar(horizontalSizeClass == .regular ? .hidden : .visible, for: .tabBar)
     }
 }
 
-/// The iPhone's main navigation: a gris clair capsule docked at the bottom, the active destination in ink on a raised
-/// pill, like the S / M / L control (the user's pick on 2026-10-08). No kind color: noir chaud is X and vermillon the
-/// interventions, so the former noir chaud bar with its vermillon tab read as content. Drawn by hand: the system tab
-/// bar takes no fill color.
-private struct MainTabBar: View {
-    @Environment(AppModel.self) private var model
-    @Environment(\.colorScheme) private var colorScheme
+/// "Tout écouter" as the tab bar's accessory, on the journal's root only. iOS 26.0 cannot hide an accessory, so
+/// there it stays on every tab, disabled when nothing is playable.
+private struct ListenAccessoryDock: ViewModifier {
+    let enabled: Bool
 
-    var body: some View {
-        HStack(spacing: 0) {
-            item("Le journal", symbol: "house", tab: .feed, identifier: "navigation-feed")
-            item("Mes suivis", symbol: "bookmark", tab: .saved, identifier: "navigation-saved")
-            item("Compte", symbol: "person", tab: .account, identifier: "navigation-account")
+    func body(content: Content) -> some View {
+        if #available(iOS 26.1, *) {
+            content.tabViewBottomAccessory(isEnabled: enabled) { ListenAccessory() }
+        } else {
+            content.tabViewBottomAccessory { ListenAccessory() }
         }
-        .padding(4)
-        .background(Brand.surface, in: Capsule())
-        .overlay(Capsule().strokeBorder(Brand.rule.opacity(0.6), lineWidth: 0.5))
-        .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.08), radius: 14, y: 5)
-        // Like the system tab bar, the labels stop growing at the largest standard size; a long press on an item
-        // shows it enlarged at accessibility sizes.
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-        .padding(.bottom, 4)
-        .sensoryFeedback(.selection, trigger: model.tab)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Navigation principale")
-        .accessibilityIdentifier("main-tab-bar")
-    }
-
-    /// Filled when active, outlined otherwise.
-    private func item(_ title: String, symbol: String, tab: AppModel.Tab, identifier: String) -> some View {
-        let selected = model.tab == tab
-        return Button { model.tab = tab } label: {
-            VStack(spacing: 3) {
-                Image(systemName: selected ? "\(symbol).fill" : symbol).font(.title3.weight(.medium))
-                Text(title).font(.caption2.weight(selected ? .semibold : .medium)).lineLimit(1)
-            }
-            .foregroundStyle(selected ? Brand.ink : Brand.secondaryOnSurface)
-            .frame(width: 92).frame(minHeight: 54)
-            .background {
-                if selected {
-                    Capsule().fill(Brand.raised)
-                        .shadow(color: .black.opacity(colorScheme == .dark ? 0.3 : 0.08), radius: 3, y: 1)
-                }
-            }
-            .contentShape(Capsule())
-        }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityShowsLargeContentViewer { Label(title, systemImage: symbol) }
-        .accessibilityIdentifier(identifier)
     }
 }
 
