@@ -155,7 +155,7 @@ struct PersonView: View {
                         .padding(.vertical, 12)
                 }
                 ForEach(page.items) { item in
-                    NavigationLink { SequenceView(item: item) } label: {
+                    NavigationLink { SequenceView(item: item, list: page.items) } label: {
                         FeedCard(item: item, seen: model.isSeen(item), day: selectedDay).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).accessibilityIdentifier("person-item-\(item.id)")

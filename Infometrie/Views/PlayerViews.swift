@@ -5,7 +5,10 @@ struct SequenceView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    let item: FeedItem
+    /// The passage shown: it changes in place when the reader moves to the next one, so back still leads to the list.
+    @State private var item: FeedItem
+    /// The list the passage was opened from (the journal as filtered, or a profile's day), for "Passage suivant".
+    private let list: [FeedItem]
     @State private var detail: SequenceDetail?
     @State private var error: String?
     @State private var reload = 0
@@ -14,6 +17,28 @@ struct SequenceView: View {
     @State private var contentScrolled = false
     @State private var pageScrolledByReader = false
     @State private var pageInteracting = false
+
+    init(item: FeedItem, list: [FeedItem] = []) {
+        _item = State(initialValue: item)
+        self.list = list
+    }
+
+    /// The passage after this one in the list it was opened from.
+    private var nextItem: FeedItem? {
+        guard let index = list.firstIndex(where: { $0.id == item.id }), list.indices.contains(index + 1) else { return nil }
+        return list[index + 1]
+    }
+
+    /// Replaces the passage in place: the player of this one stops, the next one prepares without playing, and the
+    /// page starts again at its top with the full heading.
+    private func show(_ next: FeedItem) {
+        model.player.stop()
+        detail = nil; error = nil
+        transcriptReading = TranscriptReadingState()
+        pageScrolledByReader = false; contentScrolled = false
+        item = next
+        model.markSeen(next)
+    }
     private var isCurrent: Bool { model.player.current?.id == item.id && !model.player.isPodcast }
     private var displayDetail: SequenceDetail? { isCurrent ? model.player.detail ?? detail : detail }
     private var displayItem: FeedItem { displayDetail?.item ?? item }
@@ -114,6 +139,8 @@ struct SequenceView: View {
                     // A hairline once the content scrolls under the heading, so the text never runs into the title.
                     .overlay(alignment: .bottom) { if contentScrolled { AppRule() } }
                     .motion(value: compactHeader)
+                    // Above the scroll: the content passes under the heading, never over it.
+                    .zIndex(1)
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
@@ -137,17 +164,24 @@ struct SequenceView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }.accessibilityIdentifier("sequence-summary")
                         }
+                        if let next = nextItem {
+                            NextPassage(item: next) { show(next) }
+                        }
                     } else { textSkeleton }
                 }.padding(.horizontal, AppLayout.margin).padding(.top, pinsHeader ? 12 : 20).padding(.bottom, 20)
                     .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             }
+            // A new scroll per passage, so "Passage suivant" opens the next one at its top.
+            .id(item.id)
+            .clipped()
             .onScrollPhaseChange { _, phase in pageInteracting = phase == .interacting || phase == .decelerating }
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
                 contentScrolled = offset > 1
-                // Shrinks past 8 pt; restores only when the reader brings the page back to the top, not when the
-                // page settles after the heading's own change of height.
+                // Shrinks past 8 pt; restores only when the reader pulls the page down at its top. Shrinking the
+                // heading lets the scroll grow and settle back to 0, and restoring at 0 looped: shrink, restore,
+                // shrink, with the content flickering over the heading (2026-10-09).
                 if offset > 8, pageInteracting { pageScrolledByReader = true }
-                else if offset <= 0, pageInteracting { pageScrolledByReader = false }
+                else if offset < -8, pageInteracting { pageScrolledByReader = false }
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -182,7 +216,7 @@ struct SequenceView: View {
         // Pushed pages keep the room for their player: no tab bar, no listening accessory.
         .pushedPage(model)
         .onAppear { model.markSeen(item) }
-        .task(id: reload) {
+        .task(id: "\(item.id)-\(reload)") {
             do {
                 let value = try await model.sequence(item)
                 guard !Task.isCancelled else { return }
@@ -195,6 +229,40 @@ struct SequenceView: View {
             }
             catch { if !Task.isCancelled { self.error = model.message(for: error) } }
         }
+    }
+}
+
+/// The passage after this one in the list it was opened from, at the end of the page: reading on without going back
+/// to the list (2026-10-09). Its kind, time and speaker, then its title, like a journal row.
+private struct NextPassage: View {
+    let item: FeedItem
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Passage suivant").font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary)
+                    HStack(spacing: 8) {
+                        KindTag(item: item)
+                        PassageDate(item: item, day: item.date.map(ParisDay.string)).font(.footnote)
+                    }
+                    Text(item.person).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink)
+                    Text(item.displayTitle).font(.body.weight(.semibold)).foregroundStyle(Brand.ink)
+                        .lineLimit(2).multilineTextAlignment(.leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "chevron.right").font(.body.weight(.semibold)).foregroundStyle(Brand.secondary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, 16)
+            .contentShape(Rectangle())
+            .overlay(alignment: .top) { AppRule() }
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Passage suivant : \(item.person), \(item.displayTitle)")
+        .accessibilityIdentifier("next-passage")
     }
 }
 

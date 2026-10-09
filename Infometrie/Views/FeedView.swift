@@ -52,7 +52,7 @@ struct FeedView: View {
                             }
                         } else {
                             ForEach(model.visibleItems) { item in
-                                NavigationLink { SequenceView(item: item) } label: {
+                                NavigationLink { SequenceView(item: item, list: model.visibleItems) } label: {
                                     FeedCard(item: item, seen: model.isSeen(item), day: listDay)
                                         .contentShape(Rectangle())
                                 }
