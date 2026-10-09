@@ -19,8 +19,7 @@ struct FeedView: View {
                 Section {
                     // Period and display scroll with the list: only the types stay pinned, so the cards get the room.
                     FeedViewOptions().padding(.top, 8)
-                    FeedDayChart().padding(.top, 16)
-                    statusRow.padding(.top, 16).padding(.bottom, 8)
+                    FeedDayChart(listen: AnyView(listenControls)).padding(.top, 8).padding(.bottom, 16)
                     if hasAudienceFilters { selectionSummary.padding(.bottom, 8) }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.reload() } }
@@ -124,12 +123,11 @@ struct FeedView: View {
         return "Aucun résultat du \(DayLabel.short(first)) au \(DayLabel.short(last)) avec ces critères. Les passages d’aujourd’hui sont dans Live."
     }
 
-    /// "Tout écouter" under the header, which carries the count; "Rechercher" too on iPad.
-    private var statusRow: some View {
+    /// "Tout écouter" at the end of the header's count line; "Rechercher" too on iPad.
+    private var listenControls: some View {
         HStack(spacing: 12) {
-            listenButton
-            Spacer(minLength: 0)
             if usesWideLayout { filtersButton() }
+            listenButton
         }
     }
 

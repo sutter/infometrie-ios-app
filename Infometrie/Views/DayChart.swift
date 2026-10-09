@@ -6,14 +6,17 @@ import SwiftUI
 /// Live has no chart (2026-10-09): its 7-day strip repeated 7 j's with other rules and jumped to 7 j on a touch.
 struct FeedDayChart: View {
     @Environment(AppModel.self) private var model
+    /// "Tout écouter" (and "Rechercher" on iPad), at the end of the count's line: on a row of its own it cost
+    /// about 60 pt above the cards (2026-10-09).
+    let listen: AnyView
 
     var body: some View {
-        if model.period.isLive { LiveHeader() } else { period }
+        if model.period.isLive { LiveHeader(listen: listen) } else { period }
     }
 
     private var period: some View {
         VStack(alignment: .leading, spacing: 8) {
-            PeriodHeader()
+            PeriodHeader(listen: listen)
             DayChart(days: model.historyDays, counts: model.dayCounts, kinds: model.filters.selectedKinds,
                      loading: model.dayCounts.isEmpty && model.isLoadingDayCounts, selectedDay: model.selectedDay,
                      identifier: "feed-day") { day in
@@ -36,8 +39,9 @@ struct DayChart: View {
     var identifier = "day"
     var select: ((String) -> Void)?
     @Environment(\.dynamicTypeSize) private var dynamicType
-    /// Compact, the user's pick on 2026-10-08 (option A of a sheet of four): at 120 pt the chart crowded out the cards.
-    @ScaledMetric(relativeTo: .body) private var height = 64.0
+    /// Compact, the user's pick on 2026-10-08 (option A of a sheet of four): at 120 pt the chart crowded out the
+    /// cards; 64 pt until 2026-10-09, when the header above it made the block too tall.
+    @ScaledMetric(relativeTo: .body) private var height = 56.0
     @ScaledMetric(relativeTo: .caption2) private var labelHeight = 18.0
     /// The last day a slide reached: the selection given back may lag behind, and reporting that day again would unselect it.
     @State private var slidDay: String?
@@ -194,6 +198,7 @@ struct DayChart: View {
 /// calendar weeks and months; once a day is chosen they step days, beside the cross that restores the period.
 private struct PeriodHeader: View {
     @Environment(AppModel.self) private var model
+    let listen: AnyView
 
     private var day: String? { model.selectedDay }
     private var counts: [DayCount] { model.dayCounts.filter { day == nil || $0.day == day } }
@@ -209,16 +214,9 @@ private struct PeriodHeader: View {
     }
 
     var body: some View {
-        AdaptiveRow {
-            summary.frame(maxWidth: .infinity, alignment: .leading)
-            controls
-        }
-        .sensoryFeedback(.selection, trigger: model.periodOffset)
-    }
-
-    private var summary: some View {
-        HeaderSummary(title: title, total: total, loading: loading,
-                      identifier: day == nil ? "feed-status" : "feed-day-selection")
+        JournalHeader(title: title, total: total, loading: loading,
+                      identifier: day == nil ? "feed-status" : "feed-day-selection", listen: listen) { controls }
+            .sensoryFeedback(.selection, trigger: model.periodOffset)
     }
 
     @ViewBuilder private var controls: some View {
@@ -258,14 +256,14 @@ private struct PeriodHeader: View {
 /// midnight in Paris from `/days`. No arrows: the past is in 7 j and 30 j.
 private struct LiveHeader: View {
     @Environment(AppModel.self) private var model
+    let listen: AnyView
 
     var body: some View {
         // Re-read the age every 15 seconds; the feed itself refreshes every 30.
         TimelineView(.periodic(from: .now, by: 15)) { context in
-            HeaderSummary(title: "Aujourd’hui", note: model.lastRefresh.map { LiveAge.label(of: $0, at: context.date) },
+            JournalHeader(title: "Aujourd’hui", note: model.lastRefresh.map { LiveAge.label(of: $0, at: context.date) },
                           total: model.todayCounts?.total(for: model.filters) ?? 0, loading: model.todayCounts == nil,
-                          identifier: "feed-status")
-                .frame(maxWidth: .infinity, alignment: .leading)
+                          identifier: "feed-status", listen: listen) { EmptyView() }
         }
     }
 }
@@ -280,36 +278,62 @@ enum LiveAge {
     }
 }
 
-/// Two lines in every period and for a chosen day, so the header keeps its height (the user, 2026-10-09): when
-/// (bold, one line), then how many passages. The time in interventions was removed the same day.
-private struct HeaderSummary: View {
+/// Two lines in every period and for a chosen day, so the header keeps its height (the user, 2026-10-09): when,
+/// bold on one line, with the arrows at its end; then how many passages, with "Tout écouter" at its end. The time
+/// in interventions was removed the same day. At accessibility sizes everything stacks.
+private struct JournalHeader<Controls: View>: View {
     let title: String
     /// Small and gray after the title: Live's freshness.
     var note: String?
     let total: Int
     let loading: Bool
     let identifier: String
+    let listen: AnyView
+    @ViewBuilder let controls: Controls
     @Environment(\.dynamicTypeSize) private var dynamicType
-    private static let french = Locale(identifier: "fr_FR")
+    private static var french: Locale { Locale(identifier: "fr_FR") }
+
+    private var passages: String { total <= 1 ? "passage" : "passages" }
 
     var body: some View {
-        let passages = total <= 1 ? "passage" : "passages"
-        VStack(alignment: .leading, spacing: 2) {
-            (Text(title.prefix(1).uppercased(with: Self.french) + title.dropFirst()).font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
-                + Text(note.map { "  \($0)" } ?? "").font(.footnote).foregroundStyle(Brand.secondary))
-                // One line at standard sizes, shrinking a little before it would wrap; accessibility sizes stack and wrap.
-                .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
-                .minimumScaleFactor(dynamicType.isAccessibilitySize ? 1 : 0.8)
-            (Text(total.formatted(.number.locale(Self.french))).fontWeight(.semibold).foregroundStyle(Brand.ink)
-                + Text(" \(passages)").foregroundStyle(Brand.secondary))
-                .font(.subheadline.monospacedDigit())
-                .contentTransition(.numericText())
-                .skeleton(loading)
+        if dynamicType.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) { titleText; countText }
+                controls
+                listen
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 8) { titleText; Spacer(minLength: 0); controls }
+                // The button keeps its 44 pt to touch but not in the layout, so the line stays as tall as its text.
+                HStack(spacing: 8) { countText; Spacer(minLength: 0); listen.padding(.vertical, -8) }
+            }
         }
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel([title, note, "\(total) \(passages)"].compactMap { $0 }.joined(separator: ", "))
-        .accessibilityIdentifier(identifier)
+    }
+
+    /// Carries the whole summary for VoiceOver and the UI tests: "2 – 8 oct., 56 passages".
+    private var titleText: some View {
+        (Text(title.prefix(1).uppercased(with: Self.french) + title.dropFirst()).font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
+            + Text(note.map { "  \($0)" } ?? "").font(.footnote).foregroundStyle(Brand.secondary))
+            // One line at standard sizes, shrinking a little before it would wrap; accessibility sizes wrap.
+            .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
+            .minimumScaleFactor(dynamicType.isAccessibilitySize ? 1 : 0.8)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel([title, note, "\(total) \(passages)"].compactMap { $0 }.joined(separator: ", "))
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityIdentifier(identifier)
+    }
+
+    private var countText: some View {
+        // French groups thousands with a narrow no-break space, which this font draws almost invisibly ("5623"):
+        // a plain no-break space reads "5 623".
+        (Text(total.formatted(.number.locale(Self.french)).replacingOccurrences(of: "\u{202F}", with: "\u{00A0}"))
+            .fontWeight(.semibold).foregroundStyle(Brand.ink)
+            + Text(" \(passages)").foregroundStyle(Brand.secondary))
+            .font(.subheadline.monospacedDigit())
+            .contentTransition(.numericText())
+            .skeleton(loading)
+            .accessibilityHidden(true)
     }
 }
 
