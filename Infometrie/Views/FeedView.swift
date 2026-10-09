@@ -19,7 +19,7 @@ struct FeedView: View {
                 Section {
                     // Period and display scroll with the list: only the types stay pinned, so the cards get the room.
                     FeedViewOptions().padding(.top, 8)
-                    FeedDayChart(listen: usesWideLayout ? AnyView(listenControls) : nil).padding(.top, 8).padding(.bottom, 16)
+                    FeedDayChart(search: usesWideLayout ? AnyView(filtersButton()) : nil).padding(.top, 8).padding(.bottom, 16)
                     if hasAudienceFilters { selectionSummary.padding(.bottom, 8) }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.reload() } }
@@ -75,9 +75,10 @@ struct FeedView: View {
                     }
                 } header: { filterControls }
             }
-            // The iPhone tab bar floats above the scroll view. Leave enough
-            // scrollable tail space to bring the final card clear of the bar.
-            .padding(.horizontal, AppLayout.margin).padding(.bottom, usesWideLayout ? 24 : 112)
+            // The iPhone tab bar, and the listening bar above it, float over the scroll view. Leave enough
+            // scrollable tail space to bring the final card clear of them.
+            .padding(.horizontal, AppLayout.margin)
+            .padding(.bottom, (usesWideLayout ? 24 : 112) + (playable.isEmpty ? 0 : ListenBar.height + 8))
             .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         }
         .scrollPosition($scrollPosition)
@@ -86,6 +87,15 @@ struct FeedView: View {
         .onChange(of: model.period) { jumpToTop() }
         .refreshable { await model.reload() }
         .modifier(FeedScrollOverflow(overTabBar: !usesWideLayout))
+        // Listening is a mode of the journal, not a button of one of its parts: it docks above the tab bar, like
+        // the player of Musique and Podcasts, and says what it will play (the user, 2026-10-09).
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !playable.isEmpty {
+                ListenBar(items: playable)
+                    .padding(.horizontal, AppLayout.margin).padding(.bottom, 8)
+                    .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+            }
+        }
         // No scroll edge effect: the pinned type row already covers the cards under the bar, and on
         // iOS 27 the hard effect drew a hairline and a different tint under the bar at rest.
         .scrollEdgeEffectHidden(true)
@@ -98,10 +108,6 @@ struct FeedView: View {
             if !usesWideLayout {
                 ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
-                // "Tout écouter" acts on the results like "Rechercher", so both live in the bar, reachable after
-                // scrolling; in the period header it read as one more figure (the user, 2026-10-09).
-                ToolbarItem(placement: .topBarTrailing) { toolbarListenButton(scheme: colorScheme) }
-                ToolbarSpacer(.fixed, placement: .topBarTrailing)
                 ToolbarItem(placement: .topBarTrailing) { filtersButton(scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
             }
@@ -125,14 +131,6 @@ struct FeedView: View {
         }
         // Name the days: "7 jours" alone hid that today is left out, in Live.
         return "Aucun résultat du \(DayLabel.short(first)) au \(DayLabel.short(last)) avec ces critères. Les passages d’aujourd’hui sont dans Live."
-    }
-
-    /// On iPad, where the journal has no navigation bar, "Rechercher" and "Tout écouter" end the header's count line.
-    private var listenControls: some View {
-        HStack(spacing: 12) {
-            if usesWideLayout { filtersButton() }
-            listenButton
-        }
     }
 
     private var filterControls: some View {
@@ -233,33 +231,6 @@ struct FeedView: View {
         .buttonStyle(.plain).foregroundStyle(Brand.fixed(Brand.tint, for: scheme))
         .accessibilityIdentifier("edit-filters")
         .accessibilityValue(hasAudienceFilters ? "Recherche active" : "")
-    }
-
-    /// Icon only in the navigation bar, in the system's glass circle like other icon actions; VoiceOver reads "Tout écouter".
-    private func toolbarListenButton(scheme: ColorScheme?) -> some View {
-        Button { model.player.start(items: playable, app: model, podcast: true) } label: {
-            Image(systemName: "play.fill").font(.body.weight(.semibold))
-                .foregroundStyle(Brand.fixed(playable.isEmpty ? Brand.secondary : Brand.accent, for: scheme))
-        }
-        .disabled(playable.isEmpty)
-        .accessibilityLabel("Tout écouter")
-        .accessibilityIdentifier("start-podcast")
-    }
-
-    private var listenButton: some View {
-        // A play link with no background: a capsule on a pale wash read as a fourth type checkbox beside the ones above.
-        Button { model.player.start(items: playable, app: model, podcast: true) } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(Brand.accent).accessibilityHidden(true)
-                Text("Tout écouter").font(.subheadline.weight(.semibold)).foregroundStyle(Brand.actionText)
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PressableStyle())
-        .disabled(playable.isEmpty)
-        .accessibilityIdentifier("start-podcast")
     }
 }
 
@@ -456,5 +427,43 @@ private struct FeedViewOptions: View {
         }
         .accessibilityLabel(label)
         .accessibilityIdentifier(id)
+    }
+}
+
+/// The journal's listening bar: "Écouter ces 48 passages" and how long they last, above the tab bar, in the tab
+/// bar's gris clair capsule so it reads as the same family, with the brand's vermillon play. It plays what the list
+/// has loaded and says so: "Tout écouter" promised everything while 7 j counted tens of thousands of passages.
+/// Hidden when nothing is playable (only Publications X).
+struct ListenBar: View {
+    static let height: CGFloat = 56
+    @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var colorScheme
+    let items: [FeedItem]
+
+    private var label: String { items.count == 1 ? "Écouter ce passage" : "Écouter ces \(items.count) passages" }
+    private var duration: String { SpokenDuration.label(seconds: items.reduce(0) { $0 + $1.durationSec }) }
+
+    var body: some View {
+        Button { model.player.start(items: items, app: model, podcast: true) } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "play.circle.fill").font(.title).foregroundStyle(.white, Brand.accent)
+                    .accessibilityHidden(true)
+                Text(label).font(.subheadline.weight(.semibold)).foregroundStyle(Brand.ink)
+                    .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                Text(duration).font(.footnote.monospacedDigit()).foregroundStyle(Brand.secondaryOnSurface)
+            }
+            .padding(.leading, 10).padding(.trailing, 20)
+            .frame(minHeight: Self.height)
+            .background(Brand.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(Brand.rule.opacity(0.6), lineWidth: 0.5))
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.08), radius: 14, y: 5)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(PressableStyle())
+        // Like the tab bar under it, the bar stops growing at the largest standard size.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .accessibilityLabel("\(label), \(duration)")
+        .accessibilityHint("Lance la lecture à la suite, du plus ancien au plus récent")
+        .accessibilityIdentifier("start-podcast")
     }
 }

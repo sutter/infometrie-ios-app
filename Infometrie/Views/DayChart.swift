@@ -6,17 +6,16 @@ import SwiftUI
 /// Live has no chart (2026-10-09): its 7-day strip repeated 7 j's with other rules and jumped to 7 j on a touch.
 struct FeedDayChart: View {
     @Environment(AppModel.self) private var model
-    /// On iPad only, "Rechercher" and "Tout écouter" at the end of the count's line: the journal has no navigation
-    /// bar there. On iPhone both sit in the navigation bar.
-    let listen: AnyView?
+    /// On iPad only, "Rechercher" at the end of the count's line: the journal has no navigation bar there.
+    let search: AnyView?
 
     var body: some View {
-        if model.period.isLive { LiveHeader(listen: listen) } else { period }
+        if model.period.isLive { LiveHeader(search: search) } else { period }
     }
 
     private var period: some View {
         VStack(alignment: .leading, spacing: 8) {
-            PeriodHeader(listen: listen)
+            PeriodHeader(search: search)
             DayChart(days: model.historyDays, counts: model.dayCounts, kinds: model.filters.selectedKinds,
                      loading: model.dayCounts.isEmpty && model.isLoadingDayCounts, selectedDay: model.selectedDay,
                      identifier: "feed-day") { day in
@@ -198,7 +197,7 @@ struct DayChart: View {
 /// calendar weeks and months; once a day is chosen they step days, beside the cross that restores the period.
 private struct PeriodHeader: View {
     @Environment(AppModel.self) private var model
-    let listen: AnyView?
+    let search: AnyView?
 
     private var day: String? { model.selectedDay }
     private var counts: [DayCount] { model.dayCounts.filter { day == nil || $0.day == day } }
@@ -215,7 +214,7 @@ private struct PeriodHeader: View {
 
     var body: some View {
         JournalHeader(title: title, total: total, loading: loading,
-                      identifier: day == nil ? "feed-status" : "feed-day-selection", listen: listen) { controls }
+                      identifier: day == nil ? "feed-status" : "feed-day-selection", search: search) { controls }
             .sensoryFeedback(.selection, trigger: model.periodOffset)
     }
 
@@ -256,14 +255,14 @@ private struct PeriodHeader: View {
 /// midnight in Paris from `/days`. No arrows: the past is in 7 j and 30 j.
 private struct LiveHeader: View {
     @Environment(AppModel.self) private var model
-    let listen: AnyView?
+    let search: AnyView?
 
     var body: some View {
         // Re-read the age every 15 seconds; the feed itself refreshes every 30.
         TimelineView(.periodic(from: .now, by: 15)) { context in
             JournalHeader(title: "Aujourd’hui", note: model.lastRefresh.map { LiveAge.label(of: $0, at: context.date) },
                           total: model.todayCounts?.total(for: model.filters) ?? 0, loading: model.todayCounts == nil,
-                          identifier: "feed-status", listen: listen) { EmptyView() }
+                          identifier: "feed-status", search: search) { EmptyView() }
         }
     }
 }
@@ -279,7 +278,7 @@ enum LiveAge {
 }
 
 /// Two lines in every period and for a chosen day, so the header keeps its height (the user, 2026-10-09): when,
-/// bold on one line, with the arrows at its end; then how many passages (with "Tout écouter" at its end on iPad). The time
+/// bold on one line, with the arrows at its end; then how many passages (with "Rechercher" at its end on iPad). The time
 /// in interventions was removed the same day. At accessibility sizes everything stacks.
 private struct JournalHeader<Controls: View>: View {
     let title: String
@@ -288,7 +287,7 @@ private struct JournalHeader<Controls: View>: View {
     let total: Int
     let loading: Bool
     let identifier: String
-    let listen: AnyView?
+    let search: AnyView?
     @ViewBuilder let controls: Controls
     @Environment(\.dynamicTypeSize) private var dynamicType
     private static var french: Locale { Locale(identifier: "fr_FR") }
@@ -300,13 +299,13 @@ private struct JournalHeader<Controls: View>: View {
             VStack(alignment: .leading, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) { titleText; countText }
                 controls
-                listen
+                search
             }
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 8) { titleText; Spacer(minLength: 0); controls }
                 // The button keeps its 44 pt to touch but not in the layout, so the line stays as tall as its text.
-                HStack(spacing: 8) { countText; Spacer(minLength: 0); listen?.padding(.vertical, -8) }
+                HStack(spacing: 8) { countText; Spacer(minLength: 0); search?.padding(.vertical, -8) }
             }
         }
     }
