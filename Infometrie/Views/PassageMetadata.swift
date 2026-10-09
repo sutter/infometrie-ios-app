@@ -127,6 +127,8 @@ struct PassageSpeaker: View {
     var lineLimit: Int? = 2
     /// A seen passage steps back: the name turns secondary like the title.
     var dimmed = false
+    /// 14 pt at the default size, a step under the name, scaled like `footnote` (13 until 2026-10-09).
+    @ScaledMetric(relativeTo: .footnote) private var roleSize = 14.0
 
     var body: some View {
         let party = item.party.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -134,7 +136,7 @@ struct PassageSpeaker: View {
         let repeatsParty = role.range(of: party, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
             || party.range(of: role, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
         let name = Text(item.person).font(nameFont.weight(.semibold)).foregroundStyle(dimmed ? Brand.secondary : Brand.ink)
-        // Name, party and role share one color (the user, 2026-10-09); only the separator stays gray.
+        // Name and party share one color (the user, 2026-10-09); the separator and the role stay gray.
         let partyText = Text(party).font(nameFont).foregroundStyle(dimmed ? Brand.secondary : Brand.ink)
         VStack(alignment: .leading, spacing: 1) {
             // Name · party on one line when it fits; otherwise the party moves below, never leaving a lone "·".
@@ -147,7 +149,7 @@ struct PassageSpeaker: View {
                 }
             }
             if !role.isEmpty && (party.isEmpty || !repeatsParty) {
-                Text(role).font(.footnote).foregroundStyle(dimmed ? Brand.secondary : Brand.ink).lineLimit(lineLimit)
+                Text(role).font(.system(size: roleSize)).foregroundStyle(Brand.secondary).lineLimit(lineLimit)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
