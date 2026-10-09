@@ -151,6 +151,7 @@ struct SequenceView: View {
             .overlay(alignment: .bottomTrailing) {
                 if showsVideo, !videoInView {
                     Button {
+                        transcriptReading.holdForVideo()
                         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { page.scrollTo(Self.pageTop, anchor: .top) }
                     } label: {
                         VideoLayer(player: model.player.player)

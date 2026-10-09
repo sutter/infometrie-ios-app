@@ -9,14 +9,19 @@ final class TranscriptReadingState {
     /// a manual scroll, starting to listen): the passage page scrolls on it, not on `visiblePassage` changing.
     var followRequests = 0
     @ObservationIgnored private var resume: Task<Void, Never>?
+    /// A finger moved the scroll since following last stopped: only then does it resume on its own. A scroll the app
+    /// animates (back to the video) ends idle too, and must not.
+    @ObservationIgnored private var scrolledByHand = false
 
     /// Scrolling by hand suspends following, which comes back on its own a few seconds after the finger lifts, like
     /// the lyrics in Musique (2026-10-09: the "Reprendre le suivi" button was removed at the user's request).
     func scrollPhaseChanged(to phase: ScrollPhase, suspends: Bool = true) {
         if phase == .interacting {
             resume?.cancel()
+            scrolledByHand = true
             if suspends { followsPlayback = false }
-        } else if phase == .idle, !followsPlayback {
+        } else if phase == .idle, !followsPlayback, scrolledByHand {
+            scrolledByHand = false
             resume?.cancel()
             resume = Task { @MainActor [weak self] in
                 try? await Task.sleep(for: .seconds(4))
@@ -27,6 +32,9 @@ final class TranscriptReadingState {
     }
     /// A tapped word brings following back at once.
     func followNow() { resume?.cancel(); followsPlayback = true }
+    /// Back to the video at the top: following stays off, so the page does not run off again at the next passage,
+    /// until the reader scrolls the text by hand or taps a word (2026-10-09).
+    func holdForVideo() { resume?.cancel(); scrolledByHand = false; followsPlayback = false }
 }
 
 struct TranscriptView: View {
