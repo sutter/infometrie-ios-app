@@ -994,10 +994,10 @@ final class InfometrieUITests: XCTestCase {
     }
 
     /// The count of the journal: Live's status line ("7 résultats · il y a …"), or the header of 7 j and 30 j,
-    /// for the period or the chosen day ("56 passages, 7 derniers jours, …").
+    /// for the period or the chosen day ("7 derniers jours, 56 passages, …").
     @MainActor private func results(_ count: String, in app: XCUIApplication) -> XCUIElement {
-        app.descendants(matching: .any).matching(NSPredicate(format: "identifier IN %@ AND (label == %@ OR label BEGINSWITH %@)",
-                                                             ["feed-status", "feed-day-selection"], count, count + " ")).firstMatch
+        app.descendants(matching: .any).matching(NSPredicate(format: "identifier IN %@ AND (label == %@ OR label BEGINSWITH %@ OR label CONTAINS %@)",
+                                                             ["feed-status", "feed-day-selection"], count, count + " ", ", " + count)).firstMatch
     }
 
     /// Checks exactly the given feed types: 1 interventions, 2 citations, 3 Publications X.

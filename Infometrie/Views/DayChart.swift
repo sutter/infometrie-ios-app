@@ -242,22 +242,20 @@ private struct PeriodHeader: View {
 
     private var summary: some View {
         let passages = total <= 1 ? "passage" : "passages"
+        // The date leads, the count follows (the user, 2026-10-09: when matters more than how many).
         return VStack(alignment: .leading, spacing: 2) {
-            Text(title.uppercased(with: Self.french)).font(.caption2.weight(.semibold)).tracking(0.6)
-                .foregroundStyle(Brand.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(total.formatted(.number.locale(Self.french))).font(.title.weight(.bold).monospacedDigit())
-                    .foregroundStyle(Brand.ink)
-                    .contentTransition(.numericText())
-                Text(passages).font(.subheadline).foregroundStyle(Brand.secondary)
-            }
-            .skeleton(loading)
+            Text(title.prefix(1).uppercased(with: Self.french) + title.dropFirst())
+                .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
+            (Text(total.formatted(.number.locale(Self.french))).fontWeight(.semibold).foregroundStyle(Brand.ink)
+                + Text(" \(passages)").foregroundStyle(Brand.secondary))
+                .font(.subheadline.monospacedDigit())
+                .contentTransition(.numericText())
+                .skeleton(loading)
             if let detail { Text(detail).font(.footnote).foregroundStyle(Brand.secondary) }
         }
         .fixedSize(horizontal: false, vertical: true)
-        // The count leads what VoiceOver reads, like the results line it replaces in 7 j and 30 j.
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(["\(total) \(passages)", title, detail].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityLabel([title, "\(total) \(passages)", detail].compactMap { $0 }.joined(separator: ", "))
         .accessibilityIdentifier(day == nil ? "feed-status" : "feed-day-selection")
     }
 
