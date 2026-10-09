@@ -514,7 +514,7 @@ final class InfometrieUITests: XCTestCase {
                                         "La rubrique active doit rester entièrement visible en grand texte")
             }
             capture("20-compte-\(suffix)", app: app)
-            let appearance = app.buttons["appearance-picker"]
+            let appearance = app.buttons["appearance-system"]
             reveal(appearance, in: app, down: false)
             XCTAssertTrue(appearance.isHittable)
             capture("20-reglages-\(suffix)", app: app)

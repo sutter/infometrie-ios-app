@@ -7,7 +7,6 @@ struct AccountView: View {
     @AppStorage("appearance") private var appearance = "system"
     @AppStorage("readingSize") private var readingSize = ReadingSize.medium
     @State private var showLogout = false
-    @Namespace private var sizeSelection
 
     var body: some View {
         ScrollView {
@@ -67,57 +66,79 @@ struct AccountView: View {
     private var appearanceSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionLabel(title: "Apparence")
-            VStack(spacing: 12) {
-                AdaptiveRow {
-                    Text("Thème").font(.body)
-                    Spacer(minLength: 0)
-                    Picker("Thème", selection: $appearance) {
-                        Text("Système").tag("system")
-                        Text("Clair").tag("light")
-                        Text("Sombre").tag("dark")
-                    }
-                    .pickerStyle(.menu).labelsHidden().tint(Brand.secondary)
-                    .frame(minHeight: 44)
-                    .accessibilityLabel("Thème")
-                    .accessibilityIdentifier("appearance-picker")
+            // Theme and text size share one control, the S / M / L capsule: the theme was a menu until 2026-10-09.
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 8) {
+                    CapsulePicker(selection: $appearance, choices: Appearance.allCases.map { ($0.rawValue, $0.title) },
+                                  label: "Thème", identifier: { "appearance-\($0)" })
+                        .accessibilityIdentifier("appearance-picker")
+                    Text("Thème · \(Appearance(rawValue: appearance)?.title ?? Appearance.system.title)")
+                        .font(.footnote).foregroundStyle(Brand.secondary)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                AppRule()
-                HStack(spacing: 4) {
-                    ForEach(ReadingSize.allCases, id: \.self) { size in
-                        Button { readingSize = size } label: {
-                            Text(size.rawValue)
-                                .font(.body.weight(readingSize == size ? .semibold : .regular))
-                                .foregroundStyle(readingSize == size ? AnyShapeStyle(Brand.actionText) : AnyShapeStyle(Brand.ink))
-                                .padding(.vertical, 8)
-                                .frame(maxWidth: .infinity, minHeight: 44)
-                                .background {
-                                    // The selection pill slides to the chosen size.
-                                    if readingSize == size {
-                                        Capsule().fill(Brand.raised).matchedGeometryEffect(id: "size", in: sizeSelection)
-                                    }
-                                }
-                                .contentShape(Capsule())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Taille du texte : \(size.title.lowercased())")
-                        .accessibilityAddTraits(readingSize == size ? .isSelected : [])
-                        .accessibilityIdentifier("reading-size-\(size.rawValue)")
-                    }
+                VStack(alignment: .leading, spacing: 8) {
+                    CapsulePicker(selection: $readingSize, choices: ReadingSize.allCases.map { ($0, $0.rawValue) },
+                                  label: "Taille du texte", identifier: { "reading-size-\($0.rawValue)" },
+                                  spokenTitle: { "Taille du texte : \($0.title.lowercased())" })
+                    Text("Taille du texte · \(readingSize.title)")
+                        .font(.footnote).foregroundStyle(Brand.secondary)
+                        .accessibilityIdentifier("reading-size-description")
                 }
-                .padding(4).background(Brand.surface, in: Capsule())
-                .motion(value: readingSize)
-                .sensoryFeedback(.selection, trigger: readingSize)
-                .accessibilityElement(children: .contain)
-                .accessibilityLabel("Taille du texte")
             }
-            // Contain, or this identifier would replace the picker's and the size buttons' own.
+            // Contain, or this identifier would replace the pickers' and their buttons' own.
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("appearance-card")
-            Text("Taille du texte · \(readingSize.title)")
-                .font(.footnote).foregroundStyle(Brand.secondary)
-                .accessibilityIdentifier("reading-size-description")
         }
+    }
+}
+
+/// The stored theme choice; the root applies it.
+private enum Appearance: String, CaseIterable {
+    case system, light, dark
+    var title: String {
+        switch self {
+        case .system: "Système"
+        case .light: "Clair"
+        case .dark: "Sombre"
+        }
+    }
+}
+
+/// A row of choices in a gris clair capsule, the chosen one on a raised pill that slides to it.
+private struct CapsulePicker<Value: Hashable>: View {
+    @Binding var selection: Value
+    let choices: [(Value, String)]
+    let label: String
+    let identifier: (Value) -> String
+    var spokenTitle: ((Value) -> String)?
+    @Namespace private var pill
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(choices, id: \.0) { value, title in
+                let selected = selection == value
+                Button { selection = value } label: {
+                    Text(title)
+                        .font(.body.weight(selected ? .semibold : .regular))
+                        .foregroundStyle(selected ? AnyShapeStyle(Brand.actionText) : AnyShapeStyle(Brand.ink))
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background {
+                            if selected { Capsule().fill(Brand.raised).matchedGeometryEffect(id: "pill", in: pill) }
+                        }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(spokenTitle?(value) ?? "\(label) : \(title.lowercased())")
+                .accessibilityAddTraits(selected ? .isSelected : [])
+                .accessibilityIdentifier(identifier(value))
+            }
+        }
+        .padding(4).background(Brand.surface, in: Capsule())
+        .motion(value: selection)
+        .sensoryFeedback(.selection, trigger: selection)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(label)
     }
 }
 
