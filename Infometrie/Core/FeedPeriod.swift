@@ -8,6 +8,8 @@ enum FeedPeriod: Int, CaseIterable, Sendable {
     var isLive: Bool { self == .live }
     /// The complete Paris days of the period, oldest first, yesterday last. Live has none.
     func days(before now: Date = Date()) -> [String] { ParisDay.days(count: rawValue, before: now) }
+    /// Live's chart: the last 7 complete Paris days for context, then today, still going.
+    static func liveDays(now: Date = Date()) -> [String] { ParisDay.days(count: 7, before: now) + [ParisDay.string(now)] }
 }
 
 /// Days as the API counts them: `YYYY-MM-DD` in the Europe/Paris time zone.

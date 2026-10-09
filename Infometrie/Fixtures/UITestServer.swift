@@ -145,17 +145,28 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
         respond(200, ["items": json(Array(matches.prefix(limit))), "has_more": matches.count > limit])
     }
 
-    /// Every kind counted per complete Paris day, oldest first, today left out.
+    /// Every kind counted per Paris day, oldest first: the last complete days, today left out, or the days
+    /// `from` to `to`, where today counts the live feed.
     private func respondToDays(_ url: URL) {
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        func values(_ name: String) -> Set<String>? {
-            query.first { $0.name == name }?.value.map { Set($0.split(separator: ",").map(String.init)) }
+        func value(_ name: String) -> String? { query.first { $0.name == name }?.value }
+        func values(_ name: String) -> Set<String>? { value(name).map { Set($0.split(separator: ",").map(String.init)) } }
+        let today = ParisDay.string(Date())
+        let span: [String]
+        if let from = value("from"), let to = value("to") {
+            guard value("days") == nil, let first = ParisDay.date(from), let last = ParisDay.date(to), first <= last, to <= today,
+                  let count = ParisDay.calendar.dateComponents([.day], from: first, to: last).day, count < 31 else { respond(400); return }
+            span = (0...count).compactMap { ParisDay.calendar.date(byAdding: .day, value: $0, to: first).map(ParisDay.string) }
+        } else {
+            let count = value("days").flatMap { Int($0) } ?? 7
+            guard (1...31).contains(count) else { respond(400); return }
+            span = ParisDay.days(count: count, before: Date())
         }
-        let count = query.first { $0.name == "days" }?.value.flatMap { Int($0) } ?? 7
-        guard (1...31).contains(count) else { respond(400); return }
         let persons = values("persons"), parties = values("parties")
-        let items = FixtureContent.history.filter { persons?.contains($0.person) != false && parties?.contains($0.party) != false }
-        let days = ParisDay.days(count: count, before: Date()).map { day in
+        // The feed counts for today only, so past days keep matching `/history`.
+        let items = (FixtureContent.history + FixtureContent.feed.filter { $0.date.map(ParisDay.string) == today })
+            .filter { persons?.contains($0.person) != false && parties?.contains($0.party) != false }
+        let days = span.map { day in
             let passages = items.filter { $0.date.map(ParisDay.string) == day }
             return DayCount(day: day, interventions: passages.filter { $0.kind == "intervention" }.count,
                             citations: passages.filter(\.isCitation).count, tweets: passages.filter(\.isTweet).count,

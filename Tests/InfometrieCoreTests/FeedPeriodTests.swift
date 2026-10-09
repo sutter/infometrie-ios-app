@@ -16,6 +16,11 @@ struct FeedPeriodTests {
         #expect(month.last == "2026-10-07")
     }
 
+    @Test func liveChartEndsWithTheParisDayInProgress() throws {
+        let days = FeedPeriod.liveDays(now: try instant("2026-10-07T22:30:00Z"))
+        #expect(days == ["2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08"])
+    }
+
     @Test func lateEveningInUTCIsAlreadyTheNextParisDay() throws {
         #expect(FeedPeriod.week.days(before: try instant("2026-10-07T21:59:00Z")).last == "2026-10-06")
         #expect(FeedPeriod.week.days(before: try instant("2026-10-07T22:00:00Z")).last == "2026-10-07")

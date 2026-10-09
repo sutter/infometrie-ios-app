@@ -115,6 +115,18 @@ struct SwaggerContractTests {
         #expect(count["persons"] == "Camille Martin,Sam Laurent")
     }
 
+    @Test func daysOfAWindowSendFromAndToWithoutACount() async throws {
+        let client = client(routes: ["/rest/v1/days": (200, #"{"days":[{"day":"2026-10-09","interventions":3}]}"#)])
+        let filters = SearchFilters(parties: ["TEST"])
+        let days = try await client.days(token: "fixture-jwt", filters: filters, from: "2026-10-02", to: "2026-10-09").days
+        #expect(days.first?.interventions == 3)
+        let sent = query(of: ContractProtocol.requests[0])
+        #expect(ContractProtocol.requests[0].url?.path == "/rest/v1/days")
+        #expect(sent["from"] == "2026-10-02" && sent["to"] == "2026-10-09")
+        #expect(sent["days"] == nil && sent["kinds"] == nil)
+        #expect(sent["parties"] == "TEST")
+    }
+
     @Test func historyWithoutKindsSendsNothingAndMissingFieldsDecode() async throws {
         let client = client(routes: ["/rest/v1/history": (200, "{}")])
         let none = SearchFilters(interventions: false, citations: false, tweets: false)

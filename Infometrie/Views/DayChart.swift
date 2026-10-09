@@ -1,15 +1,31 @@
 import Charts
 import SwiftUI
 
-/// The journal's chart in 7 j and 30 j: the checked kinds of the period, and the chosen day with its row.
-/// Touching a bar shows that day in the list; touching it again, or the cross, shows the whole period.
+/// The journal's chart of the checked kinds. In 7 j and 30 j, the period and the chosen day with its row:
+/// touching a bar shows that day in the list; touching it again, or the cross, shows the whole period.
+/// In Live, the last 7 days then today, still going: touching a past day opens it in 7 j.
 struct FeedDayChart: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        if model.period.isLive { live } else { period }
+    }
+
+    @ViewBuilder private var live: some View {
+        if !model.liveDays.isEmpty || model.isRefreshing {
+            let days = model.liveDays.isEmpty ? FeedPeriod.liveDays() : model.liveDays
+            DayChart(days: days, counts: model.liveDayCounts, kinds: model.filters.selectedKinds,
+                     loading: model.liveDays.isEmpty, today: days.last, identifier: "live-day") { day in
+                guard day != days.last else { return }
+                Task { await model.selectPeriod(.week, day: day) }
+            }
+        }
+    }
+
+    private var period: some View {
         VStack(alignment: .leading, spacing: 8) {
             DayChart(days: model.historyDays, counts: model.dayCounts, kinds: model.filters.selectedKinds,
-                     loading: model.dayCounts.isEmpty && model.isLoadingHistory, selectedDay: model.selectedDay,
+                     loading: model.dayCounts.isEmpty && model.isLoadingDayCounts, selectedDay: model.selectedDay,
                      identifier: "feed-day") { day in
                 let next = model.selectedDay == day ? nil : day
                 Task { await model.selectDay(next) }
@@ -27,6 +43,8 @@ struct DayChart: View {
     let kinds: [String]
     var loading = false
     var selectedDay: String?
+    /// The last day when it is today, still going: labeled "auj.", the day before "hier".
+    var today: String?
     /// Prefix of the identifiers: `<identifier>-chart`, and `<identifier>-<yyyy-mm-dd>` per day.
     var identifier = "day"
     var select: ((String) -> Void)?
@@ -70,7 +88,10 @@ struct DayChart: View {
         return [first, last]
     }
 
-    private var labelStride: Int { days.count <= 7 ? 1 : 7 }
+    /// A week, plus today in Live, labels every day.
+    private var isWeek: Bool { days.count <= 8 }
+    private var labelStride: Int { isWeek ? 1 : 7 }
+    private var yesterday: String? { today == nil ? days.last : days.dropLast().last }
     /// Sparse or very large labels at the edges grow inward, or the screen edge cuts them ("09/…").
     private var anchorsEdges: Bool { labelStride > 1 || dynamicType.isAccessibilitySize }
 
@@ -85,7 +106,7 @@ struct DayChart: View {
         Chart(segments) { segment in
             // A week keeps slim 18 pt bars instead of filling its seventh of the width.
             BarMark(x: .value("Jour", segment.day), y: .value("Passages", segment.count),
-                    width: days.count <= 7 ? .fixed(18) : .ratio(0.62))
+                    width: isWeek ? .fixed(18) : .ratio(0.62))
                 .foregroundStyle(FeedItem.color(ofKind: segment.kind))
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: segment.isTop ? 3 : 0, topTrailingRadius: segment.isTop ? 3 : 0))
                 .opacity(selectedDay == nil || selectedDay == segment.day ? 1 : 0.3)
@@ -154,7 +175,7 @@ struct DayChart: View {
                 ForEach(days, id: \.self) { day in
                     Rectangle()
                         .accessibilityLabel(DayLabel.spoken(day, counts: byDay[day], kinds: kinds))
-                        .accessibilityValue(selectedDay == day ? "Sélectionné" : "")
+                        .accessibilityValue(selectedDay == day ? "Sélectionné" : day == today ? "En cours" : "")
                         .accessibilityAddTraits(select == nil ? [] : .isButton)
                         .accessibilityAction { select?(day) }
                         .accessibilityIdentifier("\(identifier)-\(day)")
@@ -167,8 +188,9 @@ struct DayChart: View {
 
     /// Centered under its bar; at the edges it starts or ends at the bar's center.
     @ViewBuilder private func dayLabel(_ day: String, at x: CGFloat, width: CGFloat, top: CGFloat) -> some View {
-        let text = Text(day == days.last ? "hier" : DayLabel.short(day))
-            .font(.caption2.monospacedDigit()).foregroundStyle(Brand.secondary)
+        let text = Text(day == today ? "auj." : day == yesterday ? "hier" : DayLabel.short(day))
+            .font(.caption2.monospacedDigit().weight(day == today ? .semibold : .regular))
+            .foregroundStyle(day == today ? Brand.ink : Brand.secondary)
             .fixedSize()
         if anchorsEdges && day == labeledDays.last {
             text.frame(width: width, alignment: .trailing).offset(x: x - width, y: top)

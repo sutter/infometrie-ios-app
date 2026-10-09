@@ -84,6 +84,11 @@ final class APIClient: @unchecked Sendable {
         let query = [URLQueryItem(name: "days", value: String(count))] + audienceQuery(filters)
         return try await historySend(request(path: "rest/v1/days", token: token, query: query))
     }
+    /// Counts of the Paris days `from` to `to`, both included; `to` may be today, still going (API 0.12).
+    func days(token: String, filters: SearchFilters, from: String, to: String) async throws -> DaysResponse {
+        let query = [URLQueryItem(name: "from", value: from), URLQueryItem(name: "to", value: to)] + audienceQuery(filters)
+        return try await historySend(request(path: "rest/v1/days", token: token, query: query))
+    }
     /// Activity of one person of the panel; 404 means the person is not in the panel.
     func profile(token: String, person: String, days: Int) async throws -> PersonProfile {
         let query = [URLQueryItem(name: "person", value: person), URLQueryItem(name: "days", value: String(days))]
