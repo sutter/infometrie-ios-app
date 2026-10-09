@@ -39,9 +39,8 @@ final class AppModel {
     private(set) var historyItems: [FeedItem] = []
     private(set) var historyHasMore = false
     private(set) var dayCounts: [DayCount] = []
-    /// Live's chart: the last 7 complete Paris days, then today, refreshed with the feed. Optional: a failure leaves it as it was.
-    private(set) var liveDays: [String] = []
-    private(set) var liveDayCounts: [DayCount] = []
+    /// Today's counts since midnight in Paris, for Live's header, refreshed with the feed. Optional: a failure leaves them as they were.
+    private(set) var todayCounts: DayCount?
     private(set) var isLoadingHistory = false
     private(set) var isLoadingDayCounts = false
     /// The next page is on its way, in Live (older than the feed's head) or in 7 j and 30 j.
@@ -133,7 +132,7 @@ final class AppModel {
         filters = SearchFilters(); draft = SearchFilters(); tab = .feed; isSearchPresented = false
         lastSeq = 0; lastRefresh = nil; feedError = nil; choicesError = nil
         resetHistory(); period = .live; periodOffset = 0; selectedDay = nil; liveHasMore = false; liveGeneration = UUID()
-        liveDays = []; liveDayCounts = []
+        todayCounts = nil
         isRefreshing = false; quota = nil; notice = nil
     }
 
@@ -143,8 +142,8 @@ final class AppModel {
         let criteria = filters
         isRefreshing = true
         defer { if requestID == id { isRefreshing = false } }
-        let days = FeedPeriod.liveDays()
-        async let counts = try? api.days(token: session.token, filters: criteria, from: days[0], to: days[days.count - 1])
+        let today = ParisDay.string(Date())
+        async let counts = try? api.days(token: session.token, filters: criteria, from: today, to: today)
         do {
             let response = try await api.feed(token: session.token, filters: criteria, since: reset ? 0 : lastSeq)
             guard requestID == id, self.session?.token == session.token, !Task.isCancelled else { return }
@@ -153,7 +152,7 @@ final class AppModel {
             lastSeq = reset ? response.lastSeq : max(lastSeq, response.lastSeq)
             lastRefresh = Date(); feedError = nil
             if let result = await counts, requestID == id, self.session?.token == session.token {
-                liveDays = days; liveDayCounts = result.days
+                todayCounts = result.days.first { $0.day == today } ?? DayCount(day: today)
             }
         } catch {
             guard requestID == id, !Task.isCancelled else { return }
@@ -183,7 +182,7 @@ final class AppModel {
         }
         persistSearches()
         if changed {
-            requestID = UUID(); lastSeq = 0; items = []; liveHasMore = false; liveGeneration = UUID(); liveDays = []; liveDayCounts = []
+            requestID = UUID(); lastSeq = 0; items = []; liveHasMore = false; liveGeneration = UUID(); todayCounts = nil
             if period.isLive { await refresh(reset: true) } else { await reloadHistory() }
         }
     }

@@ -124,23 +124,12 @@ struct FeedView: View {
         return "Aucun résultat du \(DayLabel.short(first)) au \(DayLabel.short(last)) avec ces critères. Les passages d’aujourd’hui sont dans Live."
     }
 
-    /// The result count and its freshness on one line, with "Tout écouter" at its end.
-    /// When both cannot fit, the button moves below rather than the text wrapping.
+    /// "Tout écouter" under the header, which carries the count; "Rechercher" too on iPad.
     private var statusRow: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
-                FeedStatus(singleLine: true)
-                Spacer(minLength: 0)
-                if usesWideLayout { filtersButton() }
-                listenButton
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                FeedStatus(singleLine: !dynamicType.isAccessibilitySize)
-                HStack(spacing: 12) {
-                    if usesWideLayout { filtersButton() }
-                    listenButton
-                }
-            }
+        HStack(spacing: 12) {
+            listenButton
+            Spacer(minLength: 0)
+            if usesWideLayout { filtersButton() }
         }
     }
 
@@ -258,36 +247,6 @@ struct FeedView: View {
         .buttonStyle(PressableStyle())
         .disabled(playable.isEmpty)
         .accessibilityIdentifier("start-podcast")
-    }
-}
-
-/// How many results Live holds and how fresh they are, like "50 résultats · il y a 3 min". 7 j and 30 j show
-/// their total in the chart's header instead, from `/days`, beyond the loaded pages.
-private struct FeedStatus: View {
-    @Environment(AppModel.self) private var model
-    var singleLine = true
-
-    var body: some View {
-        if model.period.isLive {
-            // Re-read the age every 15 seconds; the feed itself refreshes every 30.
-            TimelineView(.periodic(from: .now, by: 15)) { context in
-                let count = model.visibleItems.count
-                // One text, so that at accessibility sizes the age wraps under the count rather than beside it.
-                (Text(count <= 1 ? "\(count) résultat" : "\(count) résultats").fontWeight(.semibold).foregroundStyle(Brand.ink)
-                    + Text(model.lastRefresh.map { " · \(Self.age(of: $0, at: context.date))" } ?? "").foregroundStyle(Brand.secondary))
-                    .font(.footnote.monospacedDigit())
-                    .fixedSize(horizontal: singleLine, vertical: true)
-                    .accessibilityIdentifier("feed-status")
-            }
-        }
-    }
-
-    /// The age of the last refresh, short enough to keep the line whole beside "Tout écouter".
-    static func age(of date: Date, at now: Date) -> String {
-        let seconds = max(0, now.timeIntervalSince(date))
-        if seconds < 60 { return "à l’instant" }
-        if seconds < 3_600 { return "il y a \(Int(seconds / 60)) min" }
-        return "il y a \(Int(seconds / 3_600)) h"
     }
 }
 

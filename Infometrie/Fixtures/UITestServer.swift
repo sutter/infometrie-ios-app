@@ -163,11 +163,13 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
             span = ParisDay.days(count: count, before: Date())
         }
         let persons = values("persons"), parties = values("parties")
-        // The feed counts for today only, so past days keep matching `/history`.
-        let items = (FixtureContent.history + FixtureContent.feed.filter { $0.date.map(ParisDay.string) == today })
+        // The whole live feed counts for today, even just after midnight when its oldest passages fall the day
+        // before: Live's header then matches its list at any hour. Past days keep matching `/history`.
+        let items = (FixtureContent.history + FixtureContent.feed)
             .filter { persons?.contains($0.person) != false && parties?.contains($0.party) != false }
+        let feedIDs = Set(FixtureContent.feed.map(\.id))
         let days = span.map { day in
-            let passages = items.filter { $0.date.map(ParisDay.string) == day }
+            let passages = items.filter { feedIDs.contains($0.id) ? day == today : $0.date.map(ParisDay.string) == day }
             return DayCount(day: day, interventions: passages.filter { $0.kind == "intervention" }.count,
                             citations: passages.filter(\.isCitation).count, tweets: passages.filter(\.isTweet).count,
                             interventionSec: passages.filter { $0.kind == "intervention" }.reduce(0) { $0 + $1.durationSec })
@@ -236,6 +238,9 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
             let head = query.first(where: { $0.name == "since_seq" })?.value == "0"
             let allowed = Set(kinds.split(separator: ",").map(String.init))
             respond(200, ["last_seq": 1000, "items": head ? content.filter { allowed.contains($0["kind"] as! String) } : []])
+        } else if url.path == "/rest/v1/days" {
+            // One of each kind today, for Live's header.
+            respond(200, ["days": json([DayCount(day: ParisDay.string(Date()), interventions: 1, citations: 1, tweets: 1)])])
         } else if url.path == "/rest/v1/sequences/903" {
             respond(200, content[2])
         } else if ["/rest/v1/persons", "/rest/v1/parties"].contains(url.path) {

@@ -1,25 +1,14 @@
 import Charts
 import SwiftUI
 
-/// The journal's chart of the checked kinds. In 7 j and 30 j, the period and the chosen day with its row:
-/// touching a bar shows that day in the list; touching it again, or the cross, shows the whole period.
-/// In Live, the last 7 days then today, still going: touching a past day opens it in 7 j.
+/// The journal's header, the same in every period: what span, how many passages. Live adds how fresh it is;
+/// 7 j and 30 j add the chart of the checked kinds, where touching a bar shows that day in the list.
+/// Live has no chart (2026-10-09): its 7-day strip repeated 7 j's with other rules and jumped to 7 j on a touch.
 struct FeedDayChart: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if model.period.isLive { live } else { period }
-    }
-
-    @ViewBuilder private var live: some View {
-        if !model.liveDays.isEmpty || model.isRefreshing {
-            let days = model.liveDays.isEmpty ? FeedPeriod.liveDays() : model.liveDays
-            DayChart(days: days, counts: model.liveDayCounts, kinds: model.filters.selectedKinds,
-                     loading: model.liveDays.isEmpty, today: days.last, identifier: "live-day") { day in
-                guard day != days.last else { return }
-                Task { await model.selectPeriod(.week, day: day) }
-            }
-        }
+        if model.period.isLive { LiveHeader() } else { period }
     }
 
     private var period: some View {
@@ -43,8 +32,6 @@ struct DayChart: View {
     let kinds: [String]
     var loading = false
     var selectedDay: String?
-    /// The last day when it is today, still going: labeled "auj.", the day before "hier".
-    var today: String?
     /// Prefix of the identifiers: `<identifier>-chart`, and `<identifier>-<yyyy-mm-dd>` per day.
     var identifier = "day"
     var select: ((String) -> Void)?
@@ -88,8 +75,8 @@ struct DayChart: View {
         return [first, last]
     }
 
-    /// A week, plus today in Live, labels every day.
-    private var isWeek: Bool { days.count <= 8 }
+    /// A week labels every day.
+    private var isWeek: Bool { days.count <= 7 }
     private var labelStride: Int { isWeek ? 1 : 7 }
     /// Only the real yesterday reads "hier": a period stepped back ends earlier.
     private var yesterday: String? { ParisDay.days(count: 1, before: Date()).first }
@@ -176,7 +163,7 @@ struct DayChart: View {
                 ForEach(days, id: \.self) { day in
                     Rectangle()
                         .accessibilityLabel(DayLabel.spoken(day, counts: byDay[day], kinds: kinds))
-                        .accessibilityValue(selectedDay == day ? "Sélectionné" : day == today ? "En cours" : "")
+                        .accessibilityValue(selectedDay == day ? "Sélectionné" : "")
                         .accessibilityAddTraits(select == nil ? [] : .isButton)
                         .accessibilityAction { select?(day) }
                         .accessibilityIdentifier("\(identifier)-\(day)")
@@ -189,9 +176,8 @@ struct DayChart: View {
 
     /// Centered under its bar; at the edges it starts or ends at the bar's center.
     @ViewBuilder private func dayLabel(_ day: String, at x: CGFloat, width: CGFloat, top: CGFloat) -> some View {
-        let text = Text(day == today ? "auj." : day == yesterday ? "hier" : DayLabel.short(day))
-            .font(.caption2.monospacedDigit().weight(day == today ? .semibold : .regular))
-            .foregroundStyle(day == today ? Brand.ink : Brand.secondary)
+        let text = Text(day == yesterday ? "hier" : DayLabel.short(day))
+            .font(.caption2.monospacedDigit()).foregroundStyle(Brand.secondary)
             .fixedSize()
         if anchorsEdges && day == labeledDays.last {
             text.frame(width: width, alignment: .trailing).offset(x: x - width, y: top)
@@ -208,8 +194,6 @@ struct DayChart: View {
 /// calendar weeks and months; once a day is chosen they step days, beside the cross that restores the period.
 private struct PeriodHeader: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.dynamicTypeSize) private var dynamicType
-    private static let french = Locale(identifier: "fr_FR")
 
     private var day: String? { model.selectedDay }
     private var counts: [DayCount] { model.dayCounts.filter { day == nil || $0.day == day } }
@@ -243,25 +227,8 @@ private struct PeriodHeader: View {
     }
 
     private var summary: some View {
-        let passages = total <= 1 ? "passage" : "passages"
-        // The date leads, the count follows (the user, 2026-10-09: when matters more than how many).
-        return VStack(alignment: .leading, spacing: 2) {
-            Text(title.prefix(1).uppercased(with: Self.french) + title.dropFirst())
-                .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
-                // One line at standard sizes, shrinking a little before it would wrap; accessibility sizes stack and wrap.
-                .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
-                .minimumScaleFactor(dynamicType.isAccessibilitySize ? 1 : 0.8)
-            (Text(total.formatted(.number.locale(Self.french))).fontWeight(.semibold).foregroundStyle(Brand.ink)
-                + Text(" \(passages)").foregroundStyle(Brand.secondary))
-                .font(.subheadline.monospacedDigit())
-                .contentTransition(.numericText())
-                .skeleton(loading)
-            if let detail { Text(detail).font(.footnote).foregroundStyle(Brand.secondary) }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel([title, "\(total) \(passages)", detail].compactMap { $0 }.joined(separator: ", "))
-        .accessibilityIdentifier(day == nil ? "feed-status" : "feed-day-selection")
+        HeaderSummary(title: title, total: total, loading: loading, detail: detail,
+                      identifier: day == nil ? "feed-status" : "feed-day-selection")
     }
 
     @ViewBuilder private var controls: some View {
@@ -294,6 +261,66 @@ private struct PeriodHeader: View {
 
     private func target(_ index: Int?, _ offset: Int) -> String? {
         index.map { $0 + offset }.flatMap { model.historyDays.indices.contains($0) ? model.historyDays[$0] : nil }
+    }
+}
+
+/// Live's header, in the period header's look: "Aujourd'hui", today's passages since midnight in Paris from
+/// `/days`, and how fresh the list is. No arrows: the past is in 7 j and 30 j.
+private struct LiveHeader: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        // Re-read the age every 15 seconds; the feed itself refreshes every 30.
+        TimelineView(.periodic(from: .now, by: 15)) { context in
+            HeaderSummary(title: "Aujourd’hui", total: model.todayCounts?.total(for: model.filters) ?? 0,
+                          loading: model.todayCounts == nil,
+                          detail: ["En direct", model.lastRefresh.map { LiveAge.label(of: $0, at: context.date) }].compactMap { $0 }.joined(separator: " · "),
+                          identifier: "feed-status")
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+/// The age of Live's last refresh, short enough for one line: "à l'instant", "il y a 3 min", "il y a 2 h".
+enum LiveAge {
+    static func label(of date: Date, at now: Date) -> String {
+        let seconds = max(0, now.timeIntervalSince(date))
+        if seconds < 60 { return "à l’instant" }
+        if seconds < 3_600 { return "il y a \(Int(seconds / 60)) min" }
+        return "il y a \(Int(seconds / 3_600)) h"
+    }
+}
+
+/// The span as a bold one-line title, its passages, then a detail line. The date leads, the count follows
+/// (the user, 2026-10-09: when matters more than how many).
+private struct HeaderSummary: View {
+    let title: String
+    let total: Int
+    let loading: Bool
+    let detail: String?
+    let identifier: String
+    @Environment(\.dynamicTypeSize) private var dynamicType
+    private static let french = Locale(identifier: "fr_FR")
+
+    var body: some View {
+        let passages = total <= 1 ? "passage" : "passages"
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title.prefix(1).uppercased(with: Self.french) + title.dropFirst())
+                .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
+                // One line at standard sizes, shrinking a little before it would wrap; accessibility sizes stack and wrap.
+                .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
+                .minimumScaleFactor(dynamicType.isAccessibilitySize ? 1 : 0.8)
+            (Text(total.formatted(.number.locale(Self.french))).fontWeight(.semibold).foregroundStyle(Brand.ink)
+                + Text(" \(passages)").foregroundStyle(Brand.secondary))
+                .font(.subheadline.monospacedDigit())
+                .contentTransition(.numericText())
+                .skeleton(loading)
+            if let detail { Text(detail).font(.footnote).foregroundStyle(Brand.secondary) }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel([title, "\(total) \(passages)", detail].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityIdentifier(identifier)
     }
 }
 

@@ -39,8 +39,6 @@ enum FeedPeriod: Int, CaseIterable, Sendable {
     static func oldestDay(now: Date = Date()) -> String {
         ParisDay.days(count: historyDepth, before: now).first ?? ParisDay.string(now)
     }
-    /// Live's chart: the last 7 complete Paris days for context, then today, still going.
-    static func liveDays(now: Date = Date()) -> [String] { ParisDay.days(count: 7, before: now) + [ParisDay.string(now)] }
 }
 
 /// Days as the API counts them: `YYYY-MM-DD` in the Europe/Paris time zone.
