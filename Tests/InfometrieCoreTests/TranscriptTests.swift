@@ -23,6 +23,18 @@ struct TranscriptTests {
         }
     }
 
+    @Test func speechRangeMarksWhereThePersonSpeaksInsideTheContext() throws {
+        let clock = try #require(MediaClock(playFrom: date, margin: 10))
+        // Speaking 3 s after play_from, for 17 s, in a 45 s media.
+        #expect(clock.speechRange(start: "2026-09-21T10:00:03Z", durationSec: 17, mediaDuration: 45) == 13...30)
+        // Clamped to the media at both ends.
+        #expect(clock.speechRange(start: "2026-09-21T09:59:45Z", durationSec: 60, mediaDuration: 45) == 0...45)
+        // Unknown or empty: no range rather than a wrong one.
+        #expect(clock.speechRange(start: "", durationSec: 17, mediaDuration: 45) == nil)
+        #expect(clock.speechRange(start: date, durationSec: 0, mediaDuration: 45) == nil)
+        #expect(clock.speechRange(start: "2026-09-21T10:05:00Z", durationSec: 10, mediaDuration: 45) == nil)
+    }
+
     @Test func hlsClockUsesActualWindowRatherThanAssumingTenSeconds() throws {
         let passage = try #require(APIDate.parse(date))
         // Observed 7 seconds into a window starting 23 seconds before play_from.

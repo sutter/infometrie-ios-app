@@ -17,6 +17,14 @@ struct MediaClock: Equatable, Sendable {
 
     func instant(at position: TimeInterval) -> Date { origin.addingTimeInterval(position) }
     func position(at instant: Date) -> TimeInterval { instant.timeIntervalSince(origin) }
+
+    /// Where the person speaks, in player seconds: `speech_start` for `speech_duration_sec`, clamped to the media.
+    /// The rest is the context the HLS margin adds around it. Nil when the passage does not say, or falls outside.
+    func speechRange(start: String, durationSec: Int, mediaDuration: TimeInterval) -> ClosedRange<TimeInterval>? {
+        guard durationSec > 0, mediaDuration > 0, mediaDuration.isFinite, let instant = APIDate.parse(start) else { return nil }
+        let lower = max(0, position(at: instant)), upper = min(mediaDuration, position(at: instant) + Double(durationSec))
+        return lower < upper ? lower...upper : nil
+    }
 }
 
 /// Uses Swagger word timings when they match the verbatim. Otherwise both directions

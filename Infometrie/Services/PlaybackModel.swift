@@ -17,6 +17,11 @@ final class PlaybackModel {
     var duration: Double = 0
     var instant: Date?
     var transcriptNotice: String?
+    /// Where the person speaks on the timeline; the rest is context (`MediaClock.speechRange`).
+    var speechRange: ClosedRange<Double>? {
+        guard let detail else { return nil }
+        return mediaClock?.speechRange(start: detail.speechStart, durationSec: detail.speechDurationSec, mediaDuration: duration)
+    }
     var current: FeedItem? { queue.indices.contains(index) ? queue[index] : nil }
     var hasPrevious: Bool { index > 0 }
     var hasNext: Bool { index + 1 < queue.count }

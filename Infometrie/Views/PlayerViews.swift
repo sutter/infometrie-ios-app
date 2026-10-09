@@ -314,9 +314,13 @@ struct PlaybackDock: View {
                         if editing { playback.beginScrubbing() } else { playback.endScrubbing() }
                     })
                         .frame(minHeight: 44)
+                        // Where the person speaks: a pale vermillon band under the track, the rest being the context
+                        // the API adds around the passage (2026-10-09: "0:13" at rest read as listening started).
+                        .background { speechBand }
                         .tint(Brand.accent)
                         .disabled(playback.isLoading || playback.error != nil || playback.duration <= 0)
                         .accessibilityLabel("Position dans le passage")
+                        .accessibilityValue(speechValue)
                         .accessibilityHint(playback.isLoading ? "Préparation de l’écoute" : "")
                         .accessibilityIdentifier("player-position")
                     HStack {
@@ -355,6 +359,22 @@ struct PlaybackDock: View {
         .background(Brand.background).overlay(alignment: .top) { AppRule() }
         .sensoryFeedback(.impact(weight: .light), trigger: presses)
     }
+    /// Drawn under the system slider rather than on it: the slider stays the native control the UI tests drive.
+    @ViewBuilder private var speechBand: some View {
+        if let range = playback.speechRange, playback.duration > 0 {
+            GeometryReader { geometry in
+                // The thumb's center travels inside the track, half a thumb (about 19 pt on iOS 26) from each end.
+                let inset: CGFloat = 19, span = max(0, geometry.size.width - 2 * inset)
+                Capsule().fill(Brand.accent.opacity(0.35))
+                    .frame(width: max(4, span * (range.upperBound - range.lowerBound) / playback.duration), height: 4)
+                    .offset(x: inset + span * range.lowerBound / playback.duration)
+            }
+            // Just under the track, which sits at the middle of the 44 pt slider.
+            .frame(height: 4).offset(y: 8)
+            .accessibilityHidden(true)
+        }
+    }
+
     private var playButton: some View {
         Button { presses += 1; playback.toggle() } label: {
             Label(playLabel, systemImage: playSymbol)
@@ -402,6 +422,13 @@ struct PlaybackDock: View {
             .disabled(playback.isLoading || playback.error != nil)
             .accessibilityLabel(forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes")
     }
+    /// "0:21, prise de parole de 0:13 à 0:30".
+    private var speechValue: String {
+        let at = clock(playback.position)
+        guard let range = playback.speechRange else { return at }
+        return "\(at), prise de parole de \(clock(range.lowerBound)) à \(clock(range.upperBound))"
+    }
+
     private func clock(_ seconds: Double) -> String {
         let value = seconds.isFinite ? max(0, Int(seconds)) : 0
         return String(format: "%d:%02d", value / 60, value % 60)
