@@ -122,16 +122,7 @@ struct SequenceView: View {
                         ErrorNotice(message: error) { self.error = nil; reload += 1 }
                     } else if let detail = displayDetail {
                         if displayItem.isTweet {
-                            if !detail.verbatim.isEmpty && detail.verbatim != displayItem.title {
-                                // The post itself, with no "La publication" title above it.
-                                Text(detail.verbatim).font(.body).lineSpacing(6)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .accessibilityIdentifier("publication-text")
-                            }
-                            if displayItem.publicationURL == nil {
-                                Text("Le lien vers cette publication n’est pas disponible.")
-                                    .font(.subheadline).foregroundStyle(Brand.secondary)
-                            }
+                            PublicationPost(item: displayItem, text: detail.verbatim)
                         } else if !detail.verbatim.isEmpty {
                             TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: isCurrent,
                                            reading: transcriptReading, onExpand: { isTranscriptExpanded = true }) { word in
@@ -161,14 +152,8 @@ struct SequenceView: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !isTranscriptExpanded {
-                if displayItem.isTweet, let url = displayItem.publicationURL {
-                    Link(destination: url) { Label("Voir la publication sur X", systemImage: "arrow.up.right") }
-                        .buttonStyle(ActionButtonStyle(prominent: true))
-                        .accessibilityIdentifier("open-publication")
-                        .accessibilityHint("Ouvre la publication dans X ou votre navigateur")
-                        .padding([.horizontal, .top], 16).modifier(HomeIndicatorPadding()).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-                        .background(Brand.background).overlay(alignment: .top) { AppRule() }
-                } else if displayItem.canPlay {
+                // A publication X has no bottom bar: its link sits under the post (`PublicationPost`).
+                if !displayItem.isTweet, displayItem.canPlay {
                     if isCurrent { PlaybackDock() }
                     else if displayDetail == nil && error == nil {
                         // While the passage loads, the player's own shape, greyed: the page prepares the player on
@@ -209,6 +194,48 @@ struct SequenceView: View {
                 }
             }
             catch { if !Task.isCancelled { self.error = model.message(for: error) } }
+        }
+    }
+}
+
+/// The post of a publication X, set off by an ink bar like the journal's rows, then a discreet link to it on X
+/// (2026-10-09: a full-width vermillon "Voir la publication sur X" was the strongest thing on the page and sent the
+/// reader out of the app, while the post itself was already shown). No card: the page has none.
+private struct PublicationPost: View {
+    let item: FeedItem
+    let text: String
+
+    /// The post, unless it only repeats the title.
+    private var post: String? {
+        let post = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return post.isEmpty || post == item.title ? nil : post
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let post {
+                Text(post).font(.body).lineSpacing(6).foregroundStyle(Brand.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 16)
+                    .overlay(alignment: .leading) {
+                        Capsule().fill(FeedItem.color(ofKind: "tweet")).frame(width: 3).accessibilityHidden(true)
+                    }
+                    .accessibilityIdentifier("publication-text")
+            }
+            if let url = item.publicationURL {
+                Link(destination: url) {
+                    Label("Voir sur X", systemImage: "arrow.up.right")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .foregroundStyle(Brand.ink)
+                .accessibilityLabel("Voir la publication sur X")
+                .accessibilityHint("Ouvre la publication dans X ou votre navigateur")
+                .accessibilityIdentifier("open-publication")
+            } else {
+                Text("Le lien vers cette publication n’est pas disponible.")
+                    .font(.subheadline).foregroundStyle(Brand.secondary)
+            }
         }
     }
 }
