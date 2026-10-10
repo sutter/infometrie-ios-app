@@ -833,7 +833,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertEqual(fullToggle.label, "Écouter", "Déplacer le curseur conserve la pause")
         let pausedPosition = fullElapsed.label
         // Scrolling by hand suspends following, which comes back on its own a few seconds later (no button since 2026-10-09).
-        scroll.swipeUp()
+        dragText(scroll)
         let follow = fullscreen.staticTexts["transcript-follow"]
         wait(follow, key: "value", equals: "Désactivé")
         wait(follow, key: "value", equals: "Activé")
@@ -897,7 +897,7 @@ final class InfometrieUITests: XCTestCase {
             XCTAssertLessThanOrEqual(control.frame.maxY, app.frame.maxY)
             XCTAssertLessThanOrEqual(control.frame.maxX, app.frame.maxX)
         }
-        scroll.swipeUp()
+        dragText(scroll)
         let follow = fullscreen.staticTexts["transcript-follow"]
         wait(follow, key: "value", equals: "Désactivé")
         wait(follow, key: "value", equals: "Activé")
@@ -1221,6 +1221,14 @@ final class InfometrieUITests: XCTestCase {
             let attachment = XCTAttachment(string: "Contraste hors zone de lecture (barres natives / hors écran) :\n" + covered.joined(separator: "\n"))
             attachment.name = "Portée du contrôle de contraste"; attachment.lifetime = .keepAlways; add(attachment)
         }
+    }
+
+    /// Scrolls the text by hand. A quick `swipeUp()` starts on a word, which is a link: at the largest text sizes the link
+    /// took the gesture and the text never moved, so following never suspended (2026-10-10). A slower drag scrolls it.
+    @MainActor private func dragText(_ scroll: XCUIElement) {
+        scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.6))
+            .press(forDuration: 0.05, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.2)),
+                   withVelocity: .default, thenHoldForDuration: 0.1)
     }
 
     @MainActor private func capture(_ name: String, app: XCUIApplication) {
