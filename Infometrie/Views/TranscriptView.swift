@@ -9,19 +9,15 @@ final class TranscriptReadingState {
     /// a manual scroll, starting to listen): the passage page scrolls on it, not on `visiblePassage` changing.
     var followRequests = 0
     @ObservationIgnored private var resume: Task<Void, Never>?
-    /// A finger moved the scroll since following last stopped: only then does it resume on its own. A scroll the app
-    /// animates (back to the video) ends idle too, and must not.
-    @ObservationIgnored private var scrolledByHand = false
 
     /// Scrolling by hand suspends following, which comes back on its own a few seconds after the finger lifts, like
-    /// the lyrics in Musique (2026-10-09: the "Reprendre le suivi" button was removed at the user's request).
-    func scrollPhaseChanged(to phase: ScrollPhase, suspends: Bool = true) {
+    /// the lyrics in Musique. Only a finger's scroll resumes it: a scroll the app animates (back to the video) ends
+    /// idle from `.animating`, and must not.
+    func scrollPhaseChanged(from old: ScrollPhase, to phase: ScrollPhase, suspends: Bool = true) {
         if phase == .interacting {
             resume?.cancel()
-            scrolledByHand = true
             if suspends { followsPlayback = false }
-        } else if phase == .idle, !followsPlayback, scrolledByHand {
-            scrolledByHand = false
+        } else if phase == .idle, !followsPlayback, old == .interacting || old == .decelerating {
             resume?.cancel()
             resume = Task { @MainActor [weak self] in
                 try? await Task.sleep(for: .seconds(4))
@@ -34,7 +30,7 @@ final class TranscriptReadingState {
     func followNow() { resume?.cancel(); followsPlayback = true }
     /// Back to the video at the top: following stays off, so the page does not run off again at the next passage,
     /// until the reader scrolls the text by hand or taps a word (2026-10-09).
-    func holdForVideo() { resume?.cancel(); scrolledByHand = false; followsPlayback = false }
+    func holdForVideo() { resume?.cancel(); followsPlayback = false }
 }
 
 struct TranscriptView: View {
@@ -77,13 +73,9 @@ struct TranscriptView: View {
 
     @ViewBuilder private var content: some View {
         if expanded {
-            // No header: the text starts right away, and resuming sits below it as on the page.
+            // No header: the text starts right away.
             VStack(alignment: .leading, spacing: 12) {
-                if let notice {
-                    Text(notice).font(.footnote).foregroundStyle(Brand.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("transcript-notice")
-                }
+                if let notice { noticeText(notice) }
                 textScroll.frame(maxHeight: .infinity)
                     .overlay(alignment: .topLeading) { positionStatus }
             }
@@ -107,14 +99,12 @@ struct TranscriptView: View {
                         }
                     }
                     .overlay(alignment: .topLeading) { positionStatus }
-                    // The whole text in the page's one scroll, under the pinned heading (2026-10-09): no box
-                    // scrolling inside the scrolling page. The page follows the passage being heard.
+                    // The whole text in the page's one scroll, no box scrolling inside the scrolling page: the
+                    // page follows the passage being heard (`ListeningScroll`).
                     textInline
                 }.padding(.top, 4)
                 if let notice {
-                    Text(notice).font(.footnote).foregroundStyle(Brand.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("transcript-notice")
+                    noticeText(notice)
                     .padding(.vertical, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .overlay(alignment: .top) { AppRule() }
@@ -122,6 +112,12 @@ struct TranscriptView: View {
                 }
             }
         }
+    }
+
+    private func noticeText(_ notice: String) -> some View {
+        Text(notice).font(.footnote).foregroundStyle(Brand.ink)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("transcript-notice")
     }
 
     private var positionValue: String {
@@ -132,19 +128,18 @@ struct TranscriptView: View {
     /// follows it.
     private var positionStatus: some View {
         ZStack {
-            Color.clear.frame(width: 1, height: 1)
-                .accessibilityElement()
-                .accessibilityLabel("Le texte")
-                .accessibilityValue(positionValue)
-                .accessibilityAddTraits(.isStaticText)
-                .accessibilityIdentifier("transcript-position")
-            Color.clear.frame(width: 1, height: 1)
-                .accessibilityElement()
-                .accessibilityLabel("Suivi de l’écoute")
-                .accessibilityValue(reading.followsPlayback ? "Activé" : "Désactivé")
-                .accessibilityAddTraits(.isStaticText)
-                .accessibilityIdentifier("transcript-follow")
+            spokenStatus("Le texte", value: positionValue, id: "transcript-position")
+            spokenStatus("Suivi de l’écoute", value: reading.followsPlayback ? "Activé" : "Désactivé", id: "transcript-follow")
         }
+    }
+
+    private func spokenStatus(_ label: String, value: String, id: String) -> some View {
+        Color.clear.frame(width: 1, height: 1)
+            .accessibilityElement()
+            .accessibilityLabel(label)
+            .accessibilityValue(value)
+            .accessibilityAddTraits(.isStaticText)
+            .accessibilityIdentifier(id)
     }
 
     private var passages: some View {
@@ -178,7 +173,7 @@ struct TranscriptView: View {
         .scrollEdgeEffectHidden(true)
         .accessibilityIdentifier("transcript-scroll")
         .scrollPosition(id: $reading.visiblePassage, anchor: .top)
-        .onScrollPhaseChange { _, phase in reading.scrollPhaseChanged(to: phase) })
+        .onScrollPhaseChange { old, phase in reading.scrollPhaseChanged(from: old, to: phase) })
     }
 
     /// Moves the reading to the passage being heard, and lets a tapped word seek the player.
@@ -203,7 +198,10 @@ struct TranscriptView: View {
 
     private func follow(_ passage: Int?) {
         guard let passage else { return }
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { reading.visiblePassage = passage }
+        // Only fullscreen binds its scroll to `visiblePassage`; on the page, `ListeningScroll` animates its own scroll.
+        if expanded {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { reading.visiblePassage = passage }
+        } else { reading.visiblePassage = passage }
         reading.followRequests += 1
     }
 

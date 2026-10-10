@@ -18,10 +18,18 @@ final class PlaybackModel {
     var instant: Date?
     var transcriptNotice: String?
     /// Where the person speaks on the timeline; the rest is context (`MediaClock.speechRange`).
+    /// Cached per passage, duration and clock: the dock reads it on every 0.1 s position tick, and computing it parses
+    /// `speech_start` with a new date formatter each time.
     var speechRange: ClosedRange<Double>? {
-        guard let detail else { return nil }
-        return mediaClock?.speechRange(start: detail.speechStart, durationSec: detail.speechDurationSec, mediaDuration: duration)
+        guard let detail, let mediaClock else { return nil }
+        let key = SpeechKey(sequence: detail.id, duration: duration, origin: mediaClock.origin)
+        if let cached = speechCache, cached.key == key { return cached.range }
+        let range = mediaClock.speechRange(start: detail.speechStart, durationSec: detail.speechDurationSec, mediaDuration: duration)
+        speechCache = (key, range)
+        return range
     }
+    private struct SpeechKey: Equatable { let sequence: Int64; let duration: Double; let origin: Date }
+    @ObservationIgnored private var speechCache: (key: SpeechKey, range: ClosedRange<Double>?)?
     var current: FeedItem? { queue.indices.contains(index) ? queue[index] : nil }
     var hasPrevious: Bool { index > 0 }
     var hasNext: Bool { index + 1 < queue.count }

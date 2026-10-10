@@ -4,7 +4,6 @@ import AVKit
 struct SequenceView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The passage shown: it changes in place when the reader moves to the next one, so back still leads to the list.
     @State private var item: FeedItem
     /// The list the passage was opened from (the journal as filtered, or a profile's day), for "Passage suivant".
@@ -27,7 +26,7 @@ struct SequenceView: View {
     }
 
     /// Replaces the passage in place: the player of this one stops, the next one prepares without playing, and the
-    /// page starts again at its top with the full heading.
+    /// page starts again at its top.
     private func show(_ next: FeedItem) {
         model.player.stop()
         detail = nil; error = nil
@@ -73,8 +72,7 @@ struct SequenceView: View {
 
     private var showsVideo: Bool { isCurrent && displayItem.canPlay && displayItem.video }
 
-    /// The whole page scrolls as one, heading and video included (the user, 2026-10-09, after a day of pinned,
-    /// shrinking and tightened headings).
+    /// The whole page scrolls as one, heading and video included.
     @ViewBuilder private func header(_ video: PageVideo) -> some View {
         PassageHeading(item: displayItem, titleIdentifier: "sequence-title", linksPerson: true)
         if isCurrent, let playbackError = model.player.error { ErrorNotice(message: playbackError) }
@@ -82,37 +80,35 @@ struct SequenceView: View {
     }
 
     private var sequenceContent: some View {
-        VStack(spacing: 0) {
-            ListeningScroll(reading: transcriptReading, following: isCurrent, showsVideo: showsVideo, pageID: item.id) { video in
-                VStack(alignment: .leading, spacing: 24) {
-                    header(video)
-                    if let error {
-                        ErrorNotice(message: error) { self.error = nil; reload += 1 }
-                    } else if let detail = displayDetail {
-                        if displayItem.isTweet {
-                            PublicationPost(item: displayItem, text: detail.verbatim)
-                        } else if !detail.verbatim.isEmpty {
-                            TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: isCurrent,
-                                           reading: transcriptReading, onExpand: { isTranscriptExpanded = true }) { word in
-                                if isCurrent { model.player.seekToWord(word, sequenceID: detail.id) }
-                                else { model.player.start(items: [item], app: model, podcast: false, atWord: word) }
-                            }.id(detail.id).transition(.opacity)
-                        } else { Text("Le texte n’est pas disponible pour ce passage.").foregroundStyle(Brand.secondary) }
-                        if !displayItem.isTweet, let summary = detail.summary {
-                            // Always open, at the user's request on 2026-10-08: the summary is read, not hunted for.
-                            SequenceSection(title: "Résumé", icon: "text.alignleft") {
-                                Text(summary).font(.body).lineSpacing(3)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }.accessibilityIdentifier("sequence-summary")
-                        }
-                        if let next = nextItem {
-                            NextPassage(item: next) { show(next) }
-                        }
-                    } else { textSkeleton }
-                }.padding(.horizontal, AppLayout.margin).padding(.top, 20).padding(.bottom, 20)
-                    .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-            }
-        }
+        ListeningScroll(reading: transcriptReading, following: isCurrent, showsVideo: showsVideo, pageID: item.id) { video in
+            VStack(alignment: .leading, spacing: 24) {
+                header(video)
+                if let error {
+                    ErrorNotice(message: error) { self.error = nil; reload += 1 }
+                } else if let detail = displayDetail {
+                    if displayItem.isTweet {
+                        PublicationPost(item: displayItem, text: detail.verbatim)
+                    } else if !detail.verbatim.isEmpty {
+                        TranscriptView(detail: detail, timings: model.wordTimings[detail.id], isCurrent: isCurrent,
+                                       reading: transcriptReading, onExpand: { isTranscriptExpanded = true }) { word in
+                            if isCurrent { model.player.seekToWord(word, sequenceID: detail.id) }
+                            else { model.player.start(items: [item], app: model, podcast: false, atWord: word) }
+                        }.id(detail.id).transition(.opacity)
+                    } else { Text("Le texte n’est pas disponible pour ce passage.").foregroundStyle(Brand.secondary) }
+                    if !displayItem.isTweet, let summary = detail.summary {
+                        // Always open, at the user's request on 2026-10-08: the summary is read, not hunted for.
+                        SequenceSection(title: "Résumé", icon: "text.alignleft") {
+                            Text(summary).font(.body).lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }.accessibilityIdentifier("sequence-summary")
+                    }
+                    if let next = nextItem {
+                        NextPassage(item: next) { show(next) }
+                    }
+                } else { textSkeleton }
+            }.padding(.horizontal, AppLayout.margin).padding(.vertical, 20)
+                .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+    }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !isTranscriptExpanded {
                 // A publication X has no bottom bar: its link sits under the post (`PublicationPost`).
@@ -134,8 +130,7 @@ struct SequenceView: View {
                                 }
                             }
                         }.buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("play-sequence")
-                            .padding([.horizontal, .top], 16).modifier(HomeIndicatorPadding()).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity).background(Brand.background)
-                            .overlay(alignment: .top) { AppRule() }
+                            .padding([.horizontal, .top], 16).modifier(PassageBottomBar())
                     }
                 }
             }
@@ -215,7 +210,7 @@ private struct PublicationPost: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, 16)
                     .overlay(alignment: .leading) {
-                        Capsule().fill(FeedItem.color(ofKind: "tweet")).frame(width: 3).accessibilityHidden(true)
+                        Capsule().fill(item.kindColor).frame(width: 3).accessibilityHidden(true)
                     }
                     .accessibilityIdentifier("publication-text")
             }
@@ -270,19 +265,21 @@ private struct SequenceSectionLabel: View {
     }
 }
 
-/// The bottom bars of a passage page (player, "Voir la publication sur X", "Écouter ce passage"): no margin under
-/// them where the home indicator's 34 pt safe area already clears them, 12 pt on a phone with a home button, which
-/// has none (2026-10-09: the 12 to 16 pt they added left a gap the user found too wide).
-struct HomeIndicatorPadding: ViewModifier {
+/// The bottom bars of a passage page (the player, "Écouter ce passage"): on the page color under a hairline, with no
+/// margin under them where the home indicator's 34 pt safe area already clears them, 12 pt on a phone with a home
+/// button, which has none (2026-10-09: the 12 to 16 pt they added left a gap the user found too wide).
+struct PassageBottomBar: ViewModifier {
     @State private var inset: CGFloat = 0
 
     func body(content: Content) -> some View {
         content.padding(.bottom, max(0, 12 - inset))
             .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { inset = $0 }
+            .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+            .background(Brand.background).overlay(alignment: .top) { AppRule() }
     }
 }
 
-/// The text can scroll independently; the timeline and transport stay within reach.
+/// The timeline and transport, docked under the passage so they stay within reach while the page scrolls.
 struct PlaybackDock: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
@@ -298,8 +295,7 @@ struct PlaybackDock: View {
         VStack(spacing: 10) {
             if playback.error != nil {
                 Text("Écoute indisponible").font(.headline)
-                let retry = Button("Réessayer l’écoute") { playback.retry() }.buttonStyle(ActionButtonStyle(prominent: true))
-                retry
+                Button("Réessayer l’écoute") { playback.retry() }.buttonStyle(ActionButtonStyle(prominent: true))
                 // A passage that fails must not block the queue.
                 if queue { HStack(spacing: 12) { queueButton(forward: false); queueButton(forward: true) } }
             } else {
@@ -336,9 +332,7 @@ struct PlaybackDock: View {
                 }
             }
         }
-        .padding(.horizontal, AppLayout.margin).padding(.top, 8).modifier(HomeIndicatorPadding())
-        .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-        .background(Brand.background).overlay(alignment: .top) { AppRule() }
+        .padding(.horizontal, AppLayout.margin).padding(.top, 8).modifier(PassageBottomBar())
         .sensoryFeedback(.impact(weight: .light), trigger: presses)
     }
     private var slider: some View {
@@ -399,9 +393,10 @@ struct PlaybackDock: View {
                 .contentTransition(.symbolEffect(.replace))
         }.buttonStyle(ActionButtonStyle(prominent: true))
             .motion(Motion.quick, value: playSymbol)
-            .disabled(playback.isLoading || playback.error != nil)
+            .disabled(controlsUnavailable)
             .accessibilityIdentifier("player-toggle")
     }
+    private var controlsUnavailable: Bool { playback.isLoading || playback.error != nil }
     private var playSymbol: String { playback.isPlaying ? "pause.fill" : playback.ended ? "arrow.counterclockwise" : "play.fill" }
     private var playLabel: String { playback.isPlaying ? "Pause" : playback.ended ? "Réécouter" : "Écouter" }
     /// The queue's play control stays discreet: previous and next are the main actions there.
@@ -413,7 +408,7 @@ struct PlaybackDock: View {
                 .background(Brand.actionWash, in: Circle())
                 .contentShape(Circle())
         }.buttonStyle(PressableStyle()).foregroundStyle(Brand.actionText)
-            .disabled(playback.isLoading || playback.error != nil)
+            .disabled(controlsUnavailable)
             .accessibilityLabel(playLabel)
             .accessibilityIdentifier("player-toggle")
             .motion(Motion.quick, value: playSymbol)
@@ -437,7 +432,7 @@ struct PlaybackDock: View {
                 .background(Brand.actionWash, in: Capsule())
                 .contentShape(Rectangle())
         }.buttonStyle(PressableStyle()).foregroundStyle(Brand.actionText)
-            .disabled(playback.isLoading || playback.error != nil)
+            .disabled(controlsUnavailable)
             .accessibilityLabel(forward ? "Avancer de 10 secondes" : "Reculer de 10 secondes")
     }
     /// "0:21, prise de parole de 0:13 à 0:30".
@@ -479,11 +474,11 @@ struct PodcastView: View {
                     .motion(value: model.player.current?.id)
                     .motion(value: model.player.detail?.id)
             }
-            .onChange(of: model.player.current?.id) { reading = TranscriptReadingState() }
             .safeAreaInset(edge: .bottom, spacing: 0) { PlaybackDock(queue: true) }
             .background(Brand.background).appNavigationTitle("Tout écouter")
-            // Each passage the queue plays counts as seen, like an opened page.
-            .onChange(of: model.player.current?.id, initial: true) {
+            // Each passage the queue plays counts as seen, like an opened page, and starts its text's following anew.
+            .onChange(of: model.player.current?.id, initial: true) { old, new in
+                if old != new { reading = TranscriptReadingState() }
                 if let item = model.player.current { model.markSeen(item) }
             }
             .toolbar {
@@ -523,41 +518,38 @@ struct ListeningScroll<Content: View>: View {
     let pageID: AnyHashable
     @ViewBuilder let content: (PageVideo) -> Content
     @State private var videoInView = true
-    private static var top: String { "listening-page-top" }
-    static var floatingWidth: CGFloat { 150 }
-    static var floatingHeight: CGFloat { floatingWidth * 9 / 16 }
+    private let top = "listening-page-top"
+    private let floatingWidth: CGFloat = 150
+    private var floatingHeight: CGFloat { floatingWidth * 9 / 16 }
 
     var body: some View {
         ScrollViewReader { page in
             ScrollView {
                 VStack(spacing: 0) {
-                    Color.clear.frame(height: 0).id(Self.top)
+                    Color.clear.frame(height: 0).id(top)
                     content(PageVideo(player: model.player.player, inView: $videoInView))
                     // Room at the end for the floating video, which covered the last row (2026-10-09).
-                    if showsVideo { Color.clear.frame(height: Self.floatingHeight + 12) }
+                    if showsVideo { Color.clear.frame(height: floatingHeight + 12) }
                 }
             }
             .id(pageID)
             .clipped()
             .onChange(of: pageID) { videoInView = true }
             // Scrolling by hand while listening suspends following for a few seconds; before listening, nothing.
-            .onScrollPhaseChange { _, phase in
-                reading.scrollPhaseChanged(to: phase, suspends: following && model.player.isPlaying)
+            .onScrollPhaseChange { old, phase in
+                reading.scrollPhaseChanged(from: old, to: phase, suspends: following && model.player.isPlaying)
             }
-            // On every follow request and on starting to listen, not on the passage changing: resuming or starting
-            // asks for the same passage again. Only while playing: a passage opens past 0, at the speech's start.
-            .onChange(of: reading.followRequests) { follow(page) }
-            .onChange(of: model.player.isPlaying) { _, playing in
-                if playing, reading.followsPlayback { follow(page) }
-            }
+            // In a child of its own, so a follow request does not re-run this body and rebuild the page's content
+            // (and the transcript's timelines) once per passage heard.
+            .background { FollowDriver(reading: reading, following: following, page: page) }
             .overlay(alignment: .bottomTrailing) {
                 if showsVideo, !videoInView {
                     Button {
                         reading.holdForVideo()
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { page.scrollTo(Self.top, anchor: .top) }
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { page.scrollTo(top, anchor: .top) }
                     } label: {
                         VideoLayer(player: model.player.player)
-                            .frame(width: Self.floatingWidth, height: Self.floatingHeight)
+                            .frame(width: floatingWidth, height: floatingHeight)
                             .background(Color.black)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                             .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
@@ -574,7 +566,27 @@ struct ListeningScroll<Content: View>: View {
         }
     }
 
-    private func follow(_ page: ScrollViewProxy) {
+}
+
+/// Scrolls the page to the passage being heard on every follow request and on starting to listen, not on the passage
+/// changing: resuming or starting asks for the same passage again. Only while playing: a passage opens past 0, at the
+/// speech's start, and following that would land the page on the highlighted word.
+private struct FollowDriver: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let reading: TranscriptReadingState
+    let following: Bool
+    let page: ScrollViewProxy
+
+    var body: some View {
+        Color.clear
+            .onChange(of: reading.followRequests) { follow() }
+            .onChange(of: model.player.isPlaying) { _, playing in
+                if playing, reading.followsPlayback { follow() }
+            }
+    }
+
+    private func follow() {
         guard let passage = reading.visiblePassage, following, model.player.isPlaying else { return }
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) {
             page.scrollTo(passage, anchor: UnitPoint(x: 0.5, y: 0.05))
