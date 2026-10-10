@@ -410,6 +410,12 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["filter-kind-1"].tap()
         app.buttons["Annuler"].tap()
         XCTAssertFalse(app.buttons["clear-filters"].exists)
+        // The audit runs without the glass tab bar and its accessory: their faded text over the cards reaches the audit
+        // with no element, so it cannot be told apart from the cards in view (2026-10-10).
+        app.terminate()
+        app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light", "--hide-tab-bar"]
+        app.launch()
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         try auditVisibleFeed(app)
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.70))
             .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.40)))

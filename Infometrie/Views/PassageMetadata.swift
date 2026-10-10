@@ -7,15 +7,19 @@ struct PassageDate: View {
     var day: String?
 
     var body: some View {
-        if let date = item.date, day != nil, ParisDay.string(date) == day {
-            Text(date, style: .time).foregroundStyle(Brand.secondary).monospacedDigit()
-                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
-        } else if let date = item.date {
-            Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) \(date, style: .time)")
-                .foregroundStyle(Brand.secondary).monospacedDigit()
-                .accessibilityLabel(Text(date, format: .dateTime.day().month(.wide).year().hour().minute()))
+        if let text = Self.text(item, day: day), let date = item.date {
+            text.foregroundStyle(Brand.secondary).monospacedDigit()
+                .accessibilityLabel(Self.spoken(date))
         }
     }
+
+    /// "14:52" for a passage of `day`, "25/09 14:39" otherwise.
+    static func text(_ item: FeedItem, day: String?) -> Text? {
+        guard let date = item.date else { return nil }
+        if day != nil, ParisDay.string(date) == day { return Text(date, style: .time) }
+        return Text("\(date, format: .dateTime.day(.twoDigits).month(.twoDigits)) \(date, style: .time)")
+    }
+    static func spoken(_ date: Date) -> Text { Text(date, format: .dateTime.day().month(.wide).year().hour().minute()) }
 }
 
 /// The listening duration, shown only for a playable passage.

@@ -57,7 +57,7 @@ struct FeedCard: View {
             }
         } else {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) { KindTag(item: item); facts.fixedSize(); Spacer(minLength: 0); logo }
+                HStack(spacing: 8) { KindTag(item: item); facts; Spacer(minLength: 0); logo }
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) { KindTag(item: item); Spacer(minLength: 0); logo }
                     facts
@@ -66,41 +66,31 @@ struct FeedCard: View {
         }
     }
 
-    /// "14:52 · 47 s", then "· ✓ Vu", then the channel's name when no logo shows it.
+    /// "14:52 · 47 s", then "· ✓ Vu", then the channel's name when no logo shows it, as one text: separate "·" glyphs
+    /// and a fixed-size row failed the accessibility audit's contrast and clipping checks (2026-10-10).
     private var facts: some View {
-        HStack(spacing: 6) {
-            PassageDate(item: item, day: day)
-            if item.canPlay && item.durationSec > 0 {
-                separator
-                PassageDuration(item: item)
-            }
-            seenMark
-            if !channelLine.isEmpty {
-                separator
-                Text(channelLine).foregroundStyle(Brand.secondary).lineLimit(1)
-            }
-        }
-        .font(.footnote)
+        var parts: [Text] = []
+        if let date = PassageDate.text(item, day: day) { parts.append(date) }
+        if item.canPlay && item.durationSec > 0 { parts.append(Text(item.readableDuration)) }
+        if seen { parts.append(Text("\(Image(systemName: "checkmark")) Vu").fontWeight(.semibold)) }
+        if !channelLine.isEmpty { parts.append(Text(channelLine)) }
+        let line = parts.dropFirst().reduce(parts.first ?? Text("")) { $0 + Text("  ·  ") + $1 }
+        return line.font(.footnote).monospacedDigit().foregroundStyle(Brand.secondary).lineLimit(1)
+            .accessibilityLabel(spokenFacts)
     }
 
-    private var separator: some View { Text("·").foregroundStyle(Brand.secondary).accessibilityHidden(true) }
+    /// The date in full and the listening duration; "Déjà vu" is the row's value.
+    private var spokenFacts: Text {
+        var parts: [Text] = []
+        if let date = item.date { parts.append(PassageDate.spoken(date)) }
+        if item.canPlay && item.durationSec > 0 { parts.append(Text("durée d’écoute : \(item.readableDuration)")) }
+        if !channelLine.isEmpty { parts.append(Text(channelLine)) }
+        return parts.dropFirst().reduce(parts.first ?? Text("")) { $0 + Text(", ") + $1 }
+    }
 
     /// Logos are the only color on the card: large enough to recognize at a glance.
     @ViewBuilder private var logo: some View {
         if !item.isTweet { ChannelMark(item: item, size: 24) }
-    }
-
-    /// "· ✓ Vu" after the date (and the channel name when no logo shows it): the state never rests on color alone. VoiceOver reads the row's value instead.
-    @ViewBuilder private var seenMark: some View {
-        if seen {
-            HStack(spacing: 6) {
-                Text("·")
-                Label("Vu", systemImage: "checkmark").fontWeight(.semibold)
-            }
-            .foregroundStyle(Brand.secondary)
-            .fixedSize()
-            .accessibilityHidden(true)
-        }
     }
 
     /// The logo names the channel; its name shows in the facts only when no logo is bundled.

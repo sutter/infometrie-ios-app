@@ -70,7 +70,8 @@ struct RootView: View {
                     // moves beside it.
                     .tabBarMinimizeBehavior(.onScrollDown)
                     .modifier(ListenAccessoryDock(enabled: horizontalSizeClass != .regular && model.tab == .feed
-                                                  && model.pushedPages == 0 && !model.playableItems.isEmpty))
+                                                  && model.pushedPages == 0 && !model.playableItems.isEmpty
+                                                  && !hidesTabBarForTests))
                 }
                 .background(Brand.background)
                 .sheet(isPresented: $binding.isSearchPresented) {
@@ -122,7 +123,7 @@ private struct MainTabBarDock: ViewModifier {
 
     // No explicit `.visible` on iPhone: it outranked the pushed pages' `.hidden`, and the tab bar stayed on the passage.
     @ViewBuilder func body(content: Content) -> some View {
-        if horizontalSizeClass == .regular { content.toolbar(.hidden, for: .tabBar) } else { content }
+        if horizontalSizeClass == .regular || hidesTabBarForTests { content.toolbar(.hidden, for: .tabBar) } else { content }
     }
 }
 
@@ -201,4 +202,14 @@ private struct MainNavigation: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier(identifier)
     }
+}
+
+/// Debug only, for the feed's accessibility audit: the glass tab bar and its accessory lie over the cards, and the audit
+/// reports their faded text with no element to tell it apart from the cards in view (2026-10-10).
+private var hidesTabBarForTests: Bool {
+    #if DEBUG
+    ProcessInfo.processInfo.arguments.contains("--hide-tab-bar")
+    #else
+    false
+    #endif
 }
