@@ -1,5 +1,12 @@
 # Validation du portage
 
+## Suite complète avant le build 15 — 10 octobre 2026
+
+Première suite depuis le build 10. Les builds 11 à 14 (9 octobre) ont été envoyés sans suite complète, à la demande de l’utilisateur. Entre-temps : barre d’onglets système avec « Tout écouter » en accessoire, en-tête commun aux périodes avec navigation par semaine et par mois, cartes sur une ligne, page passage d’un seul tenant qui suit l’écoute, zone de prise de parole sur la barre de lecture, « Cité par », « Passage suivant », vidéo flottante, publication X sobre, reprise automatique du suivi, navigation dans la fiche personnalité, puis nettoyage du code du lecteur.
+
+- `build/FullSuite-2026-10-10.xcresult`, iPhone 17 Pro, iOS 26.4 : **21 tests réussis sur 23**, dont le nouveau `testNextPassageAndFloatingVideo`. Les deux échecs sont les échecs connus, avec leurs symptômes habituels : l’audit de `testLoginFormAndEmptyFilters` (30 contrastes et 10 textes tronqués sans élément exposé) et `testFullscreenTranscriptSeeksFromTextAtMaximumSize` (le suivi ne passe jamais à « Désactivé »).
+- Un premier lancement a échoué avant tout test : le simulateur, éteint depuis la veille, a refusé de lancer le programme de test pendant son démarrage (« Application failed preflight checks »). Relancé une fois le démarrage terminé (`xcrun simctl bootstatus -b`).
+
 ## Suite complète après les corrections de grande taille — 8 octobre 2026
 
 Corrections : étiquettes de type qui débordaient de l’écran aux tailles d’accessibilité, ligne du nom sur la page passage, lecteur compact à ces tailles, bouton « Créer un suivi », étiquettes de type d’un suivi sur plusieurs lignes.
