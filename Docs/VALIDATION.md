@@ -1,5 +1,11 @@
 # Validation du portage
 
+## Suite complète sans échec — 10 octobre 2026
+
+Corrections des deux échecs connus depuis septembre : la ligne heure et durée des cartes en un seul texte, l'audit du journal fait sans la barre d'onglets en verre (`--hide-tab-bar`, Debug uniquement), et le texte plein écran défilé par un glisser lent plutôt qu'un balayage qui partait sur un lien.
+
+- `build/FullSuite-2026-10-10b.xcresult`, iPhone 17 Pro, iOS 26.4 : **23 tests réussis sur 23** (« TEST SUCCEEDED », 23 min). Première suite complète sans échec du projet.
+
 ## Suite complète avant le build 15 — 10 octobre 2026
 
 Première suite depuis le build 10. Les builds 11 à 14 (9 octobre) ont été envoyés sans suite complète, à la demande de l’utilisateur. Entre-temps : barre d’onglets système avec « Tout écouter » en accessoire, en-tête commun aux périodes avec navigation par semaine et par mois, cartes sur une ligne, page passage d’un seul tenant qui suit l’écoute, zone de prise de parole sur la barre de lecture, « Cité par », « Passage suivant », vidéo flottante, publication X sobre, reprise automatique du suivi, navigation dans la fiche personnalité, puis nettoyage du code du lecteur.
