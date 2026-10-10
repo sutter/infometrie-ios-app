@@ -902,6 +902,42 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertEqual(app.buttons["player-toggle"].label, "Écouter")
     }
 
+    /// "Passage suivant" replaces the passage in place, and on a video passage a small video floats once the page's
+    /// video scrolls away; touching it brings the page back to its top (2026-10-09).
+    @MainActor
+    func testNextPassageAndFloatingVideo() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light"]
+        app.launch()
+        let video = app.buttons["feed-item-5"]
+        XCTAssertTrue(video.waitForExistence(timeout: 10))
+        reveal(video, in: app, down: true)
+        video.tap()
+        XCTAssertTrue(app.buttons["player-toggle"].waitForExistence(timeout: 10))
+        let title = app.staticTexts["sequence-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        let floating = app.buttons["floating-video"]
+        XCTAssertFalse(floating.exists, "La vidéo flottante n’apparaît qu’une fois la vidéo de la page hors de l’écran")
+
+        // Scrolling the page past its video floats a small copy; touching it goes back to the top.
+        for _ in 0..<4 where !floating.exists { app.swipeUp() }
+        XCTAssertTrue(floating.waitForExistence(timeout: 5), "La vidéo flotte une fois la vidéo de la page hors de l’écran")
+        capture("26-video-flottante", app: app)
+        floating.tap()
+        XCTAssertTrue(floating.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(title.isHittable, "Toucher la vidéo flottante ramène en haut de la page")
+
+        // "Passage suivant" opens the next one in place; back leads straight to the journal.
+        let next = app.buttons["next-passage"]
+        for _ in 0..<6 where !(next.exists && next.isHittable) { app.swipeUp() }
+        XCTAssertTrue(next.isHittable)
+        next.tap()
+        XCTAssertTrue(app.navigationBars["Publication X"].waitForExistence(timeout: 10), "Le passage suivant du journal est une publication X")
+        XCTAssertTrue(app.staticTexts["sequence-title"].isHittable, "Le passage suivant s’ouvre en haut de page")
+        app.navigationBars["Publication X"].buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 5), "Le retour mène au journal, pas au passage précédent")
+    }
+
     @MainActor
     func testTranscriptSeeksPlayerAndFollowsScrubbingWhilePaused() {
         let app = XCUIApplication()

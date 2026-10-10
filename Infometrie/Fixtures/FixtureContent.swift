@@ -26,7 +26,10 @@ enum FixtureContent {
                             kind: i % 3 == 1 ? "citation" : "intervention", media: i % 2 == 0 ? "radio" : "tv",
                             channel: i % 2 == 0 ? "Radio Test" : "TV Test", show: i % 2 == 0 ? "La matinale" : "Le rendez-vous",
                             person: person.name, role: person.role, party: person.party, title: title,
-                            citedBy: i % 3 == 1 ? "La rédaction (fictive)" : "", durationSec: 18, hasMedia: true)
+                            citedBy: i % 3 == 1 ? "La rédaction (fictive)" : "", durationSec: 18, hasMedia: true,
+                            // The last passage is a video one, for the floating video: its media is the same
+                            // instrumental audio, which is enough for the page to show and float the video view.
+                            video: i == 4)
         }
         let publications = ["Préparer les territoires de demain", "Le débat continue, au plus près des citoyens"].enumerated().map { index, title in
             let person = persons[index]
