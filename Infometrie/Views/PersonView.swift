@@ -187,6 +187,10 @@ struct PersonView: View {
                         FeedCard(item: item, seen: model.isSeen(item), favorite: model.isFavorite(item), day: selectedDay).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).accessibilityIdentifier("person-item-\(item.id)")
+                    .favoriteSwipe(isFavorite: model.isFavorite(item)) { model.toggleFavorite(item) }
+                    .accessibilityAction(named: model.isFavorite(item) ? "Retirer des favoris" : "Ajouter aux favoris") {
+                        model.toggleFavorite(item)
+                    }
                 }
                 if page.hasMore {
                     Text("Les \(page.items.count) passages les plus récents de la journée.")

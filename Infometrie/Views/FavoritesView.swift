@@ -60,8 +60,13 @@ struct FavoritesView: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("favorite-item-\(favorite.id)")
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button("Retirer", role: .destructive) { remove(favorite) }
+        // One full swipe removes, either way: to the right like the journal's star swipe, to the left like any list.
+        // A favorite gone from the history asks first, so its button keeps the row until the answer.
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button("Retirer", systemImage: "star.slash.fill") { remove(favorite) }.tint(Brand.interventionFill)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button("Retirer", role: unavailable ? nil : .destructive) { remove(favorite) }.tint(Brand.destructive)
         }
         .contextMenu {
             Button("Retirer des favoris", systemImage: "star.slash", role: .destructive) { remove(favorite) }

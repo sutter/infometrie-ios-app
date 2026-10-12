@@ -58,6 +58,7 @@ struct FeedView: View {
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
+                                .favoriteSwipe(isFavorite: model.isFavorite(item)) { model.toggleFavorite(item) }
                                 // A long press, or VoiceOver's actions, can undo or set the state by hand.
                                 .contextMenu {
                                     seenToggle(item)

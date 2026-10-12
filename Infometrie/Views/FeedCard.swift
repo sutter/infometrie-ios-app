@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// A compact timeline entry. Opening the row reveals the complete passage.
 /// Every kind shares one order: what it is and where it was heard, then who, then the passage.
@@ -108,6 +109,100 @@ struct FeedCard: View {
 
     /// The logo names the channel; its name shows in the facts only when no logo is bundled.
     private var channelLine: String { ChannelMark.hasLogo(for: item) ? "" : item.channel }
+}
+
+extension View {
+    /// Swiping the row to the right past a threshold toggles its favorite, like Mail's full swipe: the journal and a
+    /// profile's day are scroll views, where the system's swipe actions do not exist (2026-10-12).
+    func favoriteSwipe(isFavorite: Bool, toggle: @escaping () -> Void) -> some View {
+        modifier(FavoriteSwipe(isFavorite: isFavorite, toggle: toggle))
+    }
+}
+
+private struct FavoriteSwipe: ViewModifier {
+    let isFavorite: Bool
+    let toggle: () -> Void
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicType
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var offset: CGFloat = 0
+    private let threshold: CGFloat = 96
+    private var armed: Bool { offset >= threshold }
+    private var margin: CGFloat { sizeClass == .regular ? AppLayout.wideMargin : AppLayout.margin }
+
+    func body(content: Content) -> some View {
+        content
+            .offset(x: offset)
+            .background(alignment: .leading) { if offset > 0 { action } }
+            .gesture(RightwardPan(
+                changed: { distance in
+                    let distance = max(0, distance)
+                    // Past the threshold the row resists, so the release point stays near it.
+                    offset = distance <= threshold ? distance : threshold + (distance - threshold) * 0.4
+                },
+                ended: {
+                    if armed { toggle() }
+                    withAnimation(reduceMotion ? nil : Motion.quick) { offset = 0 }
+                }))
+            .sensoryFeedback(.impact(weight: .medium), trigger: armed) { old, new in new && !old }
+    }
+
+    /// Vermillon from the screen edge to the moved row: a wash until the threshold, then the solid fill that says
+    /// letting go will act. The VoiceOver actions of the row do the same.
+    private var action: some View {
+        HStack(spacing: 8) {
+            Image(systemName: isFavorite ? "star.slash.fill" : "star.fill")
+            if !dynamicType.isAccessibilitySize { Text(isFavorite ? "Retirer" : "Favori") }
+        }
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(armed ? .white : Brand.interventionLabel)
+        .fixedSize()
+        .padding(.leading, margin)
+        .frame(width: offset + margin, alignment: .leading)
+        .frame(maxHeight: .infinity)
+        .background(armed ? Brand.interventionFill : Brand.interventionWash)
+        .clipped()
+        .offset(x: -margin)
+        .accessibilityHidden(true)
+    }
+}
+
+/// A pan that begins only for a slide to the right, mostly horizontal, and the scroll view waits for it to fail, which
+/// it does at once for any other movement. A SwiftUI drag on the rows, even simultaneous, stopped the journal from
+/// scrolling when the finger started on a row (iOS 26, 2026-10-12). Once it begins, it cancels the row's touch, so
+/// letting go does not open the passage.
+private struct RightwardPan: UIGestureRecognizerRepresentable {
+    let changed: (CGFloat) -> Void
+    let ended: () -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let pan = UIPanGestureRecognizer()
+        pan.delegate = context.coordinator
+        return pan
+    }
+
+    func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
+        switch recognizer.state {
+        case .began, .changed: changed(recognizer.translation(in: recognizer.view).x)
+        case .ended, .cancelled, .failed: ended()
+        default: break
+        }
+    }
+
+    @MainActor final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = recognizer as? UIPanGestureRecognizer else { return false }
+            let velocity = pan.velocity(in: pan.view)
+            return velocity.x > 0 && velocity.x > abs(velocity.y) * 1.5
+        }
+
+        func gestureRecognizer(_ recognizer: UIGestureRecognizer,
+                               shouldBeRequiredToFailBy other: UIGestureRecognizer) -> Bool {
+            other is UIPanGestureRecognizer && other.view is UIScrollView
+        }
+    }
 }
 
 /// Placeholder cards while the feed loads, drawn from the real card layout so they follow its changes.

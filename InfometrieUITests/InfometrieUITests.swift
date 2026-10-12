@@ -319,6 +319,21 @@ final class InfometrieUITests: XCTestCase {
         // The long press adds without opening; then the list, the last added first.
         app.buttons["feed-item-2"].press(forDuration: 1)
         app.buttons["Ajouter aux favoris"].tap()
+
+        // Swiping a row to the right toggles its favorite; a vertical drag still scrolls the journal.
+        let third = app.buttons["feed-item-3"]
+        drag(third, by: 240)
+        XCTAssertTrue((third.value as? String ?? "").contains("Favori"), "Le swipe à droite ajoute aux favoris")
+        drag(third, by: 240)
+        XCTAssertFalse((third.value as? String ?? "").contains("Favori"), "Le même swipe retire des favoris")
+        drag(third, by: 40)
+        XCTAssertFalse((third.value as? String ?? "").contains("Favori"), "Un swipe court ne change rien")
+        XCTAssertFalse(app.buttons["toggle-favorite"].exists, "Le swipe n’ouvre pas le passage")
+        let top = first.frame.minY
+        app.swipeUp()
+        XCTAssertLessThan(first.frame.minY, top - 100, "Le journal défile toujours verticalement")
+        app.swipeDown(); app.swipeDown()
+        XCTAssertEqual(first.frame.minY, top, accuracy: 2)
         navigationButton("Favoris", in: app).tap()
         let newest = app.buttons["favorite-item-2"], oldest = app.buttons["favorite-item-1"]
         XCTAssertTrue(newest.waitForExistence(timeout: 5))
@@ -336,12 +351,13 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Les priorités du débat public"].waitForExistence(timeout: 10), "Le favori suivant est feed-item-1")
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
 
-        // Swiping removes an available favorite at once.
+        // One full swipe removes an available favorite at once, to the left or to the right.
         XCTAssertTrue(oldest.waitForExistence(timeout: 5))
-        oldest.swipeLeft()
-        app.buttons["Retirer"].tap()
+        drag(oldest, by: -320)
         XCTAssertTrue(oldest.waitForNonExistence(timeout: 3))
         XCTAssertTrue(newest.exists)
+        drag(newest, by: 320)
+        XCTAssertTrue(app.descendants(matching: .any)["favorites-empty"].waitForExistence(timeout: 3))
         navigationButton("Le journal", in: app).tap()
         XCTAssertFalse((app.buttons["feed-item-1"].value as? String ?? "").contains("Favori"))
     }
@@ -361,8 +377,7 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Le contenu demandé n’est plus disponible."].waitForExistence(timeout: 10))
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
         XCTAssertTrue(expired.waitForExistence(timeout: 5))
-        expired.swipeLeft()
-        app.buttons["Retirer"].tap()
+        drag(expired, by: -320)
         let confirm = app.buttons["Retirer des favoris"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 3), "Un favori plus disponible demande confirmation")
         confirm.tap()
@@ -1162,6 +1177,12 @@ final class InfometrieUITests: XCTestCase {
     /// An active suivi in Mes suivis: its row is one button that opens the journal, read as a whole.
     @MainActor private func savedSearch(_ name: String, in app: XCUIApplication) -> XCUIElement {
         app.buttons["saved-search-\(name)"]
+    }
+
+    /// A slow horizontal drag across a row, for swipes that act on release past a distance.
+    @MainActor private func drag(_ element: XCUIElement, by distance: CGFloat) {
+        let start = element.coordinate(withNormalizedOffset: CGVector(dx: distance > 0 ? 0.1 : 0.9, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: distance, dy: 0)))
     }
 
     @MainActor private func navigationButton(_ title: String, in app: XCUIApplication) -> XCUIElement {
