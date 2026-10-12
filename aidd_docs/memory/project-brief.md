@@ -33,6 +33,7 @@ What this project is, the problem it solves, and its domain language. The non-de
 - Login, Keychain session restore, device quota replacement after confirmation, logout.
 - Feed with 30-second refresh, kind checkboxes (Interventions / Citations / X, combinable), person and party filters.
 - Seen passages: opened or listened passages step back in the feed ("✓ Vu"), stored on the device.
+- Favoris: a star keeps a passage, listed in its own tab and marked in the journal ("★"), stored on the device only, by the user's decision; one gone from the server's history stays as "Plus disponible".
 - Mes suivis: save, reuse, archive, restore and delete filter sets. Each active suivi shows its trend: the total of the last 7 complete days and one small stacked bar per day (`/days` with its persons and parties, kinds counted on the device).
 - Sequence page: text before résumé, word-tap seeking, persistent player (play/pause, scrubber, ±10 s), fullscreen transcript.
 - Podcast of the current results.

@@ -31,7 +31,7 @@ struct SavedSearchesView: View {
         .modifier(SuiviRenaming(renaming: $renaming))
     }
     private var list: some View {
-        SuiviList {
+        PageList {
             heading
             if !dynamicType.isAccessibilitySize {
                 // One legend for the right-hand column, rather than "passages sur 7 jours" in every row.
@@ -185,7 +185,7 @@ private struct ArchivedSearchesView: View {
     @State private var renaming: SavedSearch?
     private var searches: [SavedSearch] { lastUsedFirst(model.savedSearches.filter(\.isArchived)) }
     var body: some View {
-        SuiviList {
+        PageList {
             if searches.isEmpty {
                 AppEmptyState(title: "Aucun suivi archivé", icon: "archivebox",
                               message: "Un suivi archivé peut être restauré à tout moment.")
@@ -210,7 +210,8 @@ private func lastUsedFirst(_ searches: [SavedSearch]) -> [SavedSearch] {
 }
 
 /// The plain page both suivi lists share: rows on hairlines in the page margins, no list chrome.
-private struct SuiviList<Content: View>: View {
+/// A plain List on the page color, in the reading column: rows on hairlines, with swipe actions.
+struct PageList<Content: View>: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @ViewBuilder let content: () -> Content
     var body: some View {

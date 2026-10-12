@@ -5,7 +5,7 @@ How the user moves through the app: routing and the page structure.
 ## Routing
 
 - No router. `RootView` in `Infometrie/InfometrieApp.swift` switches between the restore spinner, `LoginView` and the signed-in shell. Everything past login needs `isAuthenticated` (a session).
-- The signed-in shell is a `TabView` with three destinations, each in its own `NavigationStack`: Le journal, Mes suivis, Compte. Filtering is an action of the feed, not a fourth destination. On iPhone the system tab bar (Liquid Glass) minimizes on scrolling down and carries "Tout écouter" as its accessory on the journal's root; pushed pages (passage, profile, archived suivis) hide it (`.toolbar(.hidden, for: .tabBar)`). On iPad it is hidden for the sidebar.
+- The signed-in shell is a `TabView` with four destinations, each in its own `NavigationStack`: Le journal, Mes suivis, Favoris (since 2026-10-12), Compte. Filtering is an action of the feed, not a destination. On iPhone the system tab bar (Liquid Glass) minimizes on scrolling down and carries "Tout écouter" as its accessory on the journal's root; pushed pages (passage, profile, archived suivis) hide it (`.toolbar(.hidden, for: .tabBar)`). On iPad it is hidden for the sidebar.
 - At regular width (iPad), a custom `MainNavigation` replaces the tab bar: a sidebar, or a horizontal strip at the top at accessibility text sizes.
 - On the passage page, the speaker links to `PersonView` when they belong to the panel (`model.persons`). "Voir ses passages dans le journal" filters the journal on that person and pops its stack to the root: `AppModel.returnToFeedRoot()` changes `feedStackID`, the `.id` of the journal's `NavigationStack`.
 - Filters open as a sheet (`SearchView`) that edits a `draft`: Cancel keeps the applied filters. From Mes suivis' "Créer un suivi" the same sheet opens as "Nouveau suivi" (`AppModel.isCreatingSuivi`): its action saves the suivi, then shows its results in the journal. The podcast is a sheet bound to `player.isPodcast`, and closing it stops playback.
@@ -24,5 +24,6 @@ flowchart LR
     Saved["Mes suivis"] --> Feed
     Saved --> Archived["Suivis archivés"]
     Saved -->|Créer un suivi| Filters
+    Favorites["Favoris"] --> Sequence
     Account["Compte"]
 ```

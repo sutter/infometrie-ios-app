@@ -15,7 +15,7 @@ flowchart TD
 
 ## Areas
 
-- `Infometrie/Core`: Codable models, `APIClient`, filters and feed merge, saved-search storage, HLS manifest parsing, word-timing alignment.
+- `Infometrie/Core`: Codable models, `APIClient`, filters and feed merge, saved-search, seen and favorite storage, HLS manifest parsing, word-timing alignment.
 - `Infometrie/Services`: `AppModel`, `PlaybackModel`, `SessionStore` (Keychain), `HLSRelay`.
 - `Infometrie/Fixtures`: Debug-only `UITestServer` (local API and HLS for UI tests), its fictional content and instrumental audio segments.
 - `Infometrie/Views`: screens, plus `Design.swift` for tokens and shared components.

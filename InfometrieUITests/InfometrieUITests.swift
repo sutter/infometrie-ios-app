@@ -294,6 +294,82 @@ final class InfometrieUITests: XCTestCase {
     }
 
     @MainActor
+    func testFavoritesFromPassageListAndRemove() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light"]
+        app.launch()
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
+        navigationButton("Favoris", in: app).tap()
+        XCTAssertTrue(app.descendants(matching: .any)["favorites-empty"].waitForExistence(timeout: 5))
+        capture("27-favoris-vide", app: app)
+
+        // The star of the passage page, then the journal row says it.
+        navigationButton("Le journal", in: app).tap()
+        app.buttons["feed-item-1"].tap()
+        let star = app.buttons["toggle-favorite"]
+        XCTAssertTrue(star.waitForExistence(timeout: 5))
+        XCTAssertEqual(star.label, "Ajouter aux favoris")
+        star.tap()
+        XCTAssertEqual(star.label, "Retirer des favoris")
+        app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
+        let first = app.buttons["feed-item-1"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        XCTAssertTrue((first.value as? String ?? "").contains("Favori"), "La ligne du journal dit qu’elle est en favori")
+
+        // The long press adds without opening; then the list, the last added first.
+        app.buttons["feed-item-2"].press(forDuration: 1)
+        app.buttons["Ajouter aux favoris"].tap()
+        navigationButton("Favoris", in: app).tap()
+        let newest = app.buttons["favorite-item-2"], oldest = app.buttons["favorite-item-1"]
+        XCTAssertTrue(newest.waitForExistence(timeout: 5))
+        XCTAssertTrue(oldest.exists)
+        XCTAssertLessThan(newest.frame.minY, oldest.frame.minY, "Le dernier ajouté vient en premier")
+        XCTAssertTrue(app.staticTexts["2 passages, les derniers ajoutés en premier"].exists)
+        capture("28-favoris", app: app)
+
+        // A favorite opens its page, and "Passage suivant" leads to the next favorite.
+        newest.tap()
+        XCTAssertEqual(app.buttons["toggle-favorite"].label, "Retirer des favoris")
+        let next = app.buttons["next-passage"]
+        for _ in 0..<6 where !(next.exists && next.isHittable) { app.swipeUp() }
+        next.tap()
+        XCTAssertTrue(app.staticTexts["Les priorités du débat public"].waitForExistence(timeout: 10), "Le favori suivant est feed-item-1")
+        app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
+
+        // Swiping removes an available favorite at once.
+        XCTAssertTrue(oldest.waitForExistence(timeout: 5))
+        oldest.swipeLeft()
+        app.buttons["Retirer"].tap()
+        XCTAssertTrue(oldest.waitForNonExistence(timeout: 3))
+        XCTAssertTrue(newest.exists)
+        navigationButton("Le journal", in: app).tap()
+        XCTAssertFalse((app.buttons["feed-item-1"].value as? String ?? "").contains("Favori"))
+    }
+
+    @MainActor
+    func testExpiredFavoriteStaysUntilRemoved() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--signed-in", "--expired-favorite", "-appearance", "light"]
+        app.launch()
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
+        navigationButton("Favoris", in: app).tap()
+        let expired = app.buttons["favorite-item-999"]
+        XCTAssertTrue(expired.waitForExistence(timeout: 5))
+        XCTAssertTrue((expired.value as? String ?? "").contains("Plus disponible"))
+        capture("29-favori-plus-disponible", app: app)
+        expired.tap()
+        XCTAssertTrue(app.staticTexts["Le contenu demandé n’est plus disponible."].waitForExistence(timeout: 10))
+        app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(expired.waitForExistence(timeout: 5))
+        expired.swipeLeft()
+        app.buttons["Retirer"].tap()
+        let confirm = app.buttons["Retirer des favoris"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3), "Un favori plus disponible demande confirmation")
+        confirm.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["favorites-empty"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testSearchPersistenceSequenceAndPodcast() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--signed-in", "--reset-searches", "-appearance", "light"]
@@ -1089,7 +1165,8 @@ final class InfometrieUITests: XCTestCase {
     }
 
     @MainActor private func navigationButton(_ title: String, in app: XCUIApplication) -> XCUIElement {
-        let identifiers = ["Le journal": "navigation-feed", "Mes suivis": "navigation-saved", "Compte": "navigation-account"]
+        let identifiers = ["Le journal": "navigation-feed", "Mes suivis": "navigation-saved", "Favoris": "navigation-favorites",
+                           "Compte": "navigation-account"]
         let editorial = app.buttons[identifiers[title] ?? ""]
         return editorial.exists ? editorial : app.tabBars.buttons[title]
     }

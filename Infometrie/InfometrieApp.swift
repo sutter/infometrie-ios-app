@@ -61,6 +61,9 @@ struct RootView: View {
                         Tab("Mes suivis", systemImage: "bookmark", value: AppModel.Tab.saved) {
                             NavigationStack { SavedSearchesView().withMainTabBar() }.tint(Brand.tint)
                         }
+                        Tab("Favoris", systemImage: "star", value: AppModel.Tab.favorites) {
+                            NavigationStack { FavoritesView().withMainTabBar() }.tint(Brand.tint)
+                        }
                         Tab("Compte", systemImage: "person", value: AppModel.Tab.account) {
                             NavigationStack { AccountView().withMainTabBar() }.tint(Brand.tint)
                         }
@@ -182,6 +185,7 @@ private struct MainNavigation: View {
     @ViewBuilder private var destinations: some View {
         destination("Le journal", symbol: "house", tab: .feed, identifier: "navigation-feed")
         destination("Mes suivis", symbol: "bookmark", tab: .saved, identifier: "navigation-saved")
+        destination("Favoris", symbol: "star", tab: .favorites, identifier: "navigation-favorites")
         destination("Compte", symbol: "person", tab: .account, identifier: "navigation-account")
     }
 

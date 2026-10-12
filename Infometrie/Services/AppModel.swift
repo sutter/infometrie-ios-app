@@ -3,7 +3,7 @@ import Observation
 
 @MainActor @Observable
 final class AppModel {
-    enum Tab: Hashable { case feed, saved, account }
+    enum Tab: Hashable { case feed, saved, favorites, account }
     var tab: Tab = .feed
     var isSearchPresented = false
     /// The search sheet opened from "Créer un suivi": it saves its criteria as a suivi, then shows them.

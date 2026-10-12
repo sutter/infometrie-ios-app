@@ -8,6 +8,8 @@ struct FeedCard: View {
     var seen = false
     /// A favorite shows a vermillon star at the end of the facts, so the journal says it without a long press.
     var favorite = false
+    /// A favorite gone from the server's history steps back like a seen one and says "Plus disponible".
+    var unavailable = false
     /// The Paris day the list is about: its passages show their time alone ("14:52", not "09/10 14:52").
     var day: String?
     @Environment(\.dynamicTypeSize) private var dynamicType
@@ -20,7 +22,7 @@ struct FeedCard: View {
         VStack(alignment: .leading, spacing: 12) {
             header
             VStack(alignment: .leading, spacing: 4) {
-                PassageSpeaker(item: item, dimmed: seen)
+                PassageSpeaker(item: item, dimmed: dimmed)
                 title
             }
         }
@@ -36,13 +38,16 @@ struct FeedCard: View {
         .overlay(alignment: .bottom) { AppRule() }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityValue([seen ? "Déjà vu" : nil, favorite ? "Favori" : nil].compactMap(\.self).joined(separator: ", "))
+        .accessibilityValue([unavailable ? "Plus disponible" : nil, seen ? "Déjà vu" : nil, favorite ? "Favori" : nil]
+            .compactMap(\.self).joined(separator: ", "))
         .accessibilityHint(item.canPlay ? "Ouvre le texte et le lecteur de ce passage" : "Ouvre le texte de cette publication")
     }
 
+    private var dimmed: Bool { seen || unavailable }
+
     private var title: some View {
         Text(item.displayTitle)
-            .font(.system(size: titleSize, weight: seen ? .semibold : .bold)).foregroundStyle(seen ? Brand.secondary : Brand.ink)
+            .font(.system(size: titleSize, weight: dimmed ? .semibold : .bold)).foregroundStyle(dimmed ? Brand.secondary : Brand.ink)
             .lineLimit(dynamicType.isAccessibilitySize ? nil : 4)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -68,13 +73,14 @@ struct FeedCard: View {
         }
     }
 
-    /// "14:52 · 47 s", then "· ✓ Vu", then "· ★" for a favorite, then the channel's name when no logo shows it, as one
+    /// "14:52 · 47 s", then "· Plus disponible", "· ✓ Vu", then "· ★" for a favorite, then the channel's name when no logo shows it, as one
     /// text: separate "·" glyphs and a fixed-size row failed the accessibility audit's contrast and clipping checks
     /// (2026-10-10).
     private var facts: some View {
         var parts: [Text] = []
         if let date = PassageDate.text(item, day: day) { parts.append(date) }
         if item.canPlay && item.durationSec > 0 { parts.append(Text(item.readableDuration)) }
+        if unavailable { parts.append(Text("Plus disponible").fontWeight(.semibold)) }
         if seen { parts.append(Text("\(Image(systemName: "checkmark")) Vu").fontWeight(.semibold)) }
         if favorite { parts.append(Text(Image(systemName: "star.fill")).foregroundStyle(Brand.accent)) }
         if !channelLine.isEmpty { parts.append(Text(channelLine)) }
@@ -83,7 +89,7 @@ struct FeedCard: View {
             .accessibilityLabel(spokenFacts)
     }
 
-    /// The date in full and the listening duration; "Déjà vu" and "Favori" are the row's value.
+    /// The date in full and the listening duration; "Plus disponible", "Déjà vu" and "Favori" are the row's value.
     private var spokenFacts: Text {
         var parts: [Text] = []
         if let date = item.date { parts.append(PassageDate.spoken(date)) }

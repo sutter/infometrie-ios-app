@@ -26,6 +26,15 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
         // Every UI test starts with nothing seen and no favorite, so one test's passages never mark another's.
         SeenStore().clear(account: email)
         FavoriteStore().clear(account: email)
+        // A favorite gone from the history: 90 days old, with an id the server answers 404 for.
+        if process.arguments.contains("--expired-favorite") {
+            let person = FixtureContent.persons[1]
+            let old = FeedItem(id: 999, at: APIDate.string(Date().addingTimeInterval(-90 * 86_400)), kind: "citation", media: "radio",
+                               channel: "Radio Test", show: "La matinale", person: person.name, role: person.role,
+                               party: person.party, title: "Un passage sorti de l’historique",
+                               citedBy: "La rédaction (fictive)", durationSec: 18, hasMedia: true)
+            try? FavoriteStore().save([Favorite(item: old, addedAt: Date().addingTimeInterval(-89 * 86_400))], account: email)
+        }
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [UITestServer.self]
         return AppModel(api: APIClient(session: URLSession(configuration: configuration)),
