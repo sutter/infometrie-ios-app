@@ -125,45 +125,62 @@ private struct FavoriteSwipe: ViewModifier {
     @Environment(\.dynamicTypeSize) private var dynamicType
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var offset: CGFloat = 0
+    /// Where the pan began, so the row starts under the finger instead of jumping by the pan's slop.
+    @State private var start: CGFloat?
+    /// What the slide does, fixed when it begins: the label keeps it while the row springs back after the toggle.
+    @State private var adding = true
+    /// Let go past the threshold: the action stays solid while the row springs back over it.
+    @State private var acted = false
+    /// From the first movement until the row is back: the action never fades while the row still uncovers it.
+    @State private var revealed = false
     private let threshold: CGFloat = 96
     private var armed: Bool { offset >= threshold }
+    private var solid: Bool { armed || acted }
     private var margin: CGFloat { sizeClass == .regular ? AppLayout.wideMargin : AppLayout.margin }
 
     func body(content: Content) -> some View {
         content
+            // Opaque out to the screen edges, so the row slides over the action and uncovers it, like Mail.
+            .background(Brand.background.padding(.horizontal, -margin))
             .offset(x: offset)
-            .background(alignment: .leading) { if offset > 0 { action } }
+            .background { action }
             .gesture(HorizontalPan(
                 rightOnly: true,
                 changed: { distance, _ in
-                    let distance = max(0, distance)
-                    // Past the threshold the row resists, so the release point stays near it.
-                    offset = distance <= threshold ? distance : threshold + (distance - threshold) * 0.4
+                    if start == nil { start = distance; adding = !isFavorite; revealed = true }
+                    offset = max(0, distance - (start ?? 0))
                 },
                 ended: {
-                    if armed { toggle() }
-                    withAnimation(reduceMotion ? nil : Motion.quick) { offset = 0 }
+                    start = nil
+                    if armed { acted = true; toggle() }
+                    withAnimation(reduceMotion ? nil : Motion.standard) { offset = 0 } completion: {
+                        acted = false; revealed = false
+                    }
                 }))
             .sensoryFeedback(.impact(weight: .medium), trigger: armed) { old, new in new && !old }
     }
 
-    /// Vermillon from the screen edge to the moved row: a wash until the threshold, then the solid fill that says
-    /// letting go will act. The VoiceOver actions of the row do the same.
+    /// Behind the row, from screen edge to screen edge: a vermillon wash with the star until the threshold, then the
+    /// solid fill that says letting go will act. The VoiceOver actions of the row do the same.
     private var action: some View {
-        HStack(spacing: 8) {
-            Image(systemName: isFavorite ? "star.slash.fill" : "star.fill")
-            if !dynamicType.isAccessibilitySize { Text(isFavorite ? "Retirer" : "Favori") }
-        }
-        .font(.subheadline.weight(.semibold))
-        .foregroundStyle(armed ? .white : Brand.interventionLabel)
-        .fixedSize()
-        .padding(.leading, margin)
-        .frame(width: offset + margin, alignment: .leading)
-        .frame(maxHeight: .infinity)
-        .background(armed ? Brand.interventionFill : Brand.interventionWash)
-        .clipped()
-        .offset(x: -margin)
-        .accessibilityHidden(true)
+        Rectangle()
+            .fill(solid ? Brand.interventionFill : Brand.interventionWash)
+            .overlay(alignment: .leading) {
+                HStack(spacing: 8) {
+                    Image(systemName: adding ? "star.fill" : "star.slash.fill")
+                        .scaleEffect(solid ? 1.15 : 1)
+                    if !dynamicType.isAccessibilitySize { Text(adding ? "Favori" : "Retirer") }
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(solid ? .white : Brand.interventionLabel)
+                .padding(.leading, margin)
+            }
+            .padding(.horizontal, -margin)
+            // Hidden only once the row has covered it again, so it never fades into a gap on the way back, and no
+            // seam of it shows at the row's edges at rest.
+            .opacity(revealed ? 1 : 0)
+            .animation(reduceMotion ? nil : Motion.quick, value: solid)
+            .accessibilityHidden(true)
     }
 }
 
