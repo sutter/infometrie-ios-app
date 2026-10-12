@@ -829,6 +829,20 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.buttons["feed-display-chart"].exists, "Graphique reste annoncé à côté des périodes")
         capture("periode-7-jours", app: app)
 
+        // A vertical drag that starts on the chart scrolls the journal; a horizontal one selects the days it crosses.
+        let chart = app.descendants(matching: .any)["feed-day-chart"]
+        let chartTop = chart.frame.minY
+        let onChart = chart.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        onChart.press(forDuration: 0.05, thenDragTo: onChart.withOffset(CGVector(dx: 0, dy: -250)))
+        XCTAssertLessThan(chart.frame.minY, chartTop - 100, "Le journal défile depuis le graphique")
+        app.swipeDown(); app.swipeDown()
+        XCTAssertEqual(chart.frame.minY, chartTop, accuracy: 2)
+        let fromBar = bar(7).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        fromBar.press(forDuration: 0.05, thenDragTo: bar(1).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        wait(bar(1), key: "value", equals: "Sélectionné")
+        app.buttons["feed-day-clear"].tap()
+        XCTAssertTrue(results("56 passages", in: app).waitForExistence(timeout: 5))
+
         // Touching a bar shows that day only; previous and next move one day; the cross restores the period.
         bar(1).tap()
         XCTAssertTrue(app.descendants(matching: .any)["feed-day-selection"].waitForExistence(timeout: 5))

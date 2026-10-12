@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 /// A compact timeline entry. Opening the row reveals the complete passage.
 /// Every kind shares one order: what it is and where it was heard, then who, then the passage.
@@ -134,8 +133,9 @@ private struct FavoriteSwipe: ViewModifier {
         content
             .offset(x: offset)
             .background(alignment: .leading) { if offset > 0 { action } }
-            .gesture(RightwardPan(
-                changed: { distance in
+            .gesture(HorizontalPan(
+                rightOnly: true,
+                changed: { distance, _ in
                     let distance = max(0, distance)
                     // Past the threshold the row resists, so the release point stays near it.
                     offset = distance <= threshold ? distance : threshold + (distance - threshold) * 0.4
@@ -164,44 +164,6 @@ private struct FavoriteSwipe: ViewModifier {
         .clipped()
         .offset(x: -margin)
         .accessibilityHidden(true)
-    }
-}
-
-/// A pan that begins only for a slide to the right, mostly horizontal, and the scroll view waits for it to fail, which
-/// it does at once for any other movement. A SwiftUI drag on the rows, even simultaneous, stopped the journal from
-/// scrolling when the finger started on a row (iOS 26, 2026-10-12). Once it begins, it cancels the row's touch, so
-/// letting go does not open the passage.
-private struct RightwardPan: UIGestureRecognizerRepresentable {
-    let changed: (CGFloat) -> Void
-    let ended: () -> Void
-
-    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
-
-    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
-        let pan = UIPanGestureRecognizer()
-        pan.delegate = context.coordinator
-        return pan
-    }
-
-    func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
-        switch recognizer.state {
-        case .began, .changed: changed(recognizer.translation(in: recognizer.view).x)
-        case .ended, .cancelled, .failed: ended()
-        default: break
-        }
-    }
-
-    @MainActor final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
-            guard let pan = recognizer as? UIPanGestureRecognizer else { return false }
-            let velocity = pan.velocity(in: pan.view)
-            return velocity.x > 0 && velocity.x > abs(velocity.y) * 1.5
-        }
-
-        func gestureRecognizer(_ recognizer: UIGestureRecognizer,
-                               shouldBeRequiredToFailBy other: UIGestureRecognizer) -> Bool {
-            other is UIPanGestureRecognizer && other.view is UIScrollView
-        }
     }
 }
 

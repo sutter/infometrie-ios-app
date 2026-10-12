@@ -132,14 +132,14 @@ struct DayChart: View {
                     Rectangle().fill(.clear).contentShape(Rectangle())
                         .onTapGesture { location in if let day = day(location) { select(day) } }
                         // Sliding across the bars selects the day under the finger. Only a horizontal slide
-                        // counts, so the journal still scrolls vertically from the chart.
-                        .simultaneousGesture(DragGesture(minimumDistance: 8).onChanged { drag in
-                            guard abs(drag.translation.width) > abs(drag.translation.height),
-                                  let day = day(drag.location), day != (slidDay ?? selectedDay) else { return }
-                            slidDay = day
-                            select(day)
-                        }
-                        .onEnded { _ in slidDay = nil })
+                        // counts, so the journal still scrolls vertically from the chart (`HorizontalPan`).
+                        .gesture(HorizontalPan(
+                            changed: { _, location in
+                                guard let day = day(location), day != (slidDay ?? selectedDay) else { return }
+                                slidDay = day
+                                select(day)
+                            },
+                            ended: { slidDay = nil }))
                 }
             }
         }

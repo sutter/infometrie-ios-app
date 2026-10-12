@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// The brand palette: vermillon for actions, accent and identity; bleu canard for interface marks; noir chaud for
 /// text and icons; blanc cassé for the page; gris clair for secondary surfaces. Chosen by the client on 2026-10-07.
@@ -413,5 +414,48 @@ struct ErrorNotice: View {
         }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
             .background(Brand.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .accessibilityElement(children: .contain)
+    }
+}
+
+/// A pan that begins only for a mostly horizontal slide (only to the right with `rightOnly`), and that the scroll view
+/// waits on: it fails at once for any other movement, so the page still scrolls from where the finger started. A
+/// SwiftUI drag, even as `simultaneousGesture`, stopped the journal from scrolling when the touch began on a row or on
+/// the day chart (iOS 26, 2026-10-12). Once it begins it cancels the touch under it, so letting go taps nothing.
+/// `changed` gets the horizontal translation and the finger's location in the view's own space.
+struct HorizontalPan: UIGestureRecognizerRepresentable {
+    var rightOnly = false
+    let changed: (_ translation: CGFloat, _ location: CGPoint) -> Void
+    let ended: () -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator(rightOnly: rightOnly) }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let pan = UIPanGestureRecognizer()
+        pan.delegate = context.coordinator
+        return pan
+    }
+
+    func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
+        switch recognizer.state {
+        case .began, .changed: changed(recognizer.translation(in: recognizer.view).x, context.converter.localLocation)
+        case .ended, .cancelled, .failed: ended()
+        default: break
+        }
+    }
+
+    @MainActor final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        let rightOnly: Bool
+        init(rightOnly: Bool) { self.rightOnly = rightOnly }
+
+        func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = recognizer as? UIPanGestureRecognizer else { return false }
+            let velocity = pan.velocity(in: pan.view)
+            return (!rightOnly || velocity.x > 0) && abs(velocity.x) > abs(velocity.y) * 1.5
+        }
+
+        func gestureRecognizer(_ recognizer: UIGestureRecognizer,
+                               shouldBeRequiredToFailBy other: UIGestureRecognizer) -> Bool {
+            other is UIPanGestureRecognizer && other.view is UIScrollView
+        }
     }
 }
