@@ -10,34 +10,8 @@ struct SavedSearchesView: View {
     private var searches: [SavedSearch] { lastUsedFirst(model.savedSearches.filter { !$0.isArchived }) }
     private var archivedCount: Int { model.savedSearches.count - searches.count }
     var body: some View {
-        SuiviList {
-            heading
-            if searches.isEmpty {
-                VStack(alignment: .leading, spacing: 0) {
-                    AppEmptyState(
-                        title: "Retrouvez vos sujets de veille", icon: "bookmark",
-                        message: "Choisissez des personnalités ou des partis, puis enregistrez votre recherche pour la retrouver ici."
-                    )
-                    // The only "Créer un suivi" while nothing is followed: the navigation bar shows none then.
-                    Button { model.newSearch() } label: { Text("Créer un suivi") }
-                        .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("new-search")
-                }
-            } else if !dynamicType.isAccessibilitySize {
-                // One legend for the right-hand column, rather than "passages sur 7 jours" in every row.
-                Text("Passages sur 7 jours").font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.trailing, SuiviRow.actionsWidth + SuiviRow.spacing).padding(.bottom, 6)
-                    .overlay(alignment: .bottom) { AppRule() }
-                    .accessibilityHidden(true)
-            }
-            ForEach(searches) { search in
-                SuiviRow(search: search, rename: { renaming = search }, delete: { deleting = search })
-            }
-            if archivedCount > 0 { archivedLink }
-            if !model.savedSearches.isEmpty {
-                Text("Vos suivis sont enregistrés sur cet appareil, pour votre compte.")
-                    .font(.footnote).foregroundStyle(Brand.secondary).padding(.vertical, 24)
-            }
+        Group {
+            if searches.isEmpty { emptyPage } else { list }
         }
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbar(sizeClass == .regular ? .hidden : .visible, for: .navigationBar)
@@ -55,6 +29,54 @@ struct SavedSearchesView: View {
         .task(id: searches.map(\.filters)) { await model.loadTrends() }
         .modifier(SuiviDeletion(deleting: $deleting))
         .modifier(SuiviRenaming(renaming: $renaming))
+    }
+    private var list: some View {
+        SuiviList {
+            heading
+            if !dynamicType.isAccessibilitySize {
+                // One legend for the right-hand column, rather than "passages sur 7 jours" in every row.
+                Text("Passages sur 7 jours").font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing, SuiviRow.actionsWidth + SuiviRow.spacing).padding(.bottom, 6)
+                    .overlay(alignment: .bottom) { AppRule() }
+                    .accessibilityHidden(true)
+            }
+            ForEach(searches) { search in
+                SuiviRow(search: search, rename: { renaming = search }, delete: { deleting = search })
+            }
+            if archivedCount > 0 { archivedLink }
+            storageNote
+        }
+    }
+    /// No active suivi: the empty state stands in the middle of the free height, where the plain one left the lower
+    /// half of the page blank (option A of sheet 07, 2026-10-12). Archived suivis stay reachable at the bottom.
+    private var emptyPage: some View {
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: 0) {
+                    heading
+                    Spacer(minLength: 24)
+                    SuiviEmptyState { model.newSearch() }
+                    // Two spacers below for one above: the group sits a little above the middle, like the sheet.
+                    Spacer(minLength: 24)
+                    Spacer(minLength: 0)
+                    if archivedCount > 0 {
+                        archivedLink
+                        storageNote
+                    }
+                }
+                .padding(.horizontal, sizeClass == .regular ? AppLayout.wideMargin : AppLayout.margin)
+                .frame(minHeight: proxy.size.height)
+                .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .background(Brand.background)
+    }
+    private var storageNote: some View {
+        Text("Vos suivis sont enregistrés sur cet appareil, pour votre compte.")
+            .font(.footnote).foregroundStyle(Brand.secondary).padding(.vertical, 24)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
     /// The title, then how many suivis and in what order: they move up each time one is used, and saying so
     /// keeps that move from reading as disorder.
@@ -103,6 +125,39 @@ struct SavedSearchesView: View {
         .accessibilityLabel("Suivis archivés, \(archivedCount)")
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("saved-archived")
+    }
+}
+
+/// The app's illustration, what a suivi brings, the one way to create it here (the navigation bar has none while
+/// nothing is followed), and the journal's own gesture, which saves a search in one touch.
+private struct SuiviEmptyState: View {
+    @Environment(\.dynamicTypeSize) private var dynamicType
+    let create: () -> Void
+    var body: some View {
+        VStack(spacing: 20) {
+            KindFan()
+            VStack(spacing: 8) {
+                Text("Aucun suivi pour l’instant")
+                    .font(.title3.weight(.bold)).foregroundStyle(Brand.ink)
+                    .accessibilityAddTraits(.isHeader)
+                Text("Suivez des personnalités ou des partis pour retrouver ici leur activité, jour après jour.")
+                    .font(.body).foregroundStyle(Brand.secondary)
+            }
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            Button(action: create) {
+                // At accessibility sizes the "+" left too little room and the label broke inside "Créer".
+                if dynamicType.isAccessibilitySize { Text("Créer un suivi") } else { Label("Créer un suivi", systemImage: "plus") }
+            }
+            .buttonStyle(ActionButtonStyle(prominent: true))
+            .frame(maxWidth: dynamicType.isAccessibilitySize ? .infinity : 280)
+            .accessibilityIdentifier("new-search")
+            Text("Ou touchez « Suivre » sous une recherche du journal.")
+                .font(.footnote).foregroundStyle(Brand.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
