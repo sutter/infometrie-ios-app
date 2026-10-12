@@ -129,11 +129,11 @@ final class InfometrieUITests: XCTestCase {
         let name = "Publications X " + UUID().uuidString.prefix(6)
         app.textFields["search-name"].tap(); app.textFields["search-name"].typeText(String(name))
         app.buttons["confirm-save-search"].tap()
-        XCTAssertTrue(app.staticTexts[String(name)].waitForExistence(timeout: 5))
+        XCTAssertTrue(savedSearch(String(name), in: app).waitForExistence(timeout: 5))
         app.terminate(); app.launch()
         XCTAssertTrue(app.buttons["feed-kind-1"].waitForExistence(timeout: 10))
         navigationButton("Mes suivis", in: app).tap()
-        XCTAssertTrue(app.staticTexts[String(name)].waitForExistence(timeout: 5))
+        XCTAssertTrue(savedSearch(String(name), in: app).waitForExistence(timeout: 5))
         app.buttons["saved-actions-\(name)"].tap()
         app.buttons["Modifier la recherche"].tap()
         reveal(app.buttons["filter-kind-3"], in: app, down: false)
@@ -257,7 +257,7 @@ final class InfometrieUITests: XCTestCase {
         let name = "Veille test " + UUID().uuidString.prefix(6)
         field.tap(); field.typeText(String(name))
         app.buttons["confirm-save-search"].tap()
-        XCTAssertTrue(app.staticTexts[String(name)].waitForExistence(timeout: 4))
+        XCTAssertTrue(savedSearch(String(name), in: app).waitForExistence(timeout: 4))
         capture("02-recherches", app: app)
         app.buttons["saved-actions-\(name)"].tap()
         app.buttons["Modifier la recherche"].tap()
@@ -270,17 +270,22 @@ final class InfometrieUITests: XCTestCase {
 
         app.terminate(); app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light"]; app.launch()
         navigationButton("Mes suivis", in: app).tap()
-        XCTAssertTrue(app.staticTexts[String(name)].waitForExistence(timeout: 5))
+        XCTAssertTrue(savedSearch(String(name), in: app).waitForExistence(timeout: 5))
         app.buttons["saved-actions-\(name)"].tap()
         app.buttons["Archiver"].tap()
+        XCTAssertFalse(savedSearch(String(name), in: app).waitForExistence(timeout: 2))
         app.buttons["saved-archived"].tap()
+        XCTAssertTrue(app.navigationBars["Suivis archivés"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts[String(name)].exists)
         app.buttons["restore-search-\(name)"].tap()
-        app.buttons["saved-active"].tap()
+        XCTAssertTrue(app.staticTexts["Aucun suivi archivé"].waitForExistence(timeout: 3))
+        app.navigationBars["Suivis archivés"].buttons.firstMatch.tap()
+        XCTAssertTrue(savedSearch(String(name), in: app).waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["saved-archived"].exists)
         app.buttons["saved-actions-\(name)"].tap()
         app.buttons["Supprimer"].tap()
         app.alerts.buttons["Supprimer"].tap()
-        XCTAssertFalse(app.staticTexts[String(name)].exists)
+        XCTAssertFalse(savedSearch(String(name), in: app).waitForExistence(timeout: 2))
 
         navigationButton("Le journal", in: app).tap()
         let first = app.buttons["feed-item-1"]
@@ -1015,6 +1020,11 @@ final class InfometrieUITests: XCTestCase {
         wait(app.staticTexts["transcript-position"], key: "value", equals: "Mot 9 sur 41")
         XCTAssertEqual(app.staticTexts["player-elapsed"].label, "0:03")
         capture("09-podcast-verbatim", app: app)
+    }
+
+    /// An active suivi in Mes suivis: its row is one button that opens the journal, read as a whole.
+    @MainActor private func savedSearch(_ name: String, in app: XCUIApplication) -> XCUIElement {
+        app.buttons["saved-search-\(name)"]
     }
 
     @MainActor private func navigationButton(_ title: String, in app: XCUIApplication) -> XCUIElement {

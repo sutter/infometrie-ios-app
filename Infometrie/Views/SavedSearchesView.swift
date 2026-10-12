@@ -5,62 +5,39 @@ struct SavedSearchesView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.dynamicTypeSize) private var dynamicType
-    @State private var archived = false
     @State private var deleting: SavedSearch?
-    private var searches: [SavedSearch] {
-        model.savedSearches.filter { $0.isArchived == archived }
-            .sorted { ($0.lastUsedAt ?? $0.createdAt) > ($1.lastUsedAt ?? $1.createdAt) }
-    }
-    private var activeCount: Int { model.savedSearches.filter { !$0.isArchived }.count }
+    private var searches: [SavedSearch] { lastUsedFirst(model.savedSearches.filter { !$0.isArchived }) }
+    private var archivedCount: Int { model.savedSearches.count - searches.count }
     var body: some View {
-        List {
-            Group {
-                heading
-                if searches.isEmpty {
-                    VStack(alignment: .leading, spacing: 0) {
-                        AppEmptyState(
-                            title: archived ? "Aucun suivi archivé" : "Retrouvez vos sujets de veille",
-                            icon: archived ? "archivebox" : "bookmark",
-                            message: archived ? "Un suivi archivé peut être restauré à tout moment." : "Choisissez des personnalités ou des partis, puis enregistrez votre recherche pour la retrouver ici."
-                        )
-                        // The only "Créer un suivi" while nothing is followed: the navigation bar shows none then.
-                        if !archived {
-                            Button { model.newSearch() } label: { Text("Créer un suivi") }
-                                .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("new-search")
-                        }
-                    }
-                } else if !archived && !dynamicType.isAccessibilitySize {
-                    // One legend for the right-hand column, rather than "passages sur 7 jours" in every row.
-                    Text("Passages sur 7 jours").font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .padding(.trailing, SuiviRow.actionsWidth + SuiviRow.spacing).padding(.bottom, 6)
-                        .overlay(alignment: .bottom) { AppRule() }
-                        .accessibilityHidden(true)
+        SuiviList {
+            heading
+            if searches.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    AppEmptyState(
+                        title: "Retrouvez vos sujets de veille", icon: "bookmark",
+                        message: "Choisissez des personnalités ou des partis, puis enregistrez votre recherche pour la retrouver ici."
+                    )
+                    // The only "Créer un suivi" while nothing is followed: the navigation bar shows none then.
+                    Button { model.newSearch() } label: { Text("Créer un suivi") }
+                        .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("new-search")
                 }
-                ForEach(searches) { search in
-                    SuiviRow(search: search) { deleting = search }
-                }
-                // Chips, like the feed's types: one look for every choice that narrows a list.
-                HStack(spacing: 8) {
-                    category("Actifs", archived: false)
-                    category("Archivés", archived: true)
-                    Spacer(minLength: 0)
-                }
-                .sensoryFeedback(.selection, trigger: archived)
-                .padding(.top, 24)
-                if !searches.isEmpty {
-                    Text("Vos suivis sont enregistrés sur cet appareil, pour votre compte.")
-                        .font(.footnote).foregroundStyle(Brand.secondary).padding(.vertical, 24)
-                }
+            } else if !dynamicType.isAccessibilitySize {
+                // One legend for the right-hand column, rather than "passages sur 7 jours" in every row.
+                Text("Passages sur 7 jours").font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing, SuiviRow.actionsWidth + SuiviRow.spacing).padding(.bottom, 6)
+                    .overlay(alignment: .bottom) { AppRule() }
+                    .accessibilityHidden(true)
             }
-            .listRowInsets(EdgeInsets(top: 0, leading: sizeClass == .regular ? AppLayout.wideMargin : AppLayout.margin, bottom: 0, trailing: sizeClass == .regular ? AppLayout.wideMargin : AppLayout.margin))
-            .listRowBackground(Color.clear).listRowSeparator(.hidden)
+            ForEach(searches) { search in
+                SuiviRow(search: search) { deleting = search }
+            }
+            if archivedCount > 0 { archivedLink }
+            if !model.savedSearches.isEmpty {
+                Text("Vos suivis sont enregistrés sur cet appareil, pour votre compte.")
+                    .font(.footnote).foregroundStyle(Brand.secondary).padding(.vertical, 24)
+            }
         }
-        .listStyle(.plain).scrollContentBackground(.hidden)
-        // The column legend is shorter than a list row's default 44 pt, which floated it away from the rows.
-        .environment(\.defaultMinListRowHeight, 1)
-        .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-        .background(Brand.background)
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
         .toolbar(sizeClass == .regular ? .hidden : .visible, for: .navigationBar)
         .toolbarBackground(Brand.background, for: .navigationBar)
@@ -68,26 +45,23 @@ struct SavedSearchesView: View {
             if sizeClass != .regular {
                 ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
-                if activeCount > 0 {
+                if !searches.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) { createButton(scheme: colorScheme) }
                         .sharedBackgroundVisibility(.hidden)
                 }
             }
         }
-        .task(id: model.savedSearches.filter { !$0.isArchived }.map(\.filters)) { await model.loadTrends() }
-        .alert("Supprimer ce suivi ?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
-            Button("Annuler", role: .cancel) { deleting = nil }
-            Button("Supprimer", role: .destructive) { if let deleting { model.delete(deleting) }; deleting = nil }
-        } message: { Text("« \(deleting?.name ?? "") » disparaîtra de cet appareil. Cette action est définitive.") }
+        .task(id: searches.map(\.filters)) { await model.loadTrends() }
+        .modifier(SuiviDeletion(deleting: $deleting))
     }
     /// The title, then how many suivis and in what order: they move up each time one is used, and saying so
     /// keeps that move from reading as disorder.
     private var heading: some View {
         AdaptiveRow {
-            PageHeading(title: "Mes suivis", subtitle: activeCount == 0 ? nil
-                        : "\(activeCount) \(activeCount == 1 ? "suivi" : "suivis"), les derniers utilisés en premier")
+            PageHeading(title: "Mes suivis", subtitle: searches.isEmpty ? nil
+                        : "\(searches.count) \(searches.count == 1 ? "suivi" : "suivis"), les derniers utilisés en premier")
             // On iPad the page has no navigation bar: the button sits beside the title instead.
-            if sizeClass == .regular && activeCount > 0 { createButton() }
+            if sizeClass == .regular && !searches.isEmpty { createButton() }
         }
         .padding(.top, 16).padding(.bottom, 16)
     }
@@ -104,16 +78,89 @@ struct SavedSearchesView: View {
         .buttonStyle(.plain).foregroundStyle(Brand.fixed(Brand.tint, for: scheme))
         .accessibilityIdentifier("new-search")
     }
-    private func category(_ title: String, archived value: Bool) -> some View {
-        let selected = archived == value
-        return Button { archived = value } label: {
-            Text(title).font(.subheadline.weight(selected ? .semibold : .regular))
-                .foregroundStyle(selected ? Brand.ink : Brand.secondary)
-                .chip(selected: selected)
+    /// Archived suivis wait on a page of their own, a row under the active ones: Actifs / Archivés chips above
+    /// the list cost about 70 pt for a rare use.
+    private var archivedLink: some View {
+        NavigationLink { ArchivedSearchesView() } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "archivebox").foregroundStyle(Brand.secondary)
+                Text("Suivis archivés").foregroundStyle(Brand.ink)
+                Spacer(minLength: 8)
+                Text(archivedCount.formatted()).foregroundStyle(Brand.secondary)
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary)
+            }
+            .font(.body)
+            .frame(minHeight: 52).contentShape(Rectangle())
         }
+        // Its own chevron, drawn like the rest of the row, rather than the list's.
+        .navigationLinkIndicatorVisibility(.hidden)
         .buttonStyle(.plain)
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityIdentifier(value ? "saved-archived" : "saved-active")
+        .overlay(alignment: .bottom) { AppRule() }
+        .padding(.top, 24)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Suivis archivés, \(archivedCount)")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("saved-archived")
+    }
+}
+
+/// The archived suivis, out of the way of the active ones: each can be restored or deleted.
+private struct ArchivedSearchesView: View {
+    @Environment(AppModel.self) private var model
+    @State private var deleting: SavedSearch?
+    private var searches: [SavedSearch] { lastUsedFirst(model.savedSearches.filter(\.isArchived)) }
+    var body: some View {
+        SuiviList {
+            if searches.isEmpty {
+                AppEmptyState(title: "Aucun suivi archivé", icon: "archivebox",
+                              message: "Un suivi archivé peut être restauré à tout moment.")
+            } else {
+                ForEach(searches) { search in
+                    SuiviRow(search: search) { deleting = search }
+                }
+                Text("Un suivi archivé peut être restauré à tout moment.")
+                    .font(.footnote).foregroundStyle(Brand.secondary).padding(.vertical, 24)
+            }
+        }
+        .appNavigationTitle("Suivis archivés")
+        .pushedPage(model)
+        .modifier(SuiviDeletion(deleting: $deleting))
+    }
+}
+
+/// Most recently used first, then most recently created.
+private func lastUsedFirst(_ searches: [SavedSearch]) -> [SavedSearch] {
+    searches.sorted { ($0.lastUsedAt ?? $0.createdAt) > ($1.lastUsedAt ?? $1.createdAt) }
+}
+
+/// The plain page both suivi lists share: rows on hairlines in the page margins, no list chrome.
+private struct SuiviList<Content: View>: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @ViewBuilder let content: () -> Content
+    var body: some View {
+        let margin = sizeClass == .regular ? AppLayout.wideMargin : AppLayout.margin
+        List {
+            Group { content() }
+                .listRowInsets(EdgeInsets(top: 0, leading: margin, bottom: 0, trailing: margin))
+                .listRowBackground(Color.clear).listRowSeparator(.hidden)
+        }
+        .listStyle(.plain).scrollContentBackground(.hidden)
+        // The column legend is shorter than a list row's default 44 pt, which floated it away from the rows.
+        .environment(\.defaultMinListRowHeight, 1)
+        .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+        .background(Brand.background)
+    }
+}
+
+/// Asks before deleting a suivi, on either page.
+private struct SuiviDeletion: ViewModifier {
+    @Environment(AppModel.self) private var model
+    @Binding var deleting: SavedSearch?
+    func body(content: Content) -> some View {
+        content.alert("Supprimer ce suivi ?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
+            Button("Annuler", role: .cancel) { deleting = nil }
+            Button("Supprimer", role: .destructive) { if let deleting { model.delete(deleting) }; deleting = nil }
+        } message: { Text("« \(deleting?.name ?? "") » disparaîtra de cet appareil. Cette action est définitive.") }
     }
 }
 
@@ -134,7 +181,6 @@ private struct SuiviRow: View {
             HStack(alignment: dynamicType.isAccessibilitySize ? .top : .center, spacing: Self.spacing) {
                 if search.isArchived {
                     description.frame(maxWidth: .infinity, alignment: .leading)
-                        .accessibilityElement(children: .combine)
                 } else {
                     Button { Task { await model.apply(search.filters) } } label: { opener }
                         // Plain, so that the row's own "⋯" menu stays a separate target.
