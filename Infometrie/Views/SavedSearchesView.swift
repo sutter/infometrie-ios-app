@@ -106,12 +106,26 @@ struct SavedSearchesView: View {
     /// the list cost about 70 pt for a rare use.
     private var archivedLink: some View {
         NavigationLink { ArchivedSearchesView() } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "archivebox").foregroundStyle(Brand.secondary)
-                Text("Suivis archivés").foregroundStyle(Brand.ink)
-                Spacer(minLength: 8)
-                Text(archivedCount.formatted()).foregroundStyle(Brand.secondary)
-                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary)
+            // When the label cannot stand on one line, the icon goes and the count moves under it: beside them,
+            // at the largest text size, "archivés" had about 170 pt and broke inside the word ("archi-vés").
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    Image(systemName: "archivebox").foregroundStyle(Brand.secondary)
+                    Text("Suivis archivés").foregroundStyle(Brand.ink)
+                    Spacer(minLength: 8)
+                    Text(archivedCount.formatted()).foregroundStyle(Brand.secondary)
+                    archivedChevron
+                }
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Suivis archivés").foregroundStyle(Brand.ink)
+                        Text("\(archivedCount) \(archivedCount == 1 ? "suivi" : "suivis")").foregroundStyle(Brand.secondary)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    archivedChevron
+                }
+                .padding(.vertical, 8)
             }
             .font(.body)
             .frame(minHeight: 52).contentShape(Rectangle())
@@ -125,6 +139,9 @@ struct SavedSearchesView: View {
         .accessibilityLabel("Suivis archivés, \(archivedCount)")
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("saved-archived")
+    }
+    private var archivedChevron: some View {
+        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary)
     }
 }
 
