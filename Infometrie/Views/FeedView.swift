@@ -54,17 +54,21 @@ struct FeedView: View {
                         } else {
                             ForEach(model.visibleItems) { item in
                                 NavigationLink { SequenceView(item: item, list: model.visibleItems) } label: {
-                                    FeedCard(item: item, seen: model.isSeen(item), day: listDay)
+                                    FeedCard(item: item, seen: model.isSeen(item), favorite: model.isFavorite(item), day: listDay)
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).accessibilityIdentifier("feed-item-\(item.id)")
                                 // A long press, or VoiceOver's actions, can undo or set the state by hand.
                                 .contextMenu {
                                     seenToggle(item)
+                                    favoriteToggle(item)
                                     profileAction(item.person)
                                 }
                                 .accessibilityAction(named: model.isSeen(item) ? "Marquer comme non vu" : "Marquer comme vu") {
                                     model.toggleSeen(item)
+                                }
+                                .accessibilityAction(named: model.isFavorite(item) ? "Retirer des favoris" : "Ajouter aux favoris") {
+                                    model.toggleFavorite(item)
                                 }
                                 // Every period pages through the history: the last card asks for the next page.
                                 .onAppear {
@@ -221,6 +225,12 @@ struct FeedView: View {
         let seen = model.isSeen(item)
         return Button(seen ? "Marquer comme non vu" : "Marquer comme vu",
                       systemImage: seen ? "circle" : "checkmark.circle") { model.toggleSeen(item) }
+    }
+
+    private func favoriteToggle(_ item: FeedItem) -> some View {
+        let favorite = model.isFavorite(item)
+        return Button(favorite ? "Retirer des favoris" : "Ajouter aux favoris",
+                      systemImage: favorite ? "star.slash" : "star") { model.toggleFavorite(item) }
     }
 
     /// `scheme` is set in the navigation bar, which may not follow a theme change (`Brand.fixed`).

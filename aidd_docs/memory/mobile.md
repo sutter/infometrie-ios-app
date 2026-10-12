@@ -17,7 +17,7 @@ The mobile app: platform, navigation, native access, and release.
 ## State and storage
 
 - Two `@MainActor @Observable` models passed through the environment: `AppModel` (session, feed, filters, suivis, word timings) and `PlaybackModel` (queue, player, transcript position).
-- `UserDefaults`: saved searches keyed per account (`SearchStore`), seen passages keyed per account (`SeenStore`, id and time seen, dropped after 31 days, kept across logout), last email. The API has no read state yet, so seen passages do not sync between devices; `SeenStore` is the seam to replace when it does. `@AppStorage`: `appearance`, `readingSize`.
+- `UserDefaults`: saved searches keyed per account (`SearchStore`), seen passages keyed per account (`SeenStore`, id and time seen, dropped after 31 days, kept across logout), favorite passages keyed per account (`FavoriteStore`, a copy of the feed entry and the time added, never the text or the media, kept across logout and never dropped), last email. The API has no read state yet, so seen passages do not sync between devices; `SeenStore` is the seam to replace when it does. Favorites are device-only by decision (2026-10-12): they do not sync either, and deleting the app loses them. `@AppStorage`: `appearance`, `readingSize`.
 - Word timings are cached in memory for the session only. No media is written to disk and nothing works offline.
 
 ## Build and release

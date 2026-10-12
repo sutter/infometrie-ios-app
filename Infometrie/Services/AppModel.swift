@@ -29,6 +29,8 @@ final class AppModel {
     private var trendsDay = ""
     /// Passages already opened or listened to, with the time they were seen (stored on the device).
     private(set) var seen: [Int64: Date] = [:]
+    /// Passages kept by the reader, the last added first (stored on the device).
+    private(set) var favorites: [Favorite] = []
     var isRefreshing = false
     /// Live (the last 24 hours, polled) or the last 7 or 30 complete Paris days (`/history`, `/days`).
     private(set) var period: FeedPeriod = .live
@@ -82,6 +84,7 @@ final class AppModel {
     private var historyRequestID = UUID()
     private let searches = SearchStore()
     private let seenStore = SeenStore()
+    private let favoriteStore = FavoriteStore()
     @ObservationIgnored private var wordTimingTasks: [Int64: Task<Void, Never>] = [:]
     @ObservationIgnored private var wordTimingGeneration = UUID()
 
@@ -138,7 +141,7 @@ final class AppModel {
         for task in wordTimingTasks.values { task.cancel() }
         wordTimingTasks = [:]; wordTimings = [:]; wordTimingStates = [:]
         requestID = UUID(); player.stop()
-        items = []; persons = []; parties = []; savedSearches = []; justFollowed = nil; seen = [:]; trends = [:]; trendsDay = ""
+        items = []; persons = []; parties = []; savedSearches = []; justFollowed = nil; seen = [:]; favorites = []; trends = [:]; trendsDay = ""
         filters = SearchFilters(); draft = SearchFilters(); tab = .feed; isSearchPresented = false; isCreatingSuivi = false
         lastSeq = 0; lastRefresh = nil; feedError = nil; choicesError = nil
         resetHistory(); period = .live; periodOffset = 0; selectedDay = nil; liveHasMore = false; liveGeneration = UUID()
@@ -404,6 +407,8 @@ final class AppModel {
         do { savedSearches = try searches.load(account: accountID) }
         catch { savedSearches = []; notice = "Les suivis enregistrés n’ont pas pu être lus." }
         seen = seenStore.load(account: accountID)
+        do { favorites = try favoriteStore.load(account: accountID) }
+        catch { favorites = []; notice = "Les favoris n’ont pas pu être lus." }
     }
     func isSeen(_ item: FeedItem) -> Bool { seen[item.id] != nil }
     /// Called when a passage page opens or a passage plays in "Tout écouter".
@@ -416,6 +421,23 @@ final class AppModel {
         guard !accountID.isEmpty else { return }
         seen[item.id] = isSeen(item) ? nil : Date()
         seenStore.save(seen, account: accountID)
+    }
+    func isFavorite(_ item: FeedItem) -> Bool { favorites.contains { $0.id == item.id } }
+    /// Adds the passage at the top of the favorites, or removes it.
+    func toggleFavorite(_ item: FeedItem) {
+        guard !accountID.isEmpty else { return }
+        if isFavorite(item) { favorites.removeAll { $0.id == item.id } }
+        else { favorites.insert(Favorite(item: item, addedAt: Date()), at: 0) }
+        persistFavorites()
+    }
+    func removeFavorite(_ favorite: Favorite) {
+        guard !accountID.isEmpty else { return }
+        favorites.removeAll { $0.id == favorite.id }
+        persistFavorites()
+    }
+    private func persistFavorites() {
+        do { try favoriteStore.save(favorites, account: accountID) }
+        catch { notice = "Impossible d’enregistrer vos favoris sur cet appareil." }
     }
     private func persistSearches() {
         do { try searches.save(savedSearches, account: accountID) }

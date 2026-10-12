@@ -4,6 +4,7 @@ import AVKit
 struct SequenceView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
+    @Environment(\.colorScheme) private var colorScheme
     /// The passage shown: it changes in place when the reader moves to the next one, so back still leads to the list.
     @State private var item: FeedItem
     /// The list the passage was opened from (the journal as filtered, or a profile's day), for "Passage suivant".
@@ -54,6 +55,20 @@ struct SequenceView: View {
                 // Presenting the reading view must keep the existing AVPlayer alive.
                 if isCurrent && !isTranscriptExpanded { model.player.stop() }
             }
+    }
+
+    /// A regular glass circle, like the system back button. It follows `item`, so the passage shown after "Passage
+    /// suivant". Colors are fixed by the page's scheme: the bar may not follow a theme change made in Compte.
+    private var favoriteButton: some View {
+        let favorite = model.isFavorite(item)
+        return Button { model.toggleFavorite(item) } label: {
+            Image(systemName: favorite ? "star.fill" : "star")
+                .foregroundStyle(Brand.fixed(favorite ? Brand.accent : Brand.ink, for: colorScheme))
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .sensoryFeedback(.selection, trigger: favorite)
+        .accessibilityLabel(favorite ? "Retirer des favoris" : "Ajouter aux favoris")
+        .accessibilityIdentifier("toggle-favorite")
     }
 
     /// The transcript heading and a paragraph, drawn as placeholders until the passage arrives.
@@ -137,6 +152,7 @@ struct SequenceView: View {
         }
         .scrollEdgeEffectHidden(true)
         .background(Brand.background).appNavigationTitle(item.isTweet ? "Publication X" : "Séquence")
+        .toolbar { ToolbarItem(placement: .topBarTrailing) { favoriteButton } }
         // Pushed pages keep the room for their player: no tab bar, no listening accessory.
         .pushedPage(model)
         .onAppear { model.markSeen(item) }

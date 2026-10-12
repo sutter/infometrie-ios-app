@@ -6,6 +6,8 @@ struct FeedCard: View {
     let item: FeedItem
     /// Seen passages step back: name and title turn secondary and "✓ Vu" follows the date.
     var seen = false
+    /// A favorite shows a vermillon star at the end of the facts, so the journal says it without a long press.
+    var favorite = false
     /// The Paris day the list is about: its passages show their time alone ("14:52", not "09/10 14:52").
     var day: String?
     @Environment(\.dynamicTypeSize) private var dynamicType
@@ -34,7 +36,7 @@ struct FeedCard: View {
         .overlay(alignment: .bottom) { AppRule() }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityValue(seen ? "Déjà vu" : "")
+        .accessibilityValue([seen ? "Déjà vu" : nil, favorite ? "Favori" : nil].compactMap(\.self).joined(separator: ", "))
         .accessibilityHint(item.canPlay ? "Ouvre le texte et le lecteur de ce passage" : "Ouvre le texte de cette publication")
     }
 
@@ -66,20 +68,22 @@ struct FeedCard: View {
         }
     }
 
-    /// "14:52 · 47 s", then "· ✓ Vu", then the channel's name when no logo shows it, as one text: separate "·" glyphs
-    /// and a fixed-size row failed the accessibility audit's contrast and clipping checks (2026-10-10).
+    /// "14:52 · 47 s", then "· ✓ Vu", then "· ★" for a favorite, then the channel's name when no logo shows it, as one
+    /// text: separate "·" glyphs and a fixed-size row failed the accessibility audit's contrast and clipping checks
+    /// (2026-10-10).
     private var facts: some View {
         var parts: [Text] = []
         if let date = PassageDate.text(item, day: day) { parts.append(date) }
         if item.canPlay && item.durationSec > 0 { parts.append(Text(item.readableDuration)) }
         if seen { parts.append(Text("\(Image(systemName: "checkmark")) Vu").fontWeight(.semibold)) }
+        if favorite { parts.append(Text(Image(systemName: "star.fill")).foregroundStyle(Brand.accent)) }
         if !channelLine.isEmpty { parts.append(Text(channelLine)) }
         let line = parts.dropFirst().reduce(parts.first ?? Text("")) { $0 + Text("  ·  ") + $1 }
         return line.font(.footnote).monospacedDigit().foregroundStyle(Brand.secondary).lineLimit(1)
             .accessibilityLabel(spokenFacts)
     }
 
-    /// The date in full and the listening duration; "Déjà vu" is the row's value.
+    /// The date in full and the listening duration; "Déjà vu" and "Favori" are the row's value.
     private var spokenFacts: Text {
         var parts: [Text] = []
         if let date = item.date { parts.append(PassageDate.spoken(date)) }

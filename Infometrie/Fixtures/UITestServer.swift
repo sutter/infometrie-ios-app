@@ -23,8 +23,9 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
                                            organisation: "Validation locale", expires: 3600, deviceId: 38), account: "session")
         }
         if process.arguments.contains("--reset-searches") { SearchStore().clear(account: email) }
-        // Every UI test starts with nothing seen, so a passage opened by one test never greys another's.
+        // Every UI test starts with nothing seen and no favorite, so one test's passages never mark another's.
         SeenStore().clear(account: email)
+        FavoriteStore().clear(account: email)
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [UITestServer.self]
         return AppModel(api: APIClient(session: URLSession(configuration: configuration)),

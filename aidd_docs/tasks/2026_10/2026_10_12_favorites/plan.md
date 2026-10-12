@@ -1,6 +1,6 @@
 ---
 objective: "Un passage se met en favori d’un toucher et se retrouve dans un onglet « Favoris », gardé sur l’appareil par compte, même après sa sortie de l’historique du serveur."
-status: pending
+status: in-progress
 ---
 
 # Plan: Favoris
