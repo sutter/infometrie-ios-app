@@ -2,16 +2,16 @@ import SwiftUI
 
 struct SearchView: View {
     @Environment(AppModel.self) private var model
-    @State private var showSave = false
-    @State private var name = ""
-    @State private var saved = false
     private var kind: Int? { model.draft.kindSelection }
+    /// Opened from "Créer un suivi", the sheet says so and saves: a search shown first and saved later was forgotten.
+    private var creating: Bool { model.isCreatingSuivi }
 
     var body: some View {
         @Bindable var model = model
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
-                PageHeading(title: "Rechercher", subtitle: "Composez le journal qui vous intéresse.")
+                PageHeading(title: creating ? "Nouveau suivi" : "Rechercher",
+                            subtitle: creating ? "Choisissez qui suivre ; il sera enregistré dans Mes suivis." : "Composez le journal qui vous intéresse.")
                 AppSection(title: "Qui suivre ?") {
                     VStack(spacing: 0) {
                         NavigationLink {
@@ -63,9 +63,6 @@ struct SearchView: View {
                 if let error = model.choicesError {
                     ErrorNotice(message: error) { Task { await model.loadChoices() } }
                 }
-                Button { name = ""; saved = false; showSave = true } label: {
-                    FilterSelectionRow(title: "Enregistrer ce suivi", icon: "bookmark", summary: "Retrouvez cette recherche dans « Mes suivis ».", isSelected: false)
-                }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }.accessibilityIdentifier("save-search")
                 Button { model.draft = SearchFilters() } label: {
                     Label("Réinitialiser la recherche", systemImage: "arrow.counterclockwise")
                         .font(.body.weight(.medium)).frame(maxWidth: .infinity, minHeight: 52)
@@ -75,70 +72,20 @@ struct SearchView: View {
         }
         .background(Brand.background)
         .scrollEdgeEffectHidden(true)
-        .appNavigationTitle("Recherche")
+        .appNavigationTitle(creating ? "Nouveau suivi" : "Recherche")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Annuler") { model.isSearchPresented = false } }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             FilterFooter {
-                Button { Task { await model.apply(model.draft) } } label: { Text("Afficher les résultats") }
-                    .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("apply-search")
-            }
-        }
-        .sheet(isPresented: $showSave, onDismiss: {
-            if saved { model.isSearchPresented = false }
-        }) {
-            NavigationStack {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 32) {
-                        PageHeading(title: "Nouveau suivi")
-                        AppSection(title: "Donnez-lui un nom") {
-                            VStack(alignment: .leading, spacing: 12) {
-                                TextField("Nom du suivi", text: $name, prompt: Text("Ex. Ma veille politique").foregroundStyle(Brand.secondaryOnSurface))
-                                    .font(.body).autocorrectionDisabled().submitLabel(.done)
-                                    .onSubmit { save() }.accessibilityIdentifier("search-name")
-                                    .padding(16).appInput()
-                                Text("Vous le retrouverez dans « Mes suivis ».")
-                                    .font(.subheadline).foregroundStyle(Brand.secondary)
-                            }
-                        }
-                        AppSection(title: "La recherche de ce suivi") {
-                            VStack(alignment: .leading, spacing: 16) {
-                                recap("Personnalités", value: model.draft.persons.isEmpty ? "Toutes" : model.draft.persons.sorted().joined(separator: ", "))
-                                AppRule()
-                                recap("Partis politiques", value: model.draft.parties.isEmpty ? "Tous" : partyNames(model.draft.parties, in: model.parties))
-                                AppRule()
-                                recap("Contenus", value: model.draft.kindSummary)
-                            }.frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }.padding(.horizontal, AppLayout.margin).padding(.vertical, 20).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
-                }
-                .background(Brand.background)
-                .scrollDismissesKeyboard(.interactively)
-                .scrollEdgeEffectHidden(true)
-                .appNavigationTitle("Enregistrer un suivi")
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Annuler") { showSave = false } } }
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    FilterFooter {
-                        Button("Enregistrer", action: save)
-                            .buttonStyle(ActionButtonStyle(prominent: true))
-                            .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                            .accessibilityIdentifier("confirm-save-search")
-                    }
+                if creating {
+                    Button { Task { await model.createSuivi() } } label: { Text("Enregistrer et afficher") }
+                        .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("create-suivi")
+                } else {
+                    Button { Task { await model.apply(model.draft) } } label: { Text("Afficher les résultats") }
+                        .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("apply-search")
                 }
             }
-        }
-    }
-
-    private func save() {
-        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        model.saveSearch(name: name)
-        saved = true; model.tab = .saved; showSave = false
-    }
-    private func recap(_ title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.subheadline).foregroundStyle(Brand.secondary)
-            Text(value).font(.body.weight(.medium)).fixedSize(horizontal: false, vertical: true)
         }
     }
 }

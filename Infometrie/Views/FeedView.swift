@@ -22,10 +22,8 @@ struct FeedView: View {
                     // Period and display scroll with the list: only the types stay pinned, so the cards get the room.
                     FeedViewOptions().padding(.top, 8)
                     FeedDayChart(search: usesWideLayout ? AnyView(filtersButton()) : nil).padding(.top, 16).padding(.bottom, 8)
-                    if hasAudienceFilters {
-                        selectionSummary.padding(.bottom, 8)
-                        FollowOffer()
-                    }
+                    if hasAudienceFilters { selectionSummary.padding(.bottom, 8) }
+                    FollowOffer()
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.reload() } }
                             .padding(.vertical, 12)
@@ -507,7 +505,8 @@ struct ListenAccessory: View {
 }
 
 /// Under the criteria of a search no suivi holds yet, the offer to follow it: where its results show, which is
-/// where saving it used to be forgotten. Once followed, a confirmation and a way to rename it, until the criteria change.
+/// where saving it used to be forgotten. Once saved, from here or from "Nouveau suivi", a confirmation and a way to
+/// rename it, until another search or suivi is opened. Takes no room when it has nothing to say.
 private struct FollowOffer: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
@@ -519,18 +518,22 @@ private struct FollowOffer: View {
     }
 
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
             if let followed {
-                confirmation(followed)
-            } else if model.followedSearch == nil {
-                offer
+                row { confirmation(followed) }
+            } else if !model.filters.isEmpty && model.followedSearch == nil {
+                row { offer }
             }
         }
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .bottom) { AppRule() }
         .sensoryFeedback(.success, trigger: model.justFollowed) { _, new in new != nil }
         .modifier(SuiviRenaming(renaming: $renaming))
+    }
+
+    private func row(@ViewBuilder _ content: () -> some View) -> some View {
+        content()
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .bottom) { AppRule() }
     }
 
     private var offer: some View {

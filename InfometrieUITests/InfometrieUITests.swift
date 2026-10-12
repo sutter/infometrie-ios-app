@@ -121,19 +121,23 @@ final class InfometrieUITests: XCTestCase {
             XCTAssertTrue(app.buttons["feed-item-\(id)"].waitForExistence(timeout: 5))
             XCTAssertTrue(results("1 passage", in: app).exists)
         }
-        app.buttons["edit-filters"].tap()
+        // "Créer un suivi" opens a fresh search titled "Nouveau suivi" that saves before showing the results.
+        navigationButton("Mes suivis", in: app).tap()
+        app.buttons["new-search"].tap()
+        XCTAssertTrue(app.navigationBars["Nouveau suivi"].waitForExistence(timeout: 5))
         reveal(app.buttons["filter-kind-3"], in: app, down: false)
+        app.buttons["filter-kind-3"].tap()
         XCTAssertTrue(app.buttons["filter-kind-3"].isSelected)
-        reveal(app.buttons["save-search"], in: app, down: false)
-        app.buttons["save-search"].tap()
-        let name = "Publications X " + UUID().uuidString.prefix(6)
-        app.textFields["search-name"].tap(); app.textFields["search-name"].typeText(String(name))
-        app.buttons["confirm-save-search"].tap()
-        XCTAssertTrue(savedSearch(String(name), in: app).waitForExistence(timeout: 5))
+        app.buttons["create-suivi"].tap()
+        XCTAssertTrue(app.buttons["feed-item-903"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["follow-confirmation"].exists, "Le suivi créé est confirmé sur ses résultats")
+        let name = "Tout le panel · Publications X"
+        navigationButton("Mes suivis", in: app).tap()
+        XCTAssertTrue(savedSearch(name, in: app).waitForExistence(timeout: 5))
         app.terminate(); app.launch()
         XCTAssertTrue(app.buttons["feed-kind-1"].waitForExistence(timeout: 10))
         navigationButton("Mes suivis", in: app).tap()
-        XCTAssertTrue(savedSearch(String(name), in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(savedSearch(name, in: app).waitForExistence(timeout: 5))
         app.buttons["saved-actions-\(name)"].tap()
         app.buttons["Modifier la recherche"].tap()
         reveal(app.buttons["filter-kind-3"], in: app, down: false)
@@ -297,7 +301,10 @@ final class InfometrieUITests: XCTestCase {
         XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
         capture("01-fil", app: app)
 
-        app.buttons["edit-filters"].tap()
+        navigationButton("Mes suivis", in: app).tap()
+        app.buttons["new-search"].tap()
+        XCTAssertTrue(app.navigationBars["Nouveau suivi"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["apply-search"].exists)
         app.buttons["pick-persons"].tap()
         app.buttons["choice-Camille Martin"].tap()
         wait(app.staticTexts["choice-count"], key: "label", equals: "1 sélection")
@@ -305,44 +312,41 @@ final class InfometrieUITests: XCTestCase {
         app.buttons["confirm-choices"].tap()
         XCTAssertTrue(app.buttons["pick-persons"].waitForExistence(timeout: 3))
         capture("02-filtres", app: app)
-        let save = app.buttons["save-search"]
-        reveal(save, in: app, down: false)
-        save.tap()
-        let field = app.textFields["search-name"]
-        XCTAssertTrue(field.waitForExistence(timeout: 3))
-        capture("15-enregistrer-suivi", app: app)
-        let name = "Veille test " + UUID().uuidString.prefix(6)
-        field.tap(); field.typeText(String(name))
-        app.buttons["confirm-save-search"].tap()
-        XCTAssertTrue(savedSearch(String(name), in: app).waitForExistence(timeout: 4))
+        app.buttons["create-suivi"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["follow-confirmation"].waitForExistence(timeout: 5))
+        // Back to the whole journal, which the rest of this journey reads.
+        app.buttons["clear-filters"].tap()
+        XCTAssertTrue(app.buttons["feed-item-2"].waitForExistence(timeout: 5))
+        let name = "Camille Martin"
+        navigationButton("Mes suivis", in: app).tap()
+        XCTAssertTrue(savedSearch(name, in: app).waitForExistence(timeout: 4))
         capture("02-recherches", app: app)
         app.buttons["saved-actions-\(name)"].tap()
         app.buttons["Modifier la recherche"].tap()
-        reveal(app.buttons["save-search"], in: app, down: false)
-        app.buttons["save-search"].tap()
-        app.navigationBars["Enregistrer un suivi"].buttons["Annuler"].tap()
+        // Editing a suivi's criteria is a search: no saving there.
         XCTAssertTrue(app.navigationBars["Recherche"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["apply-search"].isHittable)
+        XCTAssertFalse(app.buttons["create-suivi"].exists)
         app.navigationBars["Recherche"].buttons["Annuler"].tap()
 
         app.terminate(); app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light"]; app.launch()
         navigationButton("Mes suivis", in: app).tap()
-        XCTAssertTrue(savedSearch(String(name), in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(savedSearch(name, in: app).waitForExistence(timeout: 5))
         app.buttons["saved-actions-\(name)"].tap()
         app.buttons["Archiver"].tap()
-        XCTAssertFalse(savedSearch(String(name), in: app).waitForExistence(timeout: 2))
+        XCTAssertFalse(savedSearch(name, in: app).waitForExistence(timeout: 2))
         app.buttons["saved-archived"].tap()
         XCTAssertTrue(app.navigationBars["Suivis archivés"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts[String(name)].exists)
         app.buttons["restore-search-\(name)"].tap()
         XCTAssertTrue(app.staticTexts["Aucun suivi archivé"].waitForExistence(timeout: 3))
         app.navigationBars["Suivis archivés"].buttons.firstMatch.tap()
-        XCTAssertTrue(savedSearch(String(name), in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(savedSearch(name, in: app).waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["saved-archived"].exists)
         app.buttons["saved-actions-\(name)"].tap()
         app.buttons["Supprimer"].tap()
         app.alerts.buttons["Supprimer"].tap()
-        XCTAssertFalse(savedSearch(String(name), in: app).waitForExistence(timeout: 2))
+        XCTAssertFalse(savedSearch(name, in: app).waitForExistence(timeout: 2))
 
         navigationButton("Le journal", in: app).tap()
         let first = app.buttons["feed-item-1"]
@@ -1207,7 +1211,7 @@ final class InfometrieUITests: XCTestCase {
                 ? max(top, picker.frame.maxY + 8) : top
             let controlTop = identifier.hasPrefix("feed-kind-") ? top - 8 : contentTop
             let slider = app.sliders["player-position"]
-            let filterFooter = ["confirm-save-search", "confirm-choices", "apply-search"].map { app.buttons[$0] }.first { $0.exists && $0.isHittable }
+            let filterFooter = ["create-suivi", "confirm-choices", "apply-search"].map { app.buttons[$0] }.first { $0.exists && $0.isHittable }
             let choiceCount = app.staticTexts["choice-count"]
             // The fixed selection summary can span several lines at maximum text size.
             // Its top, rather than the confirmation button, bounds the scrolling list.
@@ -1219,7 +1223,7 @@ final class InfometrieUITests: XCTestCase {
             let bottom = slider.exists ? slider.frame.minY - 12 : filterBottom ?? dockBottom ?? bounds.maxY - 150
             if element.exists && element.isHittable {
                 let contentControl = ["sequence-summary", "transcript-follow", "expand-transcript", "transcript-scroll"].contains(identifier)
-                    || ["save-search", "reset-search", "clear-choices", "start-podcast", "logout"].contains(identifier)
+                    || ["reset-search", "clear-choices", "start-podcast", "logout"].contains(identifier)
                     || ["filter-kind-", "feed-kind-", "feed-item-", "choice-", "pick-"].contains { identifier.hasPrefix($0) }
                 if element.elementType != .link && !contentControl { return }
                 // A large-text choice can be taller than the viewport. Its center

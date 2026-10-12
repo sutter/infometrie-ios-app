@@ -6,6 +6,8 @@ final class AppModel {
     enum Tab: Hashable { case feed, saved, account }
     var tab: Tab = .feed
     var isSearchPresented = false
+    /// The search sheet opened from "Créer un suivi": it saves its criteria as a suivi, then shows them.
+    private(set) var isCreatingSuivi = false
     /// Changing it rebuilds the journal's navigation stack, which pops it back to the feed.
     private(set) var feedStackID = UUID()
     var session: Session?
@@ -137,7 +139,7 @@ final class AppModel {
         wordTimingTasks = [:]; wordTimings = [:]; wordTimingStates = [:]
         requestID = UUID(); player.stop()
         items = []; persons = []; parties = []; savedSearches = []; justFollowed = nil; seen = [:]; trends = [:]; trendsDay = ""
-        filters = SearchFilters(); draft = SearchFilters(); tab = .feed; isSearchPresented = false
+        filters = SearchFilters(); draft = SearchFilters(); tab = .feed; isSearchPresented = false; isCreatingSuivi = false
         lastSeq = 0; lastRefresh = nil; feedError = nil; choicesError = nil
         resetHistory(); period = .live; periodOffset = 0; selectedDay = nil; liveHasMore = false; liveGeneration = UUID()
         todayCounts = nil
@@ -182,11 +184,12 @@ final class AppModel {
             choicesError = "Le référentiel n’a pas pu être chargé. \(message(for: error))"
         }
     }
-    func apply(_ value: SearchFilters) async {
+    /// `followed` is the suivi just saved for these criteria, whose confirmation then shows over the results.
+    func apply(_ value: SearchFilters, followed: SavedSearch.ID? = nil) async {
         let changed = value != filters
         filters = value; draft = value; tab = .feed; isSearchPresented = false
-        // The confirmation answers the touch on "Suivre" only: any search or suivi opened afterwards ends it.
-        justFollowed = nil
+        // The confirmation answers a save only: any search or suivi opened afterwards ends it.
+        justFollowed = followed
         for index in savedSearches.indices where savedSearches[index].filters == value && !savedSearches[index].isArchived {
             savedSearches[index].lastUsedAt = Date()
         }
@@ -324,15 +327,29 @@ final class AppModel {
     func returnToFeedRoot() { feedStackID = UUID(); tab = .feed }
     func openSearch(_ value: SearchFilters) {
         draft = value
+        isCreatingSuivi = false
         if !draft.hasKinds { draft.selectKind(0) }
         isSearchPresented = true
     }
-    func newSearch() { openSearch(SearchFilters()) }
-    func saveSearch(name: String) {
-        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        savedSearches.insert(SavedSearch(name: name, filters: draft), at: 0)
-        persistSearches()
+    func newSearch() {
+        openSearch(SearchFilters())
+        isCreatingSuivi = true
+    }
+    /// "Enregistrer et afficher": saves the draft as a suivi named after its criteria, then shows its results.
+    /// Only the very same criteria, kinds included, are not saved twice (an archived one comes back): asked
+    /// explicitly, "Camille Martin · Interventions" may stand beside "Camille Martin".
+    func createSuivi() async {
+        let value = draft
+        let id: SavedSearch.ID
+        if let index = savedSearches.firstIndex(where: { $0.filters == value }) {
+            savedSearches[index].archivedAt = nil
+            id = savedSearches[index].id
+        } else {
+            let search = SavedSearch(name: value.suggestedName(parties: parties), filters: value)
+            savedSearches.insert(search, at: 0)
+            id = search.id
+        }
+        await apply(value, followed: id)
     }
     /// The active suivi with the journal's persons and parties, whatever its kinds.
     var followedSearch: SavedSearch? {
