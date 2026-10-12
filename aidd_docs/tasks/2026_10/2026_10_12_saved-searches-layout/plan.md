@@ -1,6 +1,6 @@
 ---
 objective: "« Mes suivis » montre environ sept suivis par écran d’iPhone 13 mini, chacun sur une ligne compacte qui ouvre le journal d’un toucher, et les suivis archivés vivent sur leur propre page."
-status: pending
+status: in-progress
 ---
 
 # Plan: Réagencement de « Mes suivis »

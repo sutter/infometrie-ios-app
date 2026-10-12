@@ -105,6 +105,17 @@ struct CoreTests {
         #expect(decoded.isArchived)
     }
 
+    @Test func savedSearchCriteriaNamePartiesAndSkipARepeatedName() {
+        let parties = [Party(code: "DEMO-A", name: "Groupe de démonstration A")]
+        let mixed = SearchFilters(persons: ["Sam Laurent", "Camille Martin"], parties: ["DEMO-B", "DEMO-A"])
+        #expect(mixed.summary(parties: parties) == "Camille Martin · Sam Laurent · DEMO-B · Groupe de démonstration A")
+        #expect(SearchFilters().summary() == "Tout le panel")
+        let person = SearchFilters(persons: ["Camille Martin"])
+        #expect(SavedSearch(name: " camille martin ", filters: person).criteria() == nil)
+        #expect(SavedSearch(name: "Ma veille", filters: person).criteria() == "Camille Martin")
+        #expect(SavedSearch(name: "Groupe A", filters: SearchFilters(parties: ["DEMO-A"])).criteria(parties: parties) == "Groupe de démonstration A")
+    }
+
     @Test func savedSearchesRemainIsolatedBetweenAccounts() throws {
         let suite = "infometrie.tests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))

@@ -11,78 +11,43 @@ struct SavedSearchesView: View {
         model.savedSearches.filter { $0.isArchived == archived }
             .sorted { ($0.lastUsedAt ?? $0.createdAt) > ($1.lastUsedAt ?? $1.createdAt) }
     }
+    private var activeCount: Int { model.savedSearches.filter { !$0.isArchived }.count }
     var body: some View {
         List {
             Group {
-                VStack(alignment: .leading, spacing: 20) {
-                    PageHeading(title: "Mes suivis", subtitle: "Vos sujets, au fil de l’actualité.")
-                    // At accessibility sizes the "+" left too little room and the label broke inside "Créer".
-                    Button { model.newSearch() } label: {
-                        if dynamicType.isAccessibilitySize { Text("Créer un suivi") } else { Label("Créer un suivi", systemImage: "plus") }
-                    }
-                        // Prominent only while the list is empty; afterwards the suivis themselves lead.
-                        .buttonStyle(ActionButtonStyle(prominent: model.savedSearches.isEmpty)).accessibilityIdentifier("new-search")
-                    // Chips, like the feed's types: one look for every choice that narrows a list.
-                    HStack(spacing: 8) {
-                        category("Actifs", archived: false)
-                        category("Archivés", archived: true)
-                        Spacer(minLength: 0)
-                    }
-                    .sensoryFeedback(.selection, trigger: archived)
-                }.padding(.top, 16).padding(.bottom, 8)
+                heading
                 if searches.isEmpty {
-                    AppEmptyState(
-                        title: archived ? "Aucun suivi archivé" : "Retrouvez vos sujets de veille",
-                        icon: archived ? "archivebox" : "bookmark",
-                        message: archived ? "Un suivi archivé peut être restauré à tout moment." : "Choisissez des personnalités ou des partis, puis enregistrez votre recherche pour la retrouver ici."
-                    )
+                    VStack(alignment: .leading, spacing: 0) {
+                        AppEmptyState(
+                            title: archived ? "Aucun suivi archivé" : "Retrouvez vos sujets de veille",
+                            icon: archived ? "archivebox" : "bookmark",
+                            message: archived ? "Un suivi archivé peut être restauré à tout moment." : "Choisissez des personnalités ou des partis, puis enregistrez votre recherche pour la retrouver ici."
+                        )
+                        // The only "Créer un suivi" while nothing is followed: the navigation bar shows none then.
+                        if !archived {
+                            Button { model.newSearch() } label: { Text("Créer un suivi") }
+                                .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("new-search")
+                        }
+                    }
+                } else if !archived && !dynamicType.isAccessibilitySize {
+                    // One legend for the right-hand column, rather than "passages sur 7 jours" in every row.
+                    Text("Passages sur 7 jours").font(.footnote.weight(.semibold)).foregroundStyle(Brand.secondary)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.trailing, SuiviRow.actionsWidth + SuiviRow.spacing).padding(.bottom, 6)
+                        .overlay(alignment: .bottom) { AppRule() }
+                        .accessibilityHidden(true)
                 }
                 ForEach(searches) { search in
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(search.name).font(.headline)
-                            .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
-                        Text(search.filters.isEmpty ? "Toutes les personnalités" : search.filters.summary)
-                            .font(.subheadline).foregroundStyle(Brand.secondary)
-                        if !archived {
-                            SuiviTrend(filters: search.filters, days: model.trends[search.filters])
-                                .accessibilityIdentifier("saved-trend-\(search.name)")
-                        }
-                        // The kinds as tags, as in the feed; stacked when the three do not fit the width, since a
-                        // row wider than the screen pushed the whole suivi off its left edge.
-                        ViewThatFits(in: .horizontal) {
-                            HStack(spacing: 6) { kindTags(search.filters) }
-                            VStack(alignment: .leading, spacing: 6) { kindTags(search.filters) }
-                        }
-                        .accessibilityElement(children: .combine)
-                        AdaptiveRow {
-                            if archived {
-                                Button("Restaurer ce suivi") { model.archive(search) }
-                                    .buttonStyle(ActionButtonStyle()).accessibilityIdentifier("restore-search-\(search.name)")
-                            } else {
-                                Button { Task { await model.apply(search.filters) } } label: { Label("Afficher le journal", systemImage: "text.alignleft") }
-                                    .buttonStyle(ActionButtonStyle())
-                            }
-                            Menu {
-                                if !archived {
-                                    Button("Modifier la recherche", systemImage: "magnifyingglass") { model.openSearch(search.filters) }
-                                }
-                                Button(archived ? "Restaurer" : "Archiver", systemImage: archived ? "arrow.uturn.backward" : "archivebox") { model.archive(search) }
-                                Button("Supprimer", systemImage: "trash", role: .destructive) { deleting = search }
-                            } label: {
-                                Label("Options", systemImage: "ellipsis").font(.subheadline.weight(.medium))
-                                    .fixedSize(horizontal: false, vertical: true).padding(.horizontal, 8).frame(minHeight: 52)
-                            }.accessibilityLabel("Options de \(search.name)").accessibilityIdentifier("saved-actions-\(search.name)")
-                        }
-                    }
-                    // A row on a hairline, like the feed, rather than a card.
-                    .padding(.vertical, 20)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .overlay(alignment: .bottom) { AppRule() }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button("Supprimer", role: .destructive) { deleting = search }
-                            Button(archived ? "Restaurer" : "Archiver") { model.archive(search) }.tint(Brand.primary)
-                        }
+                    SuiviRow(search: search) { deleting = search }
                 }
+                // Chips, like the feed's types: one look for every choice that narrows a list.
+                HStack(spacing: 8) {
+                    category("Actifs", archived: false)
+                    category("Archivés", archived: true)
+                    Spacer(minLength: 0)
+                }
+                .sensoryFeedback(.selection, trigger: archived)
+                .padding(.top, 24)
                 if !searches.isEmpty {
                     Text("Vos suivis sont enregistrés sur cet appareil, pour votre compte.")
                         .font(.footnote).foregroundStyle(Brand.secondary).padding(.vertical, 24)
@@ -92,6 +57,8 @@ struct SavedSearchesView: View {
             .listRowBackground(Color.clear).listRowSeparator(.hidden)
         }
         .listStyle(.plain).scrollContentBackground(.hidden)
+        // The column legend is shorter than a list row's default 44 pt, which floated it away from the rows.
+        .environment(\.defaultMinListRowHeight, 1)
         .frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
         .background(Brand.background)
         .navigationTitle("").navigationBarTitleDisplayMode(.inline)
@@ -101,6 +68,10 @@ struct SavedSearchesView: View {
             if sizeClass != .regular {
                 ToolbarItem(placement: .topBarLeading) { Wordmark(size: 21, scheme: colorScheme) }
                     .sharedBackgroundVisibility(.hidden)
+                if activeCount > 0 {
+                    ToolbarItem(placement: .topBarTrailing) { createButton(scheme: colorScheme) }
+                        .sharedBackgroundVisibility(.hidden)
+                }
             }
         }
         .task(id: model.savedSearches.filter { !$0.isArchived }.map(\.filters)) { await model.loadTrends() }
@@ -109,10 +80,29 @@ struct SavedSearchesView: View {
             Button("Supprimer", role: .destructive) { if let deleting { model.delete(deleting) }; deleting = nil }
         } message: { Text("« \(deleting?.name ?? "") » disparaîtra de cet appareil. Cette action est définitive.") }
     }
-    @ViewBuilder private func kindTags(_ filters: SearchFilters) -> some View {
-        if filters.interventions { KindTag(kind: "intervention", label: "Interventions") }
-        if filters.citations { KindTag(kind: "citation", label: "Citations") }
-        if filters.tweets { KindTag(kind: "tweet", label: "Publications X") }
+    /// The title, then how many suivis and in what order: they move up each time one is used, and saying so
+    /// keeps that move from reading as disorder.
+    private var heading: some View {
+        AdaptiveRow {
+            PageHeading(title: "Mes suivis", subtitle: activeCount == 0 ? nil
+                        : "\(activeCount) \(activeCount == 1 ? "suivi" : "suivis"), les derniers utilisés en premier")
+            // On iPad the page has no navigation bar: the button sits beside the title instead.
+            if sizeClass == .regular && activeCount > 0 { createButton() }
+        }
+        .padding(.top, 16).padding(.bottom, 16)
+    }
+    /// In the navigation bar, like "Rechercher" on the journal.
+    private func createButton(scheme: ColorScheme? = nil) -> some View {
+        Button { model.newSearch() } label: {
+            Label("Créer un suivi", systemImage: "plus")
+                .labelStyle(.titleAndIcon)
+                .font(.subheadline.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 8).frame(minHeight: 48)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).foregroundStyle(Brand.fixed(Brand.tint, for: scheme))
+        .accessibilityIdentifier("new-search")
     }
     private func category(_ title: String, archived value: Bool) -> some View {
         let selected = archived == value
@@ -127,12 +117,140 @@ struct SavedSearchesView: View {
     }
 }
 
-/// A suivi's last 7 complete days: its total, then one small bar per day, its kinds stacked in their colors,
-/// so the suivi that is stirring shows at a glance.
+/// One suivi on a hairline: what it follows on the left, its last 7 days on the right, its actions behind "⋯".
+/// Touching the row anywhere but "⋯" opens the journal on it. An archived suivi has no trend and offers to restore.
+private struct SuiviRow: View {
+    static let actionsWidth: CGFloat = 44
+    static let spacing: CGFloat = 12
+    @Environment(AppModel.self) private var model
+    @Environment(\.dynamicTypeSize) private var dynamicType
+    let search: SavedSearch
+    let delete: () -> Void
+    private var criteria: String? { search.criteria(parties: model.parties) }
+    private var trend: [DayCount]? { model.trends[search.filters] }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: dynamicType.isAccessibilitySize ? .top : .center, spacing: Self.spacing) {
+                if search.isArchived {
+                    description.frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityElement(children: .combine)
+                } else {
+                    Button { Task { await model.apply(search.filters) } } label: { opener }
+                        // Plain, so that the row's own "⋯" menu stays a separate target.
+                        .buttonStyle(.plain)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(spokenLabel)
+                        .accessibilityHint("Affiche le journal de ce suivi")
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction(named: "Modifier la recherche") { model.openSearch(search.filters) }
+                        .accessibilityAction(named: "Archiver") { model.archive(search) }
+                        .accessibilityAction(named: "Supprimer") { delete() }
+                        .accessibilityIdentifier("saved-search-\(search.name)")
+                }
+                Menu { actions } label: {
+                    Image(systemName: "ellipsis").font(.body.weight(.semibold)).foregroundStyle(Brand.secondary)
+                        // A minimum, not a fixed width: at accessibility sizes the glyph outgrew 44 pt and ran past the margin.
+                        .frame(minWidth: Self.actionsWidth, minHeight: 44).contentShape(Rectangle())
+                }
+                .accessibilityLabel("Options de \(search.name)").accessibilityIdentifier("saved-actions-\(search.name)")
+            }
+            if search.isArchived {
+                Button("Restaurer ce suivi") { model.archive(search) }
+                    .buttonStyle(ActionButtonStyle()).accessibilityIdentifier("restore-search-\(search.name)")
+            }
+        }
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .bottom) { AppRule() }
+        .contentShape(Rectangle())
+        .contextMenu { actions }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button("Supprimer", role: .destructive) { delete() }
+            Button(search.isArchived ? "Restaurer" : "Archiver") { model.archive(search) }.tint(Brand.primary)
+        }
+    }
+
+    /// The description and the trend, side by side; stacked at accessibility sizes, where the trend reads in words.
+    @ViewBuilder private var opener: some View {
+        if dynamicType.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                description
+                SuiviTrend(filters: search.filters, days: trend, inWords: true).accessibilityIdentifier("saved-trend-\(search.name)")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+        } else {
+            HStack(spacing: Self.spacing) {
+                description.frame(maxWidth: .infinity, alignment: .leading)
+                SuiviTrend(filters: search.filters, days: trend, inWords: false).accessibilityIdentifier("saved-trend-\(search.name)")
+            }
+            .contentShape(Rectangle())
+        }
+    }
+
+    private var description: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(search.name).font(.headline).foregroundStyle(Brand.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            if let criteria {
+                Text(criteria).font(.subheadline).foregroundStyle(Brand.secondary)
+                    .lineLimit(dynamicType.isAccessibilitySize ? 3 : 1)
+            }
+            KindNames(filters: search.filters)
+        }
+    }
+
+    @ViewBuilder private var actions: some View {
+        if !search.isArchived {
+            Button("Modifier la recherche", systemImage: "magnifyingglass") { model.openSearch(search.filters) }
+        }
+        Button(search.isArchived ? "Restaurer" : "Archiver", systemImage: search.isArchived ? "arrow.uturn.backward" : "archivebox") { model.archive(search) }
+        Button("Supprimer", systemImage: "trash", role: .destructive) { delete() }
+    }
+
+    private var spokenLabel: String {
+        let kinds = KindNames.restricted(search.filters) ? search.filters.kindSummary.replacingOccurrences(of: " · ", with: ", ") : nil
+        return [search.name, criteria, kinds, SuiviTrend.spoken(filters: search.filters, days: trend)]
+            .compactMap { $0 }.joined(separator: ", ")
+    }
+}
+
+/// The kinds a suivi keeps, named only when it leaves one out: pictogram and name in the kind's color, with no tag,
+/// on one line, or one under the other when they do not fit.
+private struct KindNames: View {
+    let filters: SearchFilters
+    static func restricted(_ filters: SearchFilters) -> Bool { (1...2).contains(filters.selectedKinds.count) }
+
+    var body: some View {
+        if Self.restricted(filters) {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) { names }
+                VStack(alignment: .leading, spacing: 4) { names }
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private var names: some View {
+        ForEach(filters.selectedKinds, id: \.self) { kind in
+            HStack(spacing: 4) {
+                // X uses its own mark, a custom symbol sized by the font only.
+                if kind == "tweet" { Image("x.logo") } else { Image(systemName: FeedItem.symbol(ofKind: kind)) }
+                Text(kind == "intervention" ? "Interventions" : kind == "citation" ? "Citations" : "Publications X")
+            }
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(FeedItem.labelColor(ofKind: kind))
+        }
+    }
+}
+
+/// A suivi's last 7 complete days: its total over one small bar per day, its kinds stacked in their colors,
+/// so the suivi that is stirring shows at a glance. At accessibility sizes, the bars then the total in words.
 private struct SuiviTrend: View {
     let filters: SearchFilters
     let days: [DayCount]?
-    @ScaledMetric(relativeTo: .footnote) private var barHeight = 32.0
+    let inWords: Bool
+    @ScaledMetric(relativeTo: .footnote) private var barHeight = 20.0
 
     private var placeholder: [DayCount] {
         ParisDay.days(count: 7, before: Date()).enumerated().map { DayCount(day: $1, interventions: 2 + $0 % 3) }
@@ -141,24 +259,37 @@ private struct SuiviTrend: View {
     private var kinds: [String] { days == nil ? ["intervention"] : filters.selectedKinds }
     private var total: Int { shown.reduce(0) { $0 + $1.total(for: filters) } }
 
+    /// French counts 0 and 1 in the singular.
+    static func spoken(filters: SearchFilters, days: [DayCount]?) -> String {
+        guard let days else { return "Chargement de la tendance" }
+        let total = days.reduce(0) { $0 + $1.total(for: filters) }
+        return "\(total) \(total <= 1 ? "passage" : "passages") sur les 7 derniers jours"
+    }
+
     var body: some View {
-        HStack(alignment: .bottom, spacing: 16) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(total.formatted()).font(.title3.weight(.bold).monospacedDigit()).foregroundStyle(Brand.ink)
-                Text(total == 1 ? "passage sur 7 jours" : "passages sur 7 jours").font(.footnote).foregroundStyle(Brand.secondary)
+        Group {
+            if inWords {
+                HStack(alignment: .bottom, spacing: 8) {
+                    bars
+                    Text("\(Text(total.formatted()).bold().foregroundStyle(Brand.ink)) \(total <= 1 ? "passage" : "passages") sur 7 jours")
+                        .font(.footnote).foregroundStyle(Brand.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(total.formatted()).font(.headline.weight(.bold).monospacedDigit()).foregroundStyle(Brand.ink)
+                    bars
+                }
             }
-            .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-            bars
         }
         .skeleton(days == nil)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(days == nil ? "Chargement de la tendance" : "\(total) passages sur les 7 derniers jours")
+        .accessibilityLabel(Self.spoken(filters: filters, days: days))
     }
 
     private var bars: some View {
         let peak = max(1, shown.map { $0.total(for: filters) }.max() ?? 1)
-        return HStack(alignment: .bottom, spacing: 4) {
+        return HStack(alignment: .bottom, spacing: 3) {
             ForEach(shown) { day in
                 // Bottom to top in the order of the type checkboxes, like the journal's chart.
                 VStack(spacing: 0) {
@@ -170,7 +301,7 @@ private struct SuiviTrend: View {
                         }
                     }
                 }
-                .frame(width: 8, height: barHeight, alignment: .bottom)
+                .frame(width: 5, height: barHeight, alignment: .bottom)
                 .background(alignment: .bottom) { Rectangle().fill(Brand.rule).frame(height: 1) }
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: 2, topTrailingRadius: 2))
             }

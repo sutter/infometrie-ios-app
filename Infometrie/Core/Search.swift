@@ -40,8 +40,10 @@ struct SearchFilters: Codable, Hashable, Sendable {
         // Saved searches created before API 0.6 must not silently broaden to X.
         tweets = try c.decodeIfPresent(Bool.self, forKey: .tweets) ?? false
     }
-    var summary: String {
-        let names = persons.sorted() + parties.sorted()
+    /// Persons, then parties by their name in `known` (a party missing from it keeps its code), each alphabetical.
+    func summary(parties known: [Party] = []) -> String {
+        let partyNames = parties.map { code in known.first { $0.code == code }?.name ?? code }.sorted()
+        let names = persons.sorted() + partyNames
         return names.isEmpty ? "Tout le panel" : names.joined(separator: " · ")
     }
     func accepts(_ item: FeedItem) -> Bool {
@@ -59,6 +61,12 @@ struct SavedSearch: Codable, Identifiable, Equatable, Sendable {
     var lastUsedAt: Date?
     var archivedAt: Date?
     var isArchived: Bool { archivedAt != nil }
+    /// The criteria under the name, nil when they only repeat it (a suivi named after its one person).
+    func criteria(parties: [Party] = []) -> String? {
+        let summary = filters.summary(parties: parties)
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.compare(summary, options: .caseInsensitive) == .orderedSame ? nil : summary
+    }
 }
 
 enum FeedMerge {
