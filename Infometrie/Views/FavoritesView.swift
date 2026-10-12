@@ -30,7 +30,8 @@ struct FavoritesView: View {
             Button("Retirer des favoris", role: .destructive) { model.removeFavorite(favorite); removing = nil }
             Button("Annuler", role: .cancel) { removing = nil }
         } message: { _ in
-            Text("Ce passage n’est plus disponible : vous ne pourrez pas l’ajouter à nouveau.")
+            // Short: at the largest text sizes the system dialog cut a longer message (iPhone 13 mini, 2026-10-12).
+            Text("Il ne pourra plus être ajouté.")
         }
     }
 
