@@ -85,7 +85,10 @@ struct FeedCard: View {
         if favorite { parts.append(Text(Image(systemName: "star.fill")).foregroundStyle(Brand.accent)) }
         if !channelLine.isEmpty { parts.append(Text(channelLine)) }
         let line = parts.dropFirst().reduce(parts.first ?? Text("")) { $0 + Text("  ·  ") + $1 }
-        return line.font(.footnote).monospacedDigit().foregroundStyle(Brand.secondary).lineLimit(1)
+        // One line lets the header move the facts under the tag; at accessibility sizes they stand alone, and one line
+        // cut them after the duration, hiding "✓ Vu" and the star on the iPhone 13 mini (2026-10-12).
+        return line.font(.footnote).monospacedDigit().foregroundStyle(Brand.secondary)
+            .lineLimit(dynamicType.isAccessibilitySize ? nil : 1).fixedSize(horizontal: false, vertical: dynamicType.isAccessibilitySize)
             .accessibilityLabel(spokenFacts)
     }
 
