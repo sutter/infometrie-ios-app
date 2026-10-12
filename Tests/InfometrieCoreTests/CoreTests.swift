@@ -116,6 +116,21 @@ struct CoreTests {
         #expect(SavedSearch(name: "Groupe A", filters: SearchFilters(parties: ["DEMO-A"])).criteria(parties: parties) == "Groupe de démonstration A")
     }
 
+    @Test func suiviNamesComeFromTheirCriteriaAndTheJournalKindsDoNotChangeTheAudience() {
+        let parties = [Party(code: "DEMO-B", name: "Groupe B")]
+        let citations = SearchFilters(parties: ["DEMO-B"], interventions: false, citations: true, tweets: false)
+        #expect(citations.suggestedName(parties: parties) == "Groupe B · Citations")
+        #expect(SearchFilters(persons: ["Camille Martin"]).suggestedName() == "Camille Martin")
+        #expect(SearchFilters(interventions: false, citations: false, tweets: true).suggestedName() == "Tout le panel · Publications X")
+        #expect(SearchFilters().suggestedName() == "Tout le panel")
+        #expect(SavedSearch(name: "Groupe B · Citations", filters: citations).criteria(parties: parties) == nil)
+
+        let all = SearchFilters(persons: ["Camille Martin"])
+        #expect(all.sameAudience(as: SearchFilters(persons: ["Camille Martin"], interventions: true, citations: false, tweets: false)))
+        #expect(!all.sameAudience(as: SearchFilters(persons: ["Camille Martin"], parties: ["DEMO-B"])))
+        #expect(!all.sameAudience(as: SearchFilters(persons: ["Alex Morgan"])))
+    }
+
     @Test func savedSearchesRemainIsolatedBetweenAccounts() throws {
         let suite = "infometrie.tests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))

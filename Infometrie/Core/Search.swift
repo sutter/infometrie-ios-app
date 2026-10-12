@@ -46,6 +46,14 @@ struct SearchFilters: Codable, Hashable, Sendable {
         let names = persons.sorted() + partyNames
         return names.isEmpty ? "Tout le panel" : names.joined(separator: " · ")
     }
+    /// The name a suivi takes from its criteria, until renamed: its audience, then the kinds it keeps when it
+    /// leaves one out ("Groupe B · Citations").
+    func suggestedName(parties known: [Party] = []) -> String {
+        let audience = summary(parties: known)
+        return (1...2).contains(selectedKinds.count) ? "\(audience) · \(kindSummary)" : audience
+    }
+    /// Same persons and parties, whatever the kinds: the journal's kind boxes only narrow what is read.
+    func sameAudience(as other: SearchFilters) -> Bool { persons == other.persons && parties == other.parties }
     func accepts(_ item: FeedItem) -> Bool {
         selectedKinds.contains(item.kind)
             && (persons.isEmpty || persons.contains(item.person))
@@ -61,11 +69,14 @@ struct SavedSearch: Codable, Identifiable, Equatable, Sendable {
     var lastUsedAt: Date?
     var archivedAt: Date?
     var isArchived: Bool { archivedAt != nil }
-    /// The criteria under the name, nil when they only repeat it (a suivi named after its one person).
+    /// The criteria under the name, nil when they only repeat it: a suivi named after its one person, or still
+    /// carrying the name its criteria gave it.
     func criteria(parties: [Party] = []) -> String? {
         let summary = filters.summary(parties: parties)
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return name.compare(summary, options: .caseInsensitive) == .orderedSame ? nil : summary
+        let repeats = [summary, filters.suggestedName(parties: parties)]
+            .contains { name.compare($0, options: .caseInsensitive) == .orderedSame }
+        return repeats ? nil : summary
     }
 }
 

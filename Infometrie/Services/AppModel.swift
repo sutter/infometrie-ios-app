@@ -20,6 +20,8 @@ final class AppModel {
     var filters = SearchFilters()
     var draft = SearchFilters()
     var savedSearches: [SavedSearch] = []
+    /// The suivi just followed from the journal: its confirmation stays under the criteria until they change.
+    private(set) var justFollowed: SavedSearch.ID?
     /// The last 7 complete Paris days of each active suivi's criteria, for its trend in Mes suivis.
     private(set) var trends: [SearchFilters: [DayCount]] = [:]
     private var trendsDay = ""
@@ -134,7 +136,7 @@ final class AppModel {
         for task in wordTimingTasks.values { task.cancel() }
         wordTimingTasks = [:]; wordTimings = [:]; wordTimingStates = [:]
         requestID = UUID(); player.stop()
-        items = []; persons = []; parties = []; savedSearches = []; seen = [:]; trends = [:]; trendsDay = ""
+        items = []; persons = []; parties = []; savedSearches = []; justFollowed = nil; seen = [:]; trends = [:]; trendsDay = ""
         filters = SearchFilters(); draft = SearchFilters(); tab = .feed; isSearchPresented = false
         lastSeq = 0; lastRefresh = nil; feedError = nil; choicesError = nil
         resetHistory(); period = .live; periodOffset = 0; selectedDay = nil; liveHasMore = false; liveGeneration = UUID()
@@ -183,6 +185,8 @@ final class AppModel {
     func apply(_ value: SearchFilters) async {
         let changed = value != filters
         filters = value; draft = value; tab = .feed; isSearchPresented = false
+        // The confirmation answers the touch on "Suivre" only: any search or suivi opened afterwards ends it.
+        justFollowed = nil
         for index in savedSearches.indices where savedSearches[index].filters == value && !savedSearches[index].isArchived {
             savedSearches[index].lastUsedAt = Date()
         }
@@ -328,6 +332,32 @@ final class AppModel {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
         savedSearches.insert(SavedSearch(name: name, filters: draft), at: 0)
+        persistSearches()
+    }
+    /// The active suivi with the journal's persons and parties, whatever its kinds.
+    var followedSearch: SavedSearch? {
+        savedSearches.first { !$0.isArchived && $0.filters.sameAudience(as: filters) }
+    }
+    /// Follows the journal's search in one touch, named after its criteria: an archived suivi with the same
+    /// persons and parties comes back under its own name rather than being doubled.
+    func follow() {
+        if let followed = followedSearch {
+            justFollowed = followed.id
+        } else if let index = savedSearches.firstIndex(where: { $0.isArchived && $0.filters.sameAudience(as: filters) }) {
+            savedSearches[index].archivedAt = nil
+            savedSearches[index].lastUsedAt = Date()
+            justFollowed = savedSearches[index].id
+        } else {
+            let search = SavedSearch(name: filters.suggestedName(parties: parties), filters: filters)
+            savedSearches.insert(search, at: 0)
+            justFollowed = search.id
+        }
+        persistSearches()
+    }
+    func rename(_ search: SavedSearch, to name: String) {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, let index = savedSearches.firstIndex(where: { $0.id == search.id }) else { return }
+        savedSearches[index].name = name
         persistSearches()
     }
     func archive(_ search: SavedSearch) {

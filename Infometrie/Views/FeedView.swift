@@ -22,7 +22,10 @@ struct FeedView: View {
                     // Period and display scroll with the list: only the types stay pinned, so the cards get the room.
                     FeedViewOptions().padding(.top, 8)
                     FeedDayChart(search: usesWideLayout ? AnyView(filtersButton()) : nil).padding(.top, 16).padding(.bottom, 8)
-                    if hasAudienceFilters { selectionSummary.padding(.bottom, 8) }
+                    if hasAudienceFilters {
+                        selectionSummary.padding(.bottom, 8)
+                        FollowOffer()
+                    }
                     if let error = model.feedError {
                         ErrorNotice(message: error) { Task { await model.reload() } }
                             .padding(.vertical, 12)
@@ -500,5 +503,74 @@ struct ListenAccessory: View {
         .disabled(items.isEmpty)
         .accessibilityLabel("Tout écouter, \(summary)")
         .accessibilityIdentifier("start-podcast")
+    }
+}
+
+/// Under the criteria of a search no suivi holds yet, the offer to follow it: where its results show, which is
+/// where saving it used to be forgotten. Once followed, a confirmation and a way to rename it, until the criteria change.
+private struct FollowOffer: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dynamicTypeSize) private var dynamicType
+    @State private var renaming: SavedSearch?
+    private var isStacked: Bool { dynamicType.isAccessibilitySize }
+    private var followed: SavedSearch? {
+        guard let id = model.justFollowed else { return nil }
+        return model.savedSearches.first { $0.id == id && !$0.isArchived }
+    }
+
+    var body: some View {
+        Group {
+            if let followed {
+                confirmation(followed)
+            } else if model.followedSearch == nil {
+                offer
+            }
+        }
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .bottom) { AppRule() }
+        .sensoryFeedback(.success, trigger: model.justFollowed) { _, new in new != nil }
+        .modifier(SuiviRenaming(renaming: $renaming))
+    }
+
+    private var offer: some View {
+        let name = model.filters.suggestedName(parties: model.parties)
+        return AdaptiveRow {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Suivre « \(name) » ?").font(.headline).foregroundStyle(Brand.ink)
+                Text("Retrouvez-le dans Mes suivis").font(.subheadline).foregroundStyle(Brand.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+            Button { model.follow() } label: { Label("Suivre", systemImage: "bookmark") }
+                .buttonStyle(ActionButtonStyle(prominent: true))
+                // Its own width beside the text; the whole width once stacked at accessibility sizes.
+                .fixedSize(horizontal: !isStacked, vertical: false)
+                .accessibilityLabel("Suivre « \(name) »")
+                .accessibilityIdentifier("follow-search")
+        }
+    }
+
+    private func confirmation(_ search: SavedSearch) -> some View {
+        AdaptiveRow {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Image(systemName: "bookmark.fill").font(.title3).foregroundStyle(Brand.canard).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Suivi enregistré").font(.headline).foregroundStyle(Brand.ink)
+                    Text("« \(search.name) » est dans Mes suivis").font(.subheadline).foregroundStyle(Brand.secondary)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("follow-confirmation")
+            Button("Renommer") { renaming = search }
+                .font(.body.weight(.semibold)).foregroundStyle(Brand.tint)
+                .buttonStyle(.plain).frame(minHeight: 44).contentShape(Rectangle())
+                .fixedSize(horizontal: !isStacked, vertical: false)
+                .accessibilityLabel("Renommer « \(search.name) »")
+                .accessibilityIdentifier("rename-followed")
+        }
     }
 }

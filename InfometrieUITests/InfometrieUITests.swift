@@ -232,6 +232,63 @@ final class InfometrieUITests: XCTestCase {
         submit.tap()
     }
 
+    /// Following a search from its results: one touch saves it under its criteria's name, a rename corrects it, and
+    /// a suivi opened again offers nothing more, even with a kind unchecked; an archived one comes back, not doubled.
+    @MainActor
+    func testFollowSearchFromJournalAndRename() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--signed-in", "--reset-searches", "-appearance", "light"]
+        app.launch()
+        XCTAssertTrue(app.buttons["feed-item-1"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["follow-search"].exists, "Sans critère, rien à suivre")
+
+        app.buttons["edit-filters"].tap()
+        app.buttons["pick-persons"].tap()
+        app.buttons["choice-Camille Martin"].tap()
+        app.buttons["confirm-choices"].tap()
+        XCTAssertTrue(app.buttons["apply-search"].waitForExistence(timeout: 3))
+        app.buttons["apply-search"].tap()
+        let follow = app.buttons["follow-search"]
+        XCTAssertTrue(follow.waitForExistence(timeout: 5))
+        XCTAssertEqual(follow.label, "Suivre « Camille Martin »")
+        capture("22-suivre-depuis-le-journal", app: app)
+        follow.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["follow-confirmation"].waitForExistence(timeout: 3))
+        XCTAssertFalse(follow.exists)
+        XCTAssertTrue(app.buttons["clear-filters"].exists, "Suivre laisse le journal sur ses résultats")
+
+        app.buttons["rename-followed"].tap()
+        let field = app.alerts.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        XCTAssertEqual(field.value as? String, "Camille Martin")
+        field.tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Camille Martin".count) + "Veille Martin")
+        app.alerts.buttons["Renommer"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["follow-confirmation"].label.contains("Veille Martin"))
+
+        navigationButton("Mes suivis", in: app).tap()
+        let row = savedSearch("Veille Martin", in: app)
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'saved-search-'")).count, 1)
+        row.tap()
+        XCTAssertTrue(app.buttons["clear-filters"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["follow-search"].exists, "Un suivi rouvert n’est pas reproposé")
+        XCTAssertFalse(app.descendants(matching: .any)["follow-confirmation"].exists)
+        showKinds([1, 3], in: app)
+        XCTAssertFalse(app.buttons["follow-search"].waitForExistence(timeout: 2), "Décocher un type ne change pas ce qui est suivi")
+
+        navigationButton("Mes suivis", in: app).tap()
+        app.buttons["saved-actions-Veille Martin"].tap()
+        app.buttons["Archiver"].tap()
+        navigationButton("Le journal", in: app).tap()
+        XCTAssertTrue(follow.waitForExistence(timeout: 5), "Un suivi archivé ne compte plus comme suivi")
+        follow.tap()
+        navigationButton("Mes suivis", in: app).tap()
+        XCTAssertTrue(savedSearch("Veille Martin", in: app).waitForExistence(timeout: 5), "Suivre restaure l’archivé sous son nom")
+        XCTAssertFalse(app.buttons["saved-archived"].exists)
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'saved-search-'")).count, 1)
+    }
+
     @MainActor
     func testSearchPersistenceSequenceAndPodcast() throws {
         let app = XCUIApplication()

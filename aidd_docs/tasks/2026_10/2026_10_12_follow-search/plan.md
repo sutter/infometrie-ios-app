@@ -1,6 +1,6 @@
 ---
 objective: "Une recherche se garde d’un toucher, depuis le journal où l’on voit ses résultats, et « Créer un suivi » enregistre vraiment un suivi."
-status: pending
+status: in-progress
 ---
 
 # Plan: Créer un suivi sans l’oublier

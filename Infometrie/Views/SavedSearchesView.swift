@@ -6,6 +6,7 @@ struct SavedSearchesView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.dynamicTypeSize) private var dynamicType
     @State private var deleting: SavedSearch?
+    @State private var renaming: SavedSearch?
     private var searches: [SavedSearch] { lastUsedFirst(model.savedSearches.filter { !$0.isArchived }) }
     private var archivedCount: Int { model.savedSearches.count - searches.count }
     var body: some View {
@@ -30,7 +31,7 @@ struct SavedSearchesView: View {
                     .accessibilityHidden(true)
             }
             ForEach(searches) { search in
-                SuiviRow(search: search) { deleting = search }
+                SuiviRow(search: search, rename: { renaming = search }, delete: { deleting = search })
             }
             if archivedCount > 0 { archivedLink }
             if !model.savedSearches.isEmpty {
@@ -53,6 +54,7 @@ struct SavedSearchesView: View {
         }
         .task(id: searches.map(\.filters)) { await model.loadTrends() }
         .modifier(SuiviDeletion(deleting: $deleting))
+        .modifier(SuiviRenaming(renaming: $renaming))
     }
     /// The title, then how many suivis and in what order: they move up each time one is used, and saying so
     /// keeps that move from reading as disorder.
@@ -108,6 +110,7 @@ struct SavedSearchesView: View {
 private struct ArchivedSearchesView: View {
     @Environment(AppModel.self) private var model
     @State private var deleting: SavedSearch?
+    @State private var renaming: SavedSearch?
     private var searches: [SavedSearch] { lastUsedFirst(model.savedSearches.filter(\.isArchived)) }
     var body: some View {
         SuiviList {
@@ -116,7 +119,7 @@ private struct ArchivedSearchesView: View {
                               message: "Un suivi archivé peut être restauré à tout moment.")
             } else {
                 ForEach(searches) { search in
-                    SuiviRow(search: search) { deleting = search }
+                    SuiviRow(search: search, rename: { renaming = search }, delete: { deleting = search })
                 }
                 Text("Un suivi archivé peut être restauré à tout moment.")
                     .font(.footnote).foregroundStyle(Brand.secondary).padding(.vertical, 24)
@@ -125,6 +128,7 @@ private struct ArchivedSearchesView: View {
         .appNavigationTitle("Suivis archivés")
         .pushedPage(model)
         .modifier(SuiviDeletion(deleting: $deleting))
+        .modifier(SuiviRenaming(renaming: $renaming))
     }
 }
 
@@ -152,6 +156,23 @@ private struct SuiviList<Content: View>: View {
     }
 }
 
+/// Asks for a suivi's new name, prefilled with the current one: names are given by the criteria, and changed here,
+/// from Mes suivis or from the journal right after following.
+struct SuiviRenaming: ViewModifier {
+    @Environment(AppModel.self) private var model
+    @Binding var renaming: SavedSearch?
+    @State private var name = ""
+    func body(content: Content) -> some View {
+        content
+            .alert("Renommer le suivi", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+                TextField("Nom du suivi", text: $name).accessibilityIdentifier("rename-field")
+                Button("Annuler", role: .cancel) { renaming = nil }
+                Button("Renommer") { if let renaming { model.rename(renaming, to: name) }; renaming = nil }
+            }
+            .onChange(of: renaming?.id) { name = renaming?.name ?? "" }
+    }
+}
+
 /// Asks before deleting a suivi, on either page.
 private struct SuiviDeletion: ViewModifier {
     @Environment(AppModel.self) private var model
@@ -172,6 +193,7 @@ private struct SuiviRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var dynamicType
     let search: SavedSearch
+    let rename: () -> Void
     let delete: () -> Void
     private var criteria: String? { search.criteria(parties: model.parties) }
     private var trend: [DayCount]? { model.trends[search.filters] }
@@ -190,6 +212,7 @@ private struct SuiviRow: View {
                         .accessibilityHint("Affiche le journal de ce suivi")
                         .accessibilityAddTraits(.isButton)
                         .accessibilityAction(named: "Modifier la recherche") { model.openSearch(search.filters) }
+                        .accessibilityAction(named: "Renommer") { rename() }
                         .accessibilityAction(named: "Archiver") { model.archive(search) }
                         .accessibilityAction(named: "Supprimer") { delete() }
                         .accessibilityIdentifier("saved-search-\(search.name)")
@@ -251,6 +274,7 @@ private struct SuiviRow: View {
             Button("Modifier la recherche", systemImage: "magnifyingglass") { model.openSearch(search.filters) }
         }
         Button(search.isArchived ? "Restaurer" : "Archiver", systemImage: search.isArchived ? "arrow.uturn.backward" : "archivebox") { model.archive(search) }
+        Button("Renommer", systemImage: "pencil") { rename() }
         Button("Supprimer", systemImage: "trash", role: .destructive) { delete() }
     }
 

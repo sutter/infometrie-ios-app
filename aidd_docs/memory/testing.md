@@ -36,7 +36,7 @@ Run only the area a change touches; the first test of each row is the broadest.
 | Feed kinds, Publications X | `testFeedKindSelectionSyncNavigationAndPodcast`, `testPublicationsUseServerKindsResetCursorAndHaveNoAudio`, `testFeedKindsDarkAppearanceAndMaximumText` |
 | Filters | `testFilterSearchMultipleSelectionIntersectionAndReset`, `testFiltersDarkAppearanceAndMaximumText` |
 | Main navigation, iPad sidebar | `testMainNavigationPreservesFeedSelection` |
-| Suivis, sequence, podcast | `testSearchPersistenceSequenceAndPodcast` |
+| Suivis, sequence, podcast | `testSearchPersistenceSequenceAndPodcast`, `testFollowSearchFromJournalAndRename` |
 | Appearance, reading size | `testReadingComfortUpdatesTextImmediatelyAndPersists`, `testReadingSizesRespectSystemAccessibilityAndDarkAppearance`, `testDarkAppearanceAndLargeText` |
 | Next passage, floating video | `testNextPassageAndFloatingVideo` (the fixture's last passage, `feed-item-5`, is a video one on the same audio) |
 | Transcript, player | `testTranscriptSeeksPlayerAndFollowsScrubbingWhilePaused`, `testFullscreenTranscriptKeepsPreciseSeekingAndPlayback`, `testFullscreenTranscriptSeeksFromTextAtMaximumSize` |
