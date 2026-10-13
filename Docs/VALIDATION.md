@@ -1,5 +1,13 @@
 # Validation du portage
 
+## Suite complète des favoris — 13 octobre 2026
+
+Favoris gardés sur l'appareil : quatrième onglet, étoile sur la page du passage, geste vers la droite sur les lignes du journal et de la fiche, sélection et retrait multiple, « Plus disponibles » et « Tout retirer », bandeau « Annuler », confirmation en alerte centrée. Le journal défile de nouveau quand le doigt part du graphique 7 j / 30 j (geste horizontal UIKit au lieu d'un glisser SwiftUI).
+
+- `build/FullSuite-2026-10-13.xcresult`, iPhone 17 Pro, iOS 26.4 : **27 tests réussis sur 27** (25 min), dont les nouveaux `testFavoritesFromPassageListAndRemove`, `testFavoritesSelectRemoveAndUndo` et `testExpiredFavoriteStaysUntilRemoved`, et `testFeedPeriodsChartSelectsDay` qui vérifie maintenant le défilement depuis le graphique. `xcodebuild` est resté bloqué en finalisant le résultat après « Executed 27 tests, with 0 failures » et a été arrêté.
+- `swift test` : 68 tests réussis.
+- Vérifications visuelles sur iPhone 13 mini et iPad Pro 11 pouces (iOS 26.4), clair et sombre, taille normale et AccessibilityXXXL, avec des tests temporaires non commités.
+
 ## Suite complète sans échec — 10 octobre 2026
 
 Corrections des deux échecs connus depuis septembre : la ligne heure et durée des cartes en un seul texte, l'audit du journal fait sans la barre d'onglets en verre (`--hide-tab-bar`, Debug uniquement), et le texte plein écran défilé par un glisser lent plutôt qu'un balayage qui partait sur un lien.
