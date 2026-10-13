@@ -64,7 +64,8 @@ struct FavoritesView: View {
         }
         .confirmationDialog(confirmationTitle, isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
                             titleVisibility: .visible, presenting: confirming) { ids in
-            Button(ids.count == 1 ? "Retirer des favoris" : "Retirer \(ids.count) favoris", role: .destructive) {
+            // The title gives the count: "Retirer 2 favoris" broke into "favo- / ris" at the largest sizes (2026-10-13).
+            Button("Retirer des favoris", role: .destructive) {
                 remove(ids); confirming = nil
             }
             Button("Annuler", role: .cancel) { confirming = nil }
@@ -146,9 +147,11 @@ struct FavoritesView: View {
         if isSelecting {
             let selected = selection.contains(favorite.id)
             Button { toggle(favorite.id) } label: {
-                HStack(spacing: 12) {
+                // At accessibility sizes a row can outgrow the screen: the box sits by its top, where the reader looks.
+                HStack(alignment: dynamicType.isAccessibilitySize ? .top : .center, spacing: 12) {
                     card
                     ChoiceMark(selected: selected, multiple: true)
+                        .padding(.top, dynamicType.isAccessibilitySize ? 16 : 0)
                 }
                 .overlay(alignment: .bottom) { AppRule() }
                 .contentShape(Rectangle())
@@ -260,24 +263,29 @@ struct FavoritesView: View {
     /// Above the tab bar, a few seconds after each removal here: an accidental full swipe costs nothing.
     private func banner(_ undo: Undo) -> some View {
         let count = undo.removed.count
-        return HStack(spacing: 12) {
+        // Stacked at accessibility sizes: side by side, "Annuler" broke into "An- / nuler" (2026-10-13).
+        let layout = dynamicType.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+            : AnyLayout(HStackLayout(spacing: 12))
+        return layout {
             Text(count == 1 ? "Favori retiré" : "\(count) favoris retirés")
                 .foregroundStyle(Brand.primaryForeground)
                 .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 8)
+            if !dynamicType.isAccessibilitySize { Spacer(minLength: 8) }
             Button("Annuler") {
                 model.restoreFavorites(undo.removed)
                 withAnimation(motion) { self.undo = nil }
             }
             .fontWeight(.bold).foregroundStyle(Brand.inverseAccent)
+            .lineLimit(1).fixedSize()
             .buttonStyle(.plain)
             .frame(minHeight: 44).contentShape(Rectangle())
             .accessibilityLabel(count == 1 ? "Annuler le retrait" : "Annuler le retrait des \(count) favoris")
             .accessibilityIdentifier("undo-remove-favorites")
         }
         .font(.subheadline)
-        .padding(.horizontal, 20).padding(.vertical, 4)
-        .frame(minHeight: 52)
+        .padding(.horizontal, 20).padding(.vertical, dynamicType.isAccessibilitySize ? 12 : 4)
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
         .background(Brand.primary, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         .padding(.horizontal, margin).padding(.bottom, 12)
         .frame(maxWidth: AppLayout.readingWidth)
