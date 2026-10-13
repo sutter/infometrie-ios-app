@@ -12,4 +12,4 @@ How forms are built and validated across the UI.
 - Minimal client-side validation: submit stays disabled while a required field is empty or a request is running.
 - Keyboard flow: `.focused` plus `submitLabel` (`.next`, then `.go` to submit). The password field has a visibility toggle.
 - Editors work on a copy (`draft` for filters) and commit on apply. Cancel restores the applied state.
-- Destructive actions ask first with a `confirmationDialog`: device replacement, logout, deleting a suivi.
+- Destructive actions ask first. Deleting a suivi and removing favorites use a centered `alert`: a `confirmationDialog` there was a popover tied to the whole page, in a corner on iPad and too narrow at the largest text sizes, its button cut (2026-10-13). Device replacement and logout keep a `confirmationDialog`.

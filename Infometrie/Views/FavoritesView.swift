@@ -62,15 +62,14 @@ struct FavoritesView: View {
         .navigationDestination(item: $opened) { item in
             SequenceView(item: item, list: (available + unavailable).map(\.item))
         }
-        .confirmationDialog(confirmationTitle, isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
-                            titleVisibility: .visible, presenting: confirming) { ids in
-            // The title gives the count: "Retirer 2 favoris" broke into "favo- / ris" at the largest sizes (2026-10-13).
-            Button("Retirer des favoris", role: .destructive) {
-                remove(ids); confirming = nil
-            }
+        // A centered alert, like deleting a suivi: as a confirmation dialog it was a popover tied to the whole page,
+        // in a corner on iPad and too narrow there at the largest sizes, its button cut (2026-10-13).
+        .alert(confirmationTitle, isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
+               presenting: confirming) { ids in
             Button("Annuler", role: .cancel) { confirming = nil }
+            // The title gives the count: "Retirer 2 favoris" broke into "favo- / ris" at the largest sizes (2026-10-13).
+            Button("Retirer des favoris", role: .destructive) { remove(ids); confirming = nil }
         } message: { ids in
-            // Short: at the largest text sizes the system dialog cut a longer message (iPhone 13 mini, 2026-10-12).
             Text(confirmationMessage(ids))
         }
         // "Annuler" stays a few seconds, then the removal holds.

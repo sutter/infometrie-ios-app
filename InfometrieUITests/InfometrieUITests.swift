@@ -402,7 +402,7 @@ final class InfometrieUITests: XCTestCase {
 
         // "Tout retirer" clears those gone from the history, after a confirmation, and "Annuler" still gives them back.
         app.buttons["remove-unavailable-favorites"].tap()
-        let confirm = app.buttons["Retirer des favoris"]
+        let confirm = app.alerts.buttons["Retirer des favoris"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 3))
         confirm.tap()
         XCTAssertTrue(app.descendants(matching: .any)["favorites-empty"].waitForExistence(timeout: 3))
@@ -426,7 +426,7 @@ final class InfometrieUITests: XCTestCase {
         app.navigationBars["Séquence"].buttons.element(boundBy: 0).tap()
         XCTAssertTrue(expired.waitForExistence(timeout: 5))
         drag(expired, by: -320)
-        let confirm = app.buttons["Retirer des favoris"]
+        let confirm = app.alerts.buttons["Retirer des favoris"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 3), "Un favori plus disponible demande confirmation")
         confirm.tap()
         XCTAssertTrue(app.descendants(matching: .any)["favorites-empty"].waitForExistence(timeout: 5))
