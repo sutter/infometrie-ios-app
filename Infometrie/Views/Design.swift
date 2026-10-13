@@ -47,6 +47,9 @@ enum Brand {
     static let interventionLabel = color(light: 0xBB3520, dark: 0xF05A49)
     static let interventionFill = color(light: 0xC93A26, dark: 0xC93A26)
     static let interventionWash = color(light: 0xFCE8E4, dark: 0x3A1C16)
+    /// Vermillon on an inverted surface (the undo banner, `primary` behind): the dark value on noir chaud, the light
+    /// one on blanc cassé, each above 5:1.
+    static let inverseAccent = color(light: 0xF05A49, dark: 0xBB3520)
     static let citation = canard
     static let citationLabel = color(light: 0x2F6468, dark: 0x6FAEB2)
     static let citationFill = canardFill

@@ -39,6 +39,22 @@ struct FavoriteStoreTests {
         #expect(throws: (any Error).self) { try store.load(account: "a@example.invalid") }
     }
 
+    @Test func removedFavoritesGoBackInPlace() {
+        var list = [favorite(1), favorite(2), favorite(3), favorite(4)]
+        let removed = list.remove(ids: [2, 4, 9])
+        #expect(list.map(\.id) == [1, 3])
+        #expect(removed.count == 2)
+        // One of them added again meanwhile is not doubled.
+        list.insert(favorite(4), at: 0)
+        list.restore(removed)
+        #expect(list.map(\.id).sorted() == [1, 2, 3, 4])
+        var whole = [favorite(1), favorite(2), favorite(3)]
+        let all = whole.remove(ids: [1, 2, 3])
+        #expect(whole.isEmpty)
+        whole.restore(all)
+        #expect(whole.map(\.id) == [1, 2, 3])
+    }
+
     @Test func aFavoriteBeyondTheServerHistoryIsUnavailable() throws {
         let now = try #require(APIDate.parse("2026-10-12T10:00:00+02:00"))
         let oldest = FeedPeriod.oldestDay(now: now)

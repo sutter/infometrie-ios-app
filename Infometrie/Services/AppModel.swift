@@ -430,9 +430,16 @@ final class AppModel {
         else { favorites.insert(Favorite(item: item, addedAt: Date()), at: 0) }
         persistFavorites()
     }
-    func removeFavorite(_ favorite: Favorite) {
+    /// Removes these favorites and returns them with their places, for "Annuler".
+    @discardableResult func removeFavorites(_ ids: Set<Int64>) -> RemovedFavorites {
+        guard !accountID.isEmpty else { return RemovedFavorites() }
+        let removed = favorites.remove(ids: ids)
+        persistFavorites()
+        return removed
+    }
+    func restoreFavorites(_ removed: RemovedFavorites) {
         guard !accountID.isEmpty else { return }
-        favorites.removeAll { $0.id == favorite.id }
+        favorites.restore(removed)
         persistFavorites()
     }
     private func persistFavorites() {

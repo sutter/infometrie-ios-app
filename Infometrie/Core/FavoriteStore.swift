@@ -15,6 +15,34 @@ struct Favorite: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
+/// Favorites taken out of the list with their places, so "Annuler" puts them back where they were.
+struct RemovedFavorites: Equatable, Sendable {
+    struct Entry: Equatable, Sendable {
+        let index: Int
+        let favorite: Favorite
+    }
+    fileprivate(set) var entries: [Entry] = []
+    var count: Int { entries.count }
+}
+
+extension Array where Element == Favorite {
+    /// Removes the favorites with these ids and returns them with their places.
+    mutating func remove(ids: Set<Int64>) -> RemovedFavorites {
+        let entries = enumerated().filter { ids.contains($0.element.id) }
+            .map { RemovedFavorites.Entry(index: $0.offset, favorite: $0.element) }
+        removeAll { ids.contains($0.id) }
+        return RemovedFavorites(entries: entries)
+    }
+
+    /// Puts removed favorites back at their places, in ascending order so each index holds; one added again
+    /// meanwhile is not doubled.
+    mutating func restore(_ removed: RemovedFavorites) {
+        for entry in removed.entries where !contains(where: { $0.id == entry.favorite.id }) {
+            insert(entry.favorite, at: Swift.min(entry.index, count))
+        }
+    }
+}
+
 /// Favorites live on the device, per account, like the seen passages: the API does not store them.
 struct FavoriteStore {
     private let defaults: UserDefaults

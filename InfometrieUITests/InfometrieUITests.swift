@@ -363,6 +363,54 @@ final class InfometrieUITests: XCTestCase {
     }
 
     @MainActor
+    func testFavoritesSelectRemoveAndUndo() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--signed-in", "--expired-favorite", "-appearance", "light"]
+        app.launch()
+        XCTAssertTrue(app.buttons["feed-item-2"].waitForExistence(timeout: 10))
+        for id in [1, 2] { drag(app.buttons["feed-item-\(id)"], by: 240) }
+        navigationButton("Favoris", in: app).tap()
+        let first = app.buttons["favorite-item-1"], second = app.buttons["favorite-item-2"]
+        let expired = app.buttons["favorite-item-999"]
+        XCTAssertTrue(second.waitForExistence(timeout: 5))
+        XCTAssertLessThan(second.frame.minY, first.frame.minY)
+        XCTAssertLessThan(first.frame.minY, expired.frame.minY, "Les plus disponibles viennent après les autres")
+        XCTAssertTrue(app.buttons["remove-unavailable-favorites"].exists)
+
+        // A full swipe removes at once; "Annuler" puts the favorite back in its place.
+        drag(first, by: -320)
+        XCTAssertTrue(first.waitForNonExistence(timeout: 3))
+        capture("31-favoris-annuler", app: app)
+        app.buttons["undo-remove-favorites"].tap()
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        XCTAssertLessThan(second.frame.minY, first.frame.minY, "Annuler remet le favori à sa place")
+
+        // Selecting several: one button where the tab bar was, saying what it removes.
+        app.buttons["select-favorites"].tap()
+        let removeSelected = app.buttons["remove-selected-favorites"]
+        XCTAssertTrue(removeSelected.waitForExistence(timeout: 3))
+        XCTAssertFalse(removeSelected.isEnabled)
+        second.tap()
+        first.tap()
+        XCTAssertEqual(removeSelected.label, "Retirer 2 favoris")
+        capture("30-favoris-selection", app: app)
+        removeSelected.tap()
+        XCTAssertTrue(second.waitForNonExistence(timeout: 3))
+        XCTAssertFalse(first.exists)
+        XCTAssertTrue(app.staticTexts["2 favoris retirés"].exists)
+        XCTAssertTrue(app.buttons["select-favorites"].exists, "Retirer quitte la sélection")
+
+        // "Tout retirer" clears those gone from the history, after a confirmation, and "Annuler" still gives them back.
+        app.buttons["remove-unavailable-favorites"].tap()
+        let confirm = app.buttons["Retirer des favoris"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        confirm.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["favorites-empty"].waitForExistence(timeout: 3))
+        app.buttons["undo-remove-favorites"].tap()
+        XCTAssertTrue(expired.waitForExistence(timeout: 3))
+    }
+
+    @MainActor
     func testExpiredFavoriteStaysUntilRemoved() {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--signed-in", "--expired-favorite", "-appearance", "light"]

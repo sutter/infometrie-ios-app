@@ -210,7 +210,7 @@ private struct FilterChoiceRow: View {
 
 /// A radio (one choice) or checkbox (several) in vermillon: a ring holding a dot, or a box holding a check.
 /// Unchecked, a plain secondary ring, at more than 3:1 on the page.
-private struct ChoiceMark: View {
+struct ChoiceMark: View {
     let selected: Bool
     let multiple: Bool
     @ScaledMetric(relativeTo: .title3) private var side = 26.0
