@@ -31,12 +31,19 @@ struct FavoriteStoreTests {
         #expect(try store.load(account: "a@example.invalid").isEmpty)
     }
 
-    @Test func unreadableFavoritesThrow() throws {
+    @Test func unreadableFavoritesThrowAndAreSetAsideBeforeTheNextSave() throws {
         let (store, defaults, suite) = try store()
         defer { defaults.removePersistentDomain(forName: suite) }
         let key = "favorite-passages." + Data("a@example.invalid".utf8).base64EncodedString()
         defaults.set(Data("not json".utf8), forKey: key)
         #expect(throws: (any Error).self) { try store.load(account: "a@example.invalid") }
+        store.setAside(account: "a@example.invalid")
+        try store.save([favorite(1)], account: "a@example.invalid")
+        #expect(defaults.data(forKey: "unreadable." + key) == Data("not json".utf8), "What was stored is kept aside, not overwritten")
+        #expect(try store.load(account: "a@example.invalid").map(\.id) == [1], "The new star is saved")
+        defaults.set(Data("still not json".utf8), forKey: key)
+        store.setAside(account: "a@example.invalid")
+        #expect(defaults.data(forKey: "unreadable." + key) == Data("not json".utf8), "The first value set aside stays")
     }
 
     @Test func removedFavoritesGoBackInPlace() {

@@ -144,6 +144,20 @@ struct CoreTests {
         #expect(try store.load(account: "a@example.invalid").count == 1)
     }
 
+    @Test func unreadableSuivisAreSetAsideBeforeTheNextSave() throws {
+        let suite = "infometrie.tests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = SearchStore(defaults: defaults)
+        let key = "saved-searches." + Data("a@example.invalid".utf8).base64EncodedString()
+        defaults.set(Data("not json".utf8), forKey: key)
+        #expect(throws: (any Error).self) { try store.load(account: "a@example.invalid") }
+        store.setAside(account: "a@example.invalid")
+        try store.save([SavedSearch(name: "Camille Martin", filters: SearchFilters(persons: ["Camille Martin"]))], account: "a@example.invalid")
+        #expect(defaults.data(forKey: "unreadable." + key) == Data("not json".utf8), "What was stored is kept aside, not overwritten")
+        #expect(try store.load(account: "a@example.invalid").map(\.name) == ["Camille Martin"])
+    }
+
     @Test func rewriteAllHLSResourcesAndPreserveTiming() throws {
         let base = URL(string: "https://hls-test.yacast.fr/rest/v1/hls/42/index.m3u8?margin=10")!
         let source = """

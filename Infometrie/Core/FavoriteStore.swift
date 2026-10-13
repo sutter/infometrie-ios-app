@@ -58,4 +58,6 @@ struct FavoriteStore {
         defaults.set(try JSONEncoder().encode(favorites), forKey: key(account))
     }
     func clear(account: String) { defaults.removeObject(forKey: key(account)) }
+    /// After a failed `load`, before the next `save`.
+    func setAside(account: String) { defaults.setAside(key(account)) }
 }

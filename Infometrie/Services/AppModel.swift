@@ -404,11 +404,13 @@ final class AppModel {
     }
     func delete(_ search: SavedSearch) { savedSearches.removeAll { $0.id == search.id }; persistSearches() }
     private func loadSearches() {
+        // What no longer reads is set aside first: the next suivi or star saved must not overwrite it, and a favorite
+        // gone from the history can never be added again.
         do { savedSearches = try searches.load(account: accountID) }
-        catch { savedSearches = []; notice = "Les suivis enregistrés n’ont pas pu être lus." }
+        catch { searches.setAside(account: accountID); savedSearches = []; notice = "Les suivis enregistrés n’ont pas pu être lus." }
         seen = seenStore.load(account: accountID)
         do { favorites = try favoriteStore.load(account: accountID) }
-        catch { favorites = []; notice = "Les favoris n’ont pas pu être lus." }
+        catch { favoriteStore.setAside(account: accountID); favorites = []; notice = "Les favoris n’ont pas pu être lus." }
     }
     func isSeen(_ item: FeedItem) -> Bool { seen[item.id] != nil }
     /// Called when a passage page opens or a passage plays in "Tout écouter".
