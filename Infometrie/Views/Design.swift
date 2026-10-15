@@ -152,6 +152,67 @@ struct AdaptiveRow<Content: View>: View {
     }
 }
 
+/// One person or party of a search, with a cross: touching it removes that criterion only.
+/// The journal shows its active search this way, and the search sheet its selection.
+struct CriterionPill: View {
+    let title: String
+    let icon: String
+    let remove: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicType
+
+    var body: some View {
+        Button(action: remove) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.caption.weight(.semibold)).foregroundStyle(Brand.secondary)
+                Text(title).font(.subheadline.weight(.medium)).foregroundStyle(Brand.ink)
+                    .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
+                Image(systemName: "xmark").font(.caption.weight(.bold)).foregroundStyle(Brand.secondary)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 8).frame(minHeight: 36)
+            .background(Brand.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(Brand.rule, lineWidth: 0.5))
+            .frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel(title)
+        .accessibilityHint("Touchez pour retirer ce critère")
+    }
+}
+
+/// Lays its children out left to right and starts a new line when the next one would not fit,
+/// so every chosen name stays visible; a child wider than the line gets the line's width.
+struct WrappingLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let lines = arrange(subviews, width: proposal.width ?? .infinity)
+        return CGSize(width: proposal.width ?? lines.width, height: lines.height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for (subview, frame) in zip(subviews, arrange(subviews, width: bounds.width).frames) {
+            subview.place(at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY), proposal: ProposedViewSize(frame.size))
+        }
+    }
+
+    private func arrange(_ subviews: Subviews, width: CGFloat) -> (frames: [CGRect], width: CGFloat, height: CGFloat) {
+        var frames: [CGRect] = []
+        var x: CGFloat = 0, y: CGFloat = 0, lineHeight: CGFloat = 0, widest: CGFloat = 0
+        for subview in subviews {
+            var size = subview.sizeThatFits(ProposedViewSize(width: width, height: nil))
+            size.width = min(size.width, width)
+            if x > 0 && x + size.width > width {
+                x = 0; y += lineHeight; lineHeight = 0
+            }
+            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
+            widest = max(widest, x + size.width)
+            x += size.width + spacing
+            lineHeight = max(lineHeight, size.height)
+        }
+        return (frames, widest, y + lineHeight)
+    }
+}
+
 /// App motion: short, soft springs that make changes feel continuous without drawing attention.
 enum Motion {
     static let standard: Animation = .smooth(duration: 0.32)

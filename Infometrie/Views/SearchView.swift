@@ -19,16 +19,30 @@ struct SearchView: View {
                                 .init(value: $0.name, title: $0.name, subtitle: [$0.party, $0.role].filter { !$0.isEmpty }.joined(separator: " · "))
                             }, selected: $model.draft.persons)
                         } label: {
-                            FilterSelectionRow(title: "Personnalités", icon: "person.2", summary: model.draft.persons.isEmpty ? "Toutes" : model.draft.persons.sorted().joined(separator: ", "), isSelected: !model.draft.persons.isEmpty)
-                        }.accessibilityIdentifier("pick-persons")
+                            FilterSelectionRow(title: "Personnalités", icon: "person.2", summary: model.draft.persons.isEmpty ? "Toutes" : nil)
+                        }
+                        .accessibilityValue(model.draft.persons.isEmpty ? "" : selectionCount(model.draft.persons.count))
+                        .accessibilityIdentifier("pick-persons")
+                        if !model.draft.persons.isEmpty {
+                            SelectionPills(items: model.draft.persons.sorted().map { (value: $0, title: $0) }, icon: "person",
+                                           identifier: "person", clearLabel: "Effacer toutes les personnalités",
+                                           remove: { model.draft.persons.remove($0) }, clearAll: { model.draft.persons.removeAll() })
+                        }
                         AppRule()
                         NavigationLink {
                             ChoicePicker(title: "Partis politiques", allTitle: "Tous les partis", choices: model.parties.map {
                                 .init(value: $0.code, title: $0.name, subtitle: $0.code)
                             }, selected: $model.draft.parties)
                         } label: {
-                            FilterSelectionRow(title: "Partis politiques", icon: "building.columns", summary: model.draft.parties.isEmpty ? "Tous" : partyNames(model.draft.parties, in: model.parties), isSelected: !model.draft.parties.isEmpty)
-                        }.accessibilityIdentifier("pick-parties")
+                            FilterSelectionRow(title: "Partis politiques", icon: "building.columns", summary: model.draft.parties.isEmpty ? "Tous" : nil)
+                        }
+                        .accessibilityValue(model.draft.parties.isEmpty ? "" : selectionCount(model.draft.parties.count))
+                        .accessibilityIdentifier("pick-parties")
+                        if !model.draft.parties.isEmpty {
+                            SelectionPills(items: model.draft.parties.sorted().map { code in (value: code, title: model.parties.first { $0.code == code }?.name ?? code) },
+                                           icon: "building.columns", identifier: "party", clearLabel: "Effacer tous les partis",
+                                           remove: { model.draft.parties.remove($0) }, clearAll: { model.draft.parties.removeAll() })
+                        }
                         if !model.draft.persons.isEmpty && !model.draft.parties.isEmpty {
                             Text("Seules les personnalités choisies appartenant aux partis sélectionnés seront affichées.")
                                 .font(.footnote).foregroundStyle(Brand.secondaryOnSurface)
@@ -147,7 +161,7 @@ struct ChoicePicker: View {
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Rechercher un nom")
         .safeAreaInset(edge: .bottom, spacing: 0) {
             FilterFooter {
-                Text(selected.isEmpty ? allTitle : "\(selected.count) \(selected.count == 1 ? "sélection" : "sélections")")
+                Text(selected.isEmpty ? allTitle : selectionCount(selected.count))
                     .font(.subheadline).foregroundStyle(Brand.secondary)
                     .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("choice-count")
                 Button("Terminé") { dismiss() }
@@ -164,15 +178,15 @@ private let passageKinds = [
     (title: "Publications X", subtitle: "Les publications sur X")
 ]
 
-private func partyNames(_ codes: Set<String>, in parties: [Party]) -> String {
-    codes.sorted().map { code in parties.first(where: { $0.code == code })?.name ?? code }.joined(separator: ", ")
+private func selectionCount(_ count: Int) -> String {
+    "\(count) \(count == 1 ? "sélection" : "sélections")"
 }
 
 private struct FilterSelectionRow: View {
     let title: String
     let icon: String
-    let summary: String
-    let isSelected: Bool
+    /// What no choice means ("Toutes"); once names are chosen, the pills under the row list them.
+    let summary: String?
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon).font(.system(size: 17, weight: .medium))
@@ -180,13 +194,42 @@ private struct FilterSelectionRow: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
                 Text(title).font(.body.weight(.semibold)).foregroundStyle(Brand.ink)
-                Text(summary).font(.subheadline).foregroundStyle(isSelected ? Brand.ink : Brand.secondary)
+                if let summary { Text(summary).font(.subheadline).foregroundStyle(Brand.secondary) }
             }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Brand.secondary).accessibilityHidden(true)
         }
         .padding(.vertical, 14).frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
         .contentShape(Rectangle())
+    }
+}
+
+/// The chosen names of one criterion, each with its cross, then "Tout effacer" from two on: removing several
+/// no longer means finding each one in the list (the client's request on 2026-10-15, option B of sheet 09).
+private struct SelectionPills: View {
+    let items: [(value: String, title: String)]
+    let icon: String
+    let identifier: String
+    let clearLabel: String
+    let remove: (String) -> Void
+    let clearAll: () -> Void
+
+    var body: some View {
+        WrappingLayout {
+            ForEach(items, id: \.value) { item in
+                CriterionPill(title: item.title, icon: icon) { remove(item.value) }
+                    .accessibilityIdentifier("remove-\(identifier)-\(item.value)")
+            }
+            if items.count > 1 {
+                Button("Tout effacer", action: clearAll)
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(Brand.tint)
+                    .buttonStyle(.plain).frame(minHeight: 44).padding(.horizontal, 4)
+                    .accessibilityLabel(clearLabel)
+                    .accessibilityIdentifier("clear-\(identifier)-selection")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.bottom, 14)
     }
 }
 

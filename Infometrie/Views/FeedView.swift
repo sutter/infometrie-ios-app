@@ -191,27 +191,13 @@ struct FeedView: View {
         .accessibilityLabel("Recherche active")
     }
 
-    /// One person or party; touching it removes that criterion only. Alone, it carries `clear-filters`.
+    /// One person or party; touching it applies the search without it. Alone, it carries `clear-filters`.
     private func criterionPill(_ title: String, icon: String, single: Bool, remove: @escaping (inout SearchFilters) -> Void) -> some View {
-        Button {
+        CriterionPill(title: title, icon: icon) {
             var filters = model.filters
             remove(&filters)
             Task { await model.apply(filters) }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: icon).font(.caption.weight(.semibold)).foregroundStyle(Brand.secondary)
-                Text(title).font(.subheadline.weight(.medium)).foregroundStyle(Brand.ink)
-                    .lineLimit(dynamicType.isAccessibilitySize ? nil : 1)
-                Image(systemName: "xmark").font(.caption.weight(.bold)).foregroundStyle(Brand.secondary)
-            }
-            .padding(.horizontal, 12).padding(.vertical, 8).frame(minHeight: 36)
-            .background(Brand.surface, in: Capsule())
-            .overlay(Capsule().strokeBorder(Brand.rule, lineWidth: 0.5))
-            .frame(minHeight: 44).contentShape(Rectangle())
         }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel(title)
-        .accessibilityHint("Touchez pour retirer ce critère")
         .accessibilityIdentifier(single ? "clear-filters" : "remove-criterion-\(title)")
     }
 
