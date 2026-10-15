@@ -97,7 +97,7 @@ final class UITestServer: URLProtocol, @unchecked Sendable {
         case ("history", 1): respondToHistory(url)
         case ("days", 1): respondToDays(url)
         case ("profile", 1): respondToProfile(url)
-        case ("persons", 1): respond(200, json(FixtureContent.persons))
+        case ("persons", 1): respond(200, json(FixtureContent.panel))
         case ("parties", 1): respond(200, json(FixtureContent.parties))
         case ("sequences", 2):
             guard let item else { respond(404); return }

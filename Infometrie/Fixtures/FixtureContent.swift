@@ -8,6 +8,11 @@ enum FixtureContent {
         Person(name: "Alex Morgan", party: "TEST-B", role: "Personnalité fictive"),
         Person(name: "Sam Laurent", party: "TEST-A", role: "Personnalité fictive")
     ]
+    /// The panel `/persons` serves: the persons above, then two homonyms with no passage, like the real panel's.
+    static let panel = persons + [
+        Person(name: "Dominique Petit", party: "TEST-A", role: "Personnalité fictive"),
+        Person(name: "Dominique Petit", party: "TEST-B", role: "Homonyme fictif")
+    ]
     static let parties = [Party(code: "TEST-A", name: "Groupe de test A"), Party(code: "TEST-B", name: "Groupe de test B")]
     /// Dated once per launch, so the feed, the sequences and their media clock agree.
     static let feed = makeFeed(now: Date())

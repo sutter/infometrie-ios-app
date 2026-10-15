@@ -106,7 +106,9 @@ struct SearchView: View {
 
 struct ChoicePicker: View {
     struct Choice: Identifiable {
-        var id: String { value }
+        /// What the row shows. The value alone is not unique: the panel holds homonyms (two « Alexandra Martin »
+        /// on 2026-10-15), which share the name the search filters on, so checking one checks the other.
+        var id: String { "\(value)\n\(title)\n\(subtitle)" }
         let value: String
         let title: String
         let subtitle: String
@@ -128,7 +130,9 @@ struct ChoicePicker: View {
         self.title = title
         self.allTitle = allTitle
         self.othersTitle = othersTitle
-        self.choices = choices
+        // A row repeated as is would repeat its id, so it shows once.
+        var shown = Set<String>()
+        self.choices = choices.filter { shown.insert($0.id).inserted }
         _selected = selected
         _pinned = State(initialValue: selected.wrappedValue)
     }

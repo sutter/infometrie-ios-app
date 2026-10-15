@@ -698,6 +698,28 @@ final class InfometrieUITests: XCTestCase {
     }
 
     @MainActor
+    func testChoiceListShowsHomonyms() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--signed-in", "-appearance", "light"]
+        app.launch()
+        XCTAssertTrue(app.buttons["edit-filters"].waitForExistence(timeout: 10))
+        app.buttons["edit-filters"].tap()
+        XCTAssertTrue(app.buttons["pick-persons"].waitForExistence(timeout: 5))
+        app.buttons["pick-persons"].tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap(); search.typeText("Dominique")
+        // Two persons share the name: each keeps its own row (keyed by the name, the rows had duplicate ids).
+        let homonyms = app.buttons.matching(identifier: "choice-Dominique Petit")
+        XCTAssertTrue(homonyms.element(boundBy: 1).waitForExistence(timeout: 5))
+        XCTAssertEqual(homonyms.count, 2)
+        // The API filters persons by name, so checking one checks both.
+        homonyms.element(boundBy: 0).tap()
+        wait(app.staticTexts["choice-count"], key: "label", equals: "1 sélection")
+        XCTAssertTrue(homonyms.element(boundBy: 1).isSelected)
+    }
+
+    @MainActor
     func testFiltersDarkAppearanceAndMaximumText() {
         let app = XCUIApplication()
         for largeText in [false, true] {

@@ -20,6 +20,7 @@ project, this one included, lives in the ecosystem memory.
 - No automatic retry: the user retries. The feed polls every 30 seconds while the app is active and signed in.
 - HLS `margin`: 10 for a sequence, 0 in the podcast, clamped to 0–60.
 - Many sequences carry the transcript in `resume`: on 2026-10-08, of the 40 latest passages, 10 had `resume` identical to `verbatim` and 14 more its first words, cut short with or without "…"; 16 had a real summary. `SequenceDetail.summary` hides the repeats. A data issue to report to the backend.
+- `/persons` holds homonyms (two "Alexandra Martin" on 2026-10-15). The API filters persons by name, so homonyms cannot be told apart in a search: the choice list keys its rows by name, party and role, and checking one checks the other.
 - `/rest/v1/sequences/{id}/words` answering 404 or 502 means "no timings": the media plays with estimated highlighting.
 - API changes arrive unannounced. `scripts/check_api_contract.sh` compares the live Swagger with `Docs/API/openapi.yaml` (exit 1 on change, needs `oasdiff`); the `api-contract-sync` skill (`.claude/skills/`) explains the impact and updates the contract, its README and `SwaggerContractTests`.
 - The agent may call the API with `curl`. `/healthz` and `/readiness` need no auth. Private routes need a session of the real account. Never send a device replacement, never revoke a device, and never commit a token or credential: the repository is public.
