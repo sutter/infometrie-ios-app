@@ -15,7 +15,7 @@ struct SearchView: View {
                 AppSection(title: "Qui suivre ?") {
                     VStack(spacing: 0) {
                         NavigationLink {
-                            ChoicePicker(title: "Personnalités", allTitle: "Toutes les personnalités", choices: model.persons.map {
+                            ChoicePicker(title: "Personnalités", allTitle: "Toutes les personnalités", othersTitle: "Autres personnalités", choices: model.persons.map {
                                 .init(value: $0.name, title: $0.name, subtitle: [$0.party, $0.role].filter { !$0.isEmpty }.joined(separator: " · "))
                             }, selected: $model.draft.persons)
                         } label: {
@@ -30,7 +30,7 @@ struct SearchView: View {
                         }
                         AppRule()
                         NavigationLink {
-                            ChoicePicker(title: "Partis politiques", allTitle: "Tous les partis", choices: model.parties.map {
+                            ChoicePicker(title: "Partis politiques", allTitle: "Tous les partis", othersTitle: "Autres partis", choices: model.parties.map {
                                 .init(value: $0.code, title: $0.name, subtitle: $0.code)
                             }, selected: $model.draft.parties)
                         } label: {
@@ -115,26 +115,33 @@ struct ChoicePicker: View {
     @Environment(\.dismiss) private var dismiss
     let title: String
     let allTitle: String
+    /// Heads the names not chosen when the list opened, under "Votre sélection".
+    let othersTitle: String
     let choices: [Choice]
     @Binding var selected: Set<String>
     @State private var query = ""
+    /// The selection when the list opened, listed first until the next opening: a name checked or unchecked
+    /// meanwhile keeps its place, so no row jumps under the finger (option 1 of sheet 10, 2026-10-15).
+    @State private var pinned: Set<String>
+
+    init(title: String, allTitle: String, othersTitle: String, choices: [Choice], selected: Binding<Set<String>>) {
+        self.title = title
+        self.allTitle = allTitle
+        self.othersTitle = othersTitle
+        self.choices = choices
+        _selected = selected
+        _pinned = State(initialValue: selected.wrappedValue)
+    }
+
     private var filtered: [Choice] {
         choices.filter { query.isEmpty || "\($0.title) \($0.subtitle)".localizedStandardContains(query) }
             .sorted { $0.title.localizedCompare($1.title) == .orderedAscending }
     }
+
+    // No heading of its own: the bar already names the list, and a search shows its results only, which leaves
+    // the room above the keyboard to them (the client's iPhone 13 mini showed a single result).
     var body: some View {
         List {
-            PageHeading(title: title)
-                .padding(.vertical, 20)
-                .listRowInsets(EdgeInsets(top: 0, leading: AppLayout.margin, bottom: 0, trailing: AppLayout.margin))
-                .listRowBackground(Color.clear).listRowSeparator(.hidden)
-            Button { selected.removeAll() } label: {
-                FilterChoiceRow(title: allTitle, subtitle: "Sans restriction", selected: selected.isEmpty, multiple: false)
-            }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }
-                .accessibilityAddTraits(selected.isEmpty ? .isSelected : [])
-                .accessibilityIdentifier("clear-choices")
-                .listRowInsets(EdgeInsets(top: 8, leading: AppLayout.margin, bottom: 20, trailing: AppLayout.margin))
-                .listRowBackground(Color.clear).listRowSeparator(.hidden)
             if choices.isEmpty {
                 VStack(alignment: .leading, spacing: 16) {
                     AppEmptyState(title: "Liste indisponible", icon: "person.crop.circle.badge.questionmark", message: model.choicesError ?? "La liste est vide.")
@@ -143,16 +150,17 @@ struct ChoicePicker: View {
             } else if filtered.isEmpty {
                 AppEmptyState(title: "Aucun résultat", icon: "magnifyingglass", message: "Aucun nom ne correspond à « \(query) ».").listRowBackground(Color.clear).listRowSeparator(.hidden)
             }
-            ForEach(filtered) { choice in
-                Button {
-                    if selected.contains(choice.value) { selected.remove(choice.value) } else { selected.insert(choice.value) }
-                } label: {
-                    FilterChoiceRow(title: choice.title, subtitle: choice.subtitle, selected: selected.contains(choice.value), multiple: true)
-                }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }
-                    .accessibilityAddTraits(selected.contains(choice.value) ? .isSelected : [])
-                    .accessibilityIdentifier("choice-\(choice.value)")
-                    .listRowInsets(EdgeInsets(top: 0, leading: AppLayout.margin, bottom: 12, trailing: AppLayout.margin))
-                    .listRowBackground(Color.clear).listRowSeparator(.hidden)
+            let first = query.isEmpty ? filtered.filter { pinned.contains($0.value) } : []
+            if first.isEmpty {
+                ForEach(filtered, content: row)
+            } else {
+                let others = filtered.filter { !pinned.contains($0.value) }
+                sectionLabel("Votre sélection", top: 16)
+                ForEach(first, content: row)
+                if !others.isEmpty {
+                    sectionLabel(othersTitle, top: 24)
+                    ForEach(others, content: row)
+                }
             }
         }
         .listStyle(.plain).scrollContentBackground(.hidden).background(Brand.background)
@@ -160,14 +168,52 @@ struct ChoicePicker: View {
         .appNavigationTitle(title)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Rechercher un nom")
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            FilterFooter {
-                Text(selected.isEmpty ? allTitle : selectionCount(selected.count))
-                    .font(.subheadline).foregroundStyle(Brand.secondary)
-                    .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("choice-count")
+            // The count row is a touch target tall, with less padding above it, so "Tout effacer" leaves the
+            // footer at its former height and the results keep their room.
+            FilterFooter(top: 4, spacing: 0) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 12) { countLabel; Spacer(minLength: 0); clearButton }
+                    VStack(alignment: .leading, spacing: 0) { countLabel; clearButton }
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 Button("Terminé") { dismiss() }
                     .buttonStyle(ActionButtonStyle(prominent: true)).accessibilityIdentifier("confirm-choices")
             }
         }
+    }
+
+    private var countLabel: some View {
+        Text(selected.isEmpty ? allTitle : selectionCount(selected.count))
+            .font(.subheadline).foregroundStyle(Brand.secondary)
+            .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("choice-count")
+    }
+
+    /// Unchecks every name: the former "Toutes les personnalités · Sans restriction" radio did not read as clearing.
+    @ViewBuilder private var clearButton: some View {
+        if !selected.isEmpty {
+            Button("Tout effacer") { selected.removeAll() }
+                .font(.subheadline.weight(.semibold)).foregroundStyle(Brand.tint)
+                .buttonStyle(.plain).frame(minHeight: 44).contentShape(Rectangle())
+                .accessibilityIdentifier("clear-choices")
+        }
+    }
+
+    private func sectionLabel(_ title: String, top: CGFloat) -> some View {
+        SectionLabel(title: title)
+            .listRowInsets(EdgeInsets(top: top, leading: AppLayout.margin, bottom: 4, trailing: AppLayout.margin))
+            .listRowBackground(Color.clear).listRowSeparator(.hidden)
+    }
+
+    private func row(_ choice: Choice) -> some View {
+        Button {
+            if selected.contains(choice.value) { selected.remove(choice.value) } else { selected.insert(choice.value) }
+        } label: {
+            FilterChoiceRow(title: choice.title, subtitle: choice.subtitle, selected: selected.contains(choice.value), multiple: true)
+        }.buttonStyle(.plain).overlay(alignment: .bottom) { AppRule() }
+            .accessibilityAddTraits(selected.contains(choice.value) ? .isSelected : [])
+            .accessibilityIdentifier("choice-\(choice.value)")
+            .listRowInsets(EdgeInsets(top: 0, leading: AppLayout.margin, bottom: 12, trailing: AppLayout.margin))
+            .listRowBackground(Color.clear).listRowSeparator(.hidden)
     }
 }
 
@@ -278,10 +324,12 @@ struct ChoiceMark: View {
 }
 
 private struct FilterFooter<Content: View>: View {
+    var top: CGFloat = 16
+    var spacing: CGFloat = 10
     @ViewBuilder var content: () -> Content
     var body: some View {
-        VStack(alignment: .leading, spacing: 10, content: content)
-            .padding(16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
+        VStack(alignment: .leading, spacing: spacing, content: content)
+            .padding(.horizontal, 16).padding(.top, top).padding(.bottom, 16).frame(maxWidth: AppLayout.readingWidth).frame(maxWidth: .infinity)
             .background(Brand.background).overlay(alignment: .top) { AppRule() }
     }
 }
