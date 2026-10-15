@@ -1,5 +1,13 @@
 # Validation du portage
 
+## Suite complète de la recherche en pastilles — 15 octobre 2026
+
+Feuille Recherche : les personnalités et partis choisis en pastilles retirables sous chaque ligne, « Tout effacer » dès deux noms (demande du client, option B de la planche 09). Liste de détail : la sélection en tête sous « Votre sélection », plus de grand titre, une recherche n'affiche que ses résultats, « Tout effacer » à côté du compteur à la place du bouton radio « Toutes les personnalités » (planche 10). Le build 16 est parti sur TestFlight avant cette suite, après les 5 parcours de la recherche et des suivis.
+
+- `build/Full-20261015-1548.xcresult`, iPhone 17 Pro, iOS 26.4 : **27 tests réussis sur 27** (26 min). `xcodebuild` est resté bloqué en finalisant le résultat après « Executed 27 tests, with 0 failures » et a été arrêté.
+- `swift test` non relancé : `Infometrie/Core` et `Tests/` sont inchangés.
+- Planches 09 et 10 capturées sur iPhone 13 mini (iOS 26.4), clair, sombre et AccessibilityM, avec des tests temporaires non commités.
+
 ## Suite complète des favoris — 13 octobre 2026
 
 Favoris gardés sur l'appareil : quatrième onglet, étoile sur la page du passage, geste vers la droite sur les lignes du journal et de la fiche, sélection et retrait multiple, « Plus disponibles » et « Tout retirer », bandeau « Annuler », confirmation en alerte centrée. Le journal défile de nouveau quand le doigt part du graphique 7 j / 30 j (geste horizontal UIKit au lieu d'un glisser SwiftUI).
