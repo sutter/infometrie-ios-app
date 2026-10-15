@@ -1,5 +1,12 @@
 # Validation du portage
 
+## Suite complète des homonymes — 15 octobre 2026
+
+Liste des personnalités : chaque ligne est identifiée par le nom, le parti et le rôle, et plus par le seul nom. Le panel réel compte des homonymes (deux « Alexandra Martin »), qui donnaient des identifiants en double à SwiftUI et faisaient planter l'app Android en tapant « mar ». Le serveur de test sert deux « Dominique Petit » sans passage (`testChoiceListShowsHomonyms`).
+
+- `build/Full-20261015-2010.xcresult`, iPhone 17 Pro, iOS 26.4 : **28 tests réussis sur 28** (26 min). `xcodebuild` est resté bloqué en finalisant le résultat après « Executed 28 tests, with 0 failures » et a été arrêté.
+- `swift test` non relancé : `Infometrie/Core` et `Tests/` sont inchangés.
+
 ## Suite complète de la recherche en pastilles — 15 octobre 2026
 
 Feuille Recherche : les personnalités et partis choisis en pastilles retirables sous chaque ligne, « Tout effacer » dès deux noms (demande du client, option B de la planche 09). Liste de détail : la sélection en tête sous « Votre sélection », plus de grand titre, une recherche n'affiche que ses résultats, « Tout effacer » à côté du compteur à la place du bouton radio « Toutes les personnalités » (planche 10). Le build 16 est parti sur TestFlight avant cette suite, après les 5 parcours de la recherche et des suivis.
