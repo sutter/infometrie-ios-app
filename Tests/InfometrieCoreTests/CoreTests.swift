@@ -65,6 +65,20 @@ struct CoreTests {
         #expect(result.first?.title == "Titre actualisé")
     }
 
+    /// `seq` is the polling cursor: shuffled by a backend restart, higher for a passage indexed late, 0 from /history.
+    @Test func mergeOrdersByBroadcastTimeNotSeq() throws {
+        let now = try #require(APIDate.parse("2026-10-23T12:00:00Z"))
+        func passage(_ id: Int64, seq: Int64, at: String) -> FeedItem {
+            FeedItem(id: id, seq: seq, at: at, kind: "intervention", media: "tv", channel: "TV", person: "Camille Martin", party: "", title: "")
+        }
+        let feed = [passage(1, seq: 900, at: "2026-10-23T01:07:00Z"), passage(2, seq: 100, at: "2026-10-23T08:22:00Z")]
+        let late = passage(3, seq: 950, at: "2026-10-23T06:00:00Z")
+        let history = passage(4, seq: 0, at: "2026-10-23T09:00:00+02:00") // 07:00Z: after 08:22Z as text, before it in time
+        let result = FeedMerge.merge(existing: feed, incoming: [late, history], now: now)
+        #expect(result.map(\.id) == [2, 4, 3, 1])
+        #expect(FeedMerge.oldestFirst(result).map(\.id) == [1, 3, 4, 2])
+    }
+
     /// The speaker already heads the card and the passage page, so a leading "(Name)" is dropped from the title.
     @Test func displayTitleDropsTheLeadingSpeakerOnly() {
         var item = FeedItem(id: 1, at: "2026-09-21T12:00:00Z", kind: "citation", media: "radio", channel: "Radio",

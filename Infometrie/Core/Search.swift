@@ -81,10 +81,17 @@ struct SavedSearch: Codable, Identifiable, Equatable, Sendable {
 }
 
 enum FeedMerge {
+    /// Newest broadcast first. `seq` is the polling cursor, not a time: the backend renumbers the journal in no
+    /// particular order when it restarts, a passage indexed late gets a higher one, and history items carry 0.
     static func merge(existing: [FeedItem], incoming: [FeedItem], now: Date = Date()) -> [FeedItem] {
         var unique: [Int64: FeedItem] = [:]
         for item in existing + incoming { unique[item.id] = item }
-        return unique.values.filter { ($0.date ?? now) >= now.addingTimeInterval(-86_400) }
-            .sorted { $0.seq == $1.seq ? $0.at > $1.at : $0.seq > $1.seq }
+        return oldestFirst(unique.values.filter { ($0.date ?? now) >= now.addingTimeInterval(-86_400) }).reversed()
+    }
+    /// By the parsed broadcast time, since `at` strings with other offsets ("Z", "+02:00") do not sort as text;
+    /// equal times by id, and an unreadable time as the oldest.
+    static func oldestFirst(_ items: [FeedItem]) -> [FeedItem] {
+        let dated: [(item: FeedItem, date: Date)] = items.map { ($0, $0.date ?? .distantPast) }
+        return dated.sorted { $0.date == $1.date ? $0.item.id < $1.item.id : $0.date < $1.date }.map(\.item)
     }
 }
