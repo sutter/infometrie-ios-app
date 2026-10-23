@@ -1,5 +1,12 @@
 # Validation du portage
 
+## Suite complète du tri chronologique du journal, 23 octobre 2026
+
+Le journal se trie par heure de diffusion (`at` lu comme une date) et plus par `seq`, le curseur de sondage, que le backend renumérote dans le désordre à son redémarrage ; « Tout écouter » lit `at` de la même façon, ses décalages variant (`Z`, `+02:00`). Build TestFlight 17.
+
+- `build/Full-20261023-1126.xcresult`, iPhone 17 Pro, iOS 26.4 : **28 tests réussis sur 28** (26 min).
+- `swift test` : 70 tests réussis, dont `mergeOrdersByBroadcastTimeNotSeq`.
+
 ## Suite complète des homonymes — 15 octobre 2026
 
 Liste des personnalités : chaque ligne est identifiée par le nom, le parti et le rôle, et plus par le seul nom. Le panel réel compte des homonymes (deux « Alexandra Martin »), qui donnaient des identifiants en double à SwiftUI et faisaient planter l'app Android en tapant « mar ». Le serveur de test sert deux « Dominique Petit » sans passage (`testChoiceListShowsHomonyms`).
